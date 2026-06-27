@@ -47,7 +47,7 @@ class CustomTextFormField extends StatelessWidget {
 
   bool get hasLabel =>
       decoration != null &&
-          (decoration!.label != null || decoration!.labelText != null);
+      (decoration!.label != null || decoration!.labelText != null);
 
   const CustomTextFormField({
     super.key,
@@ -97,8 +97,8 @@ class CustomTextFormField extends StatelessWidget {
       helperMaxLines: decoration?.helperMaxLines,
       hintText: decoration?.hintText,
       hintStyle: TheWeTextStyle.hintText.copyWith(
-          color: TheWeColor.black500,
-          fontSize: 10
+        color: TheWeColor.black500,
+        fontSize: 10,
       ),
       hintMaxLines: decoration?.hintMaxLines,
       hintTextDirection: decoration?.hintTextDirection,
@@ -137,35 +137,27 @@ class CustomTextFormField extends StatelessWidget {
       alignLabelWithHint: decoration?.alignLabelWithHint,
       constraints: decoration?.constraints,
 
-      enabledBorder: decoration?.enabledBorder ?? OutlineInputBorder(
-        borderSide: BorderSide(
-          color: TheWeColor.black900,
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      enabledBorder:
+          decoration?.enabledBorder ??
+          OutlineInputBorder(
+            borderSide: BorderSide(color: TheWeColor.black900, width: 1),
+            borderRadius: BorderRadius.circular(8),
+          ),
 
-      focusedBorder: decoration?.focusedBorder ?? OutlineInputBorder(
-        borderSide: BorderSide(
-          color: TheWeColor.blue300,
-          width: 1,
-        ),
-        borderRadius: BorderRadius.circular(8),
-      ),
+      focusedBorder:
+          decoration?.focusedBorder ??
+          OutlineInputBorder(
+            borderSide: BorderSide(color: TheWeColor.blue300, width: 1),
+            borderRadius: BorderRadius.circular(8),
+          ),
 
       errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(
-          color: TheWeColor.pink,
-          width: 1,
-        ),
+        borderSide: BorderSide(color: TheWeColor.pink, width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
 
       focusedErrorBorder: OutlineInputBorder(
-        borderSide: BorderSide(
-          color: TheWeColor.pink,
-          width: 1,
-        ),
+        borderSide: BorderSide(color: TheWeColor.pink, width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
     );
