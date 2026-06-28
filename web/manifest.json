@@ -1,12 +1,14 @@
 {
-    "name": "the_we_system",
-    "short_name": "the_we_system",
+    "name": "The We 전자결재",
+    "short_name": "전자결재",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#F8F8F8",
+    "theme_color": "#2BA2FF",
+    "description": "결재 대기, 기안 진행, 문서 작성과 결재선을 관리하는 The We 전자결재 시스템입니다.",
     "orientation": "portrait-primary",
+    "categories": ["business", "productivity"],
+    "scope": ".",
     "prefer_related_applications": false,
     "icons": [
         {
