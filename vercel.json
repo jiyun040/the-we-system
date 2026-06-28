@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "echo 'Flutter dependencies are installed in buildCommand.'",
-  "buildCommand": "if [ ! -d .vercel/flutter ]; then git clone https://github.com/flutter/flutter.git --depth 1 -b stable .vercel/flutter; fi && .vercel/flutter/bin/flutter config --enable-web && .vercel/flutter/bin/flutter pub get && .vercel/flutter/bin/flutter build web --release --base-href=/ --no-wasm-dry-run --dart-define=API_BASE_URL=${API_BASE_URL:-}",
+  "buildCommand": "bash scripts/vercel-build.sh",
   "outputDirectory": "build/web",
   "rewrites": [
     {
