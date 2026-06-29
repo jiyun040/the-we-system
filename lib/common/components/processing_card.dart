@@ -29,6 +29,7 @@ class ProcessingCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         width: 260,
+        height: 292,
         decoration: BoxDecoration(
           color: TheWeColor.white,
           border: Border.all(
@@ -46,7 +47,7 @@ class ProcessingCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize: MainAxisSize.max,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
