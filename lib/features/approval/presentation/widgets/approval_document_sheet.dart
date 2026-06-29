@@ -45,7 +45,7 @@ class ApprovalDocumentSheet extends StatelessWidget {
                   SizedBox(width: narrow ? 0 : 20, height: narrow ? 16 : 0),
                   Expanded(
                     flex: narrow ? 0 : 6,
-                    child: _ApprovalStampTable(steps: document.steps),
+                    child: ApprovalStampTable(steps: document.steps),
                   ),
                 ],
               );
@@ -127,8 +127,8 @@ class _DocumentMetaTable extends StatelessWidget {
   String _join(List<String> values) => values.isEmpty ? '-' : values.join(', ');
 }
 
-class _ApprovalStampTable extends StatelessWidget {
-  const _ApprovalStampTable({required this.steps});
+class ApprovalStampTable extends StatelessWidget {
+  const ApprovalStampTable({super.key, required this.steps});
 
   final List<ApprovalStep> steps;
 
