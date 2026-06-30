@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/main.dart';
 
@@ -8,7 +9,7 @@ void main() {
     const Size(900, 900),
     const Size(390, 844),
   ]) {
-    testWidgets('Approval dashboard renders at ${size.width}x${size.height}', (
+    testWidgets('Approval flow renders at ${size.width}x${size.height}', (
       WidgetTester tester,
     ) async {
       tester.view.physicalSize = size;
@@ -16,13 +17,21 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
-      await tester.pumpWidget(const MyApp());
+      await tester.pumpWidget(const ProviderScope(child: MyApp()));
       await tester.pumpAndSettle();
 
-      expect(find.text('전자결재 홈'), findsOneWidget);
-      expect(find.text('결재 대기 문서'), findsOneWidget);
-      expect(find.text('업무용 PC 구매 예산 할당 요청'), findsOneWidget);
-      expect(find.text('기안 진행 문서'), findsOneWidget);
+      expect(find.text('로그인'), findsWidgets);
+      expect(find.text('회원가입'), findsOneWidget);
+
+      await tester.ensureVisible(find.text('로그인').last);
+      await tester.tap(find.text('로그인').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('홈'), findsWidgets);
+      expect(find.text('캘린더'), findsOneWidget);
+      expect(find.text('공지사항'), findsOneWidget);
+      expect(find.text('인력 현황'), findsOneWidget);
+      expect(find.text('업무 포털'), findsOneWidget);
     });
   }
 }
