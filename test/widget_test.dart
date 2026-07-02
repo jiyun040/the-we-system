@@ -31,7 +31,7 @@ void main() {
       expect(find.text('캘린더'), findsOneWidget);
       expect(find.text('공지사항'), findsOneWidget);
       expect(find.text('인력 현황'), findsOneWidget);
-      expect(find.text('업무 포털'), findsOneWidget);
+      expect(find.text('업무 포털'), findsNothing);
     });
   }
 }
