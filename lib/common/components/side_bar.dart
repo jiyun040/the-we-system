@@ -691,7 +691,7 @@ class _OrganizationDialog extends ConsumerWidget {
                             child: Container(
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: TheWeColor.white,
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
                                   color: TheWeColor.black300.withValues(
