@@ -41,9 +41,12 @@ class SideBar extends ConsumerWidget {
         GoRouterState.of(context).uri.queryParameters['view'] ?? 'weekly';
     final onAttendancePage = currentPath == AppRoutePath.absence;
     final onReceivedPage = currentPath.contains('/approval/box/received');
-    final onSentPage = currentPath.contains('/approval/box/sent');
     final onDraftPage = currentPath.contains('/approval/box/drafts');
+    final onTemporaryPage = currentPath == AppRoutePath.temporaryBox;
     final onArchivePage = currentPath.contains('/approval/box/all');
+    final onWaitingPage = currentPath.contains('/approval/box/waiting');
+    final onReferencePage = currentPath.contains('/approval/box/reference');
+    final onScheduledPage = currentPath.contains('/approval/box/scheduled');
 
     void openAttendance(String section) {
       context.goNamed(
@@ -117,12 +120,12 @@ class SideBar extends ConsumerWidget {
                                 selected:
                                     !onHomePage &&
                                     !onAttendancePage &&
-                                    !onReceivedPage &&
-                                    !onSentPage &&
-                                    !onDraftPage &&
-                                    !onArchivePage,
+                                    onWaitingPage,
                                 isCompact: isCompact,
-                                onTap: () => context.goNamed(AppRouteName.home),
+                                onTap: () => context.goNamed(
+                                  AppRouteName.box,
+                                  pathParameters: {'kind': 'waiting'},
+                                ),
                               ),
                               _SideMenuItem(
                                 icon: Icons.mark_email_unread_outlined,
@@ -139,22 +142,22 @@ class SideBar extends ConsumerWidget {
                                 icon: Icons.visibility_outlined,
                                 label: '참조/열람 대기',
                                 count: openPendingDocument,
-                                selected: onArchivePage,
+                                selected: onReferencePage,
                                 isCompact: isCompact,
                                 onTap: () => context.goNamed(
                                   AppRouteName.box,
-                                  pathParameters: {'kind': 'all'},
+                                  pathParameters: {'kind': 'reference'},
                                 ),
                               ),
                               _SideMenuItem(
                                 icon: Icons.event_available_outlined,
                                 label: '결재예정문서',
                                 count: scheduledDocument,
-                                selected: onSentPage,
+                                selected: onScheduledPage,
                                 isCompact: isCompact,
                                 onTap: () => context.goNamed(
                                   AppRouteName.box,
-                                  pathParameters: {'kind': 'sent'},
+                                  pathParameters: {'kind': 'scheduled'},
                                 ),
                               ),
                             ],
@@ -177,12 +180,10 @@ class SideBar extends ConsumerWidget {
                               _SideMenuItem(
                                 icon: Icons.drafts_outlined,
                                 label: '임시 저장함',
-                                selected: onDraftPage,
+                                selected: onTemporaryPage,
                                 isCompact: isCompact,
-                                onTap: () => context.goNamed(
-                                  AppRouteName.box,
-                                  pathParameters: {'kind': 'drafts'},
-                                ),
+                                onTap: () =>
+                                    context.goNamed(AppRouteName.temporaryBox),
                               ),
                               _SideMenuItem(
                                 icon: Icons.archive_outlined,
