@@ -61,7 +61,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F5FA),
+      backgroundColor: TheWeColor.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -70,7 +70,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
             child: Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: TheWeColor.white,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -316,7 +316,7 @@ class _SelectionDropdown extends StatelessWidget {
       icon: const Icon(Icons.keyboard_arrow_down_rounded),
       decoration: InputDecoration(
         filled: true,
-        fillColor: Colors.white,
+        fillColor: TheWeColor.white,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 14,
           vertical: 14,
@@ -331,7 +331,7 @@ class _SelectionDropdown extends StatelessWidget {
         ),
       ),
       style: TheWeTextStyle.hintText,
-      dropdownColor: Colors.white,
+      dropdownColor: TheWeColor.white,
       items: items
           .map((item) => DropdownMenuItem(value: item, child: Text(item)))
           .toList(),

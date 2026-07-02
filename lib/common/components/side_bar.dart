@@ -558,7 +558,7 @@ class _OrganizationDialog extends ConsumerWidget {
     final selectedMember = state?.selectedOrgMember;
 
     return Dialog(
-      backgroundColor: Colors.white,
+      backgroundColor: TheWeColor.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: SizedBox(
         width: 880,

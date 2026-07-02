@@ -31,7 +31,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
     final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F5FA),
+      backgroundColor: TheWeColor.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -40,7 +40,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
             child: Container(
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: TheWeColor.white,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
