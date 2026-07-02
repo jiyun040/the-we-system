@@ -14,6 +14,7 @@ abstract final class AppRouteName {
   static const draft = 'approvalDraft';
   static const box = 'approvalBox';
   static const formBox = 'approvalFormBox';
+  static const temporaryBox = 'approvalTemporaryBox';
   static const settings = 'approvalSettings';
   static const help = 'approvalHelp';
   static const absence = 'approvalAbsence';
@@ -26,6 +27,7 @@ abstract final class AppRoutePath {
   static const draft = '/approval/new';
   static const box = '/approval/box/:kind';
   static const formBox = '/approval/box/form/:formId';
+  static const temporaryBox = '/approval/temporary';
   static const settings = '/approval/settings';
   static const help = '/approval/help';
   static const absence = '/approval/absence';
@@ -86,6 +88,13 @@ final appRouter = GoRouter(
           ),
         );
       },
+    ),
+    GoRoute(
+      name: AppRouteName.temporaryBox,
+      path: AppRoutePath.temporaryBox,
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ApprovalAuthGate(child: ApprovalBoxPage(kind: 'temporary')),
+      ),
     ),
     GoRoute(
       name: AppRouteName.settings,
