@@ -143,7 +143,10 @@ class ApprovalBoxPage extends ConsumerWidget {
     return switch (kind) {
       'sent' => state.dashboard.processingDocuments,
       'waiting' => state.dashboard.waitingDocuments,
-      'received' => state.dashboard.waitingDocuments,
+      'received' => state.visibleDocuments
+          .where((document) => document.receivedRequest)
+          .toList()
+        ..sort((a, b) => b.draftedAt.compareTo(a.draftedAt)),
       'reference' => state.referenceDocuments,
       'scheduled' => state.scheduledDocuments,
       'drafts' => state.sharedDraftDocuments,
