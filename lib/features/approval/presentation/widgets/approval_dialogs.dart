@@ -4,11 +4,13 @@ import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/features/approval/domain/entities/approval_document.dart';
+import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 
 Future<void> showApprovalDecisionDialog(
   BuildContext context, {
   required ApprovalDocument document,
   required String action,
+  required Future<void> Function(String opinion) onConfirm,
 }) {
   final opinionController = TextEditingController(
     text: action == '승인' ? '관련 내용을 확인하였기에 결재합니다.' : '',
@@ -61,7 +63,12 @@ Future<void> showApprovalDecisionDialog(
       ),
       actions: [
         FilledButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () async {
+            await onConfirm(opinionController.text.trim());
+            if (context.mounted) {
+              Navigator.of(context).pop();
+            }
+          },
           style: FilledButton.styleFrom(
             backgroundColor: action == '승인'
                 ? TheWeColor.blue300
@@ -79,6 +86,16 @@ Future<void> showApprovalDecisionDialog(
         ),
       ],
     ),
+  );
+}
+
+Future<ApprovalFormTemplate?> showDraftFormSelectionDialog(
+  BuildContext context, {
+  required List<ApprovalFormTemplate> templates,
+}) {
+  return showDialog<ApprovalFormTemplate>(
+    context: context,
+    builder: (context) => _DraftFormSelectionDialog(templates: templates),
   );
 }
 
@@ -225,14 +242,14 @@ Future<void> showSaveApprovalLineDialog(BuildContext context) {
   );
 }
 
-Future<void> showRequestApprovalDialog(
+Future<bool?> showRequestApprovalDialog(
   BuildContext context, {
   required ApprovalDocument document,
 }) {
   final controller = TextEditingController();
   var urgent = false;
 
-  return showDialog<void>(
+  return showDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
       builder: (context, setState) => AlertDialog(
@@ -299,7 +316,7 @@ Future<void> showRequestApprovalDialog(
         ),
         actions: [
           FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(urgent),
             style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
             child: const Text('결재요청'),
           ),
@@ -391,6 +408,214 @@ class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(4),
                       ),
+                    ),
+                    child: const Text('확인'),
+                  ),
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('취소'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DraftFormSelectionDialog extends StatefulWidget {
+  const _DraftFormSelectionDialog({required this.templates});
+
+  final List<ApprovalFormTemplate> templates;
+
+  @override
+  State<_DraftFormSelectionDialog> createState() =>
+      _DraftFormSelectionDialogState();
+}
+
+class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
+  late ApprovalFormTemplate selectedTemplate;
+
+  @override
+  void initState() {
+    super.initState();
+    selectedTemplate = widget.templates.first;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final grouped = <String, List<ApprovalFormTemplate>>{};
+    for (final template in widget.templates) {
+      grouped.putIfAbsent(template.category, () => []).add(template);
+    }
+
+    return Dialog(
+      backgroundColor: TheWeColor.white,
+      surfaceTintColor: TheWeColor.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: SizedBox(
+        width: 920,
+        height: 560,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text('기안 항목선택', style: TheWeTextStyle.title),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                '새 결재 진행 후 바로 문서로 넘어가지 않고, 여기서 동일한 기안 양식을 먼저 선택합니다.',
+                style: TheWeTextStyle.body.copyWith(
+                  color: TheWeColor.black500,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 4,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: TheWeColor.black300.withValues(alpha: 0.35),
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: ListView(
+                          padding: const EdgeInsets.all(14),
+                          children: grouped.entries.map((entry) {
+                            return ExpansionTile(
+                              initiallyExpanded: true,
+                              tilePadding: EdgeInsets.zero,
+                              leading: const Icon(Icons.folder_outlined),
+                              title: Text(
+                                entry.key,
+                                style: TheWeTextStyle.body.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              children: entry.value
+                                  .map(
+                                    (template) => ListTile(
+                                      selected:
+                                          template.id == selectedTemplate.id,
+                                      selectedTileColor:
+                                          TheWeColor.blue100.withValues(
+                                            alpha: 0.45,
+                                          ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      leading: const Icon(
+                                        Icons.description_outlined,
+                                      ),
+                                      title: Text(
+                                        template.name,
+                                        style: TheWeTextStyle.body,
+                                      ),
+                                      subtitle: Text(
+                                        template.description,
+                                        style: TheWeTextStyle.caption,
+                                      ),
+                                      onTap: () =>
+                                          setState(() => selectedTemplate = template),
+                                    ),
+                                  )
+                                  .toList(),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 5,
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: TheWeColor.black300.withValues(alpha: 0.35),
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('상세정보', style: TheWeTextStyle.subtitle),
+                            const SizedBox(height: 16),
+                            _DialogInfoRow(
+                              label: '양식명',
+                              value: selectedTemplate.name,
+                            ),
+                            const SizedBox(height: 12),
+                            _DialogInfoRow(
+                              label: '카테고리',
+                              value: selectedTemplate.category,
+                            ),
+                            const SizedBox(height: 12),
+                            _DialogInfoRow(
+                              label: '기안부서',
+                              value: selectedTemplate.cooperationDepartment,
+                            ),
+                            const SizedBox(height: 12),
+                            _DialogInfoRow(
+                              label: '설명',
+                              value: selectedTemplate.description,
+                            ),
+                            const SizedBox(height: 18),
+                            Text('기본 제목', style: TheWeTextStyle.body),
+                            const SizedBox(height: 8),
+                            Text(
+                              selectedTemplate.defaultTitle,
+                              style: TheWeTextStyle.caption,
+                            ),
+                            const SizedBox(height: 16),
+                            Text('기본 본문', style: TheWeTextStyle.body),
+                            const SizedBox(height: 8),
+                            Expanded(
+                              child: Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF8FAFC),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  selectedTemplate.defaultContent,
+                                  style: TheWeTextStyle.caption.copyWith(
+                                    height: 1.6,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(selectedTemplate),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: TheWeColor.blue300,
                     ),
                     child: const Text('확인'),
                   ),

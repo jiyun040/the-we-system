@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
+import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/approval_history.dart';
@@ -20,18 +20,46 @@ class ApprovalDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final document = ref.watch(approvalDocumentProvider(documentId));
+    final appState = ref
+        .watch(approvalDashboardControllerProvider)
+        .asData
+        ?.value;
+
+    if (document == null || appState == null) {
+      return Scaffold(
+        backgroundColor: TheWeColor.white,
+        body: SafeArea(
+          child: Center(
+            child: Text('문서를 찾을 수 없습니다.', style: TheWeTextStyle.subtitle),
+          ),
+        ),
+      );
+    }
+
+    final currentUser = appState.currentUser;
+    final activeStep = document.steps
+        .where((step) => step.status == '진행중')
+        .firstOrNull;
+    final canApprove =
+        currentUser != null &&
+        (currentUser.isAdmin || activeStep?.name == currentUser.name);
+    final canCancel =
+        currentUser != null &&
+        (currentUser.isAdmin || document.drafter == currentUser.name) &&
+        document.canCancel &&
+        !document.steps.skip(1).any((step) => step.status == '완료');
+    final canEdit =
+        currentUser != null &&
+        (currentUser.isAdmin || document.drafter == currentUser.name);
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
       body: SafeArea(
-        child: document.when(
-          data: (value) => _DetailContent(document: value),
-          error: (error, stackTrace) => Center(
-            child: Text('문서를 찾을 수 없습니다.', style: TheWeTextStyle.subtitle),
-          ),
-          loading: () => Center(
-            child: CircularProgressIndicator(color: TheWeColor.blue300),
-          ),
+        child: _DetailContent(
+          document: document,
+          canApprove: canApprove,
+          canCancel: canCancel,
+          canEdit: canEdit,
         ),
       ),
     );
@@ -39,15 +67,28 @@ class ApprovalDetailPage extends ConsumerWidget {
 }
 
 class _DetailContent extends StatelessWidget {
-  const _DetailContent({required this.document});
+  const _DetailContent({
+    required this.document,
+    required this.canApprove,
+    required this.canCancel,
+    required this.canEdit,
+  });
 
   final ApprovalDocument document;
+  final bool canApprove;
+  final bool canCancel;
+  final bool canEdit;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _DocumentToolbar(document: document),
+        _DocumentToolbar(
+          document: document,
+          canApprove: canApprove,
+          canCancel: canCancel,
+          canEdit: canEdit,
+        ),
         Divider(height: 1, color: TheWeColor.black300.withValues(alpha: 0.35)),
         Expanded(
           child: LayoutBuilder(
@@ -106,13 +147,21 @@ class _DetailContent extends StatelessWidget {
   }
 }
 
-class _DocumentToolbar extends StatelessWidget {
-  const _DocumentToolbar({required this.document});
+class _DocumentToolbar extends ConsumerWidget {
+  const _DocumentToolbar({
+    required this.document,
+    required this.canApprove,
+    required this.canCancel,
+    required this.canEdit,
+  });
 
   final ApprovalDocument document;
+  final bool canApprove;
+  final bool canCancel;
+  final bool canEdit;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final compact = MediaQuery.sizeOf(context).width < 640;
 
     return Padding(
@@ -153,47 +202,70 @@ class _DocumentToolbar extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _ToolbarButton(
-                  icon: Icons.edit_note,
-                  label: '결재',
-                  highlighted: true,
-                  onPressed: () => showApprovalDecisionDialog(
-                    context,
-                    document: document,
-                    action: '승인',
+                if (canApprove)
+                  _ToolbarButton(
+                    icon: Icons.edit_note,
+                    label: '승인',
+                    highlighted: true,
+                    onPressed: () => showApprovalDecisionDialog(
+                      context,
+                      document: document,
+                      action: '승인',
+                      onConfirm: (opinion) => ref
+                          .read(approvalDashboardControllerProvider.notifier)
+                          .approveDocument(
+                            document.id,
+                            action: '승인',
+                            opinion: opinion,
+                          ),
+                    ),
                   ),
-                ),
-                _ToolbarButton(
-                  icon: Icons.keyboard_return,
-                  label: '반려',
-                  onPressed: () => showApprovalDecisionDialog(
-                    context,
-                    document: document,
-                    action: '반려',
+                if (canApprove)
+                  _ToolbarButton(
+                    icon: Icons.keyboard_return,
+                    label: '반려',
+                    onPressed: () => showApprovalDecisionDialog(
+                      context,
+                      document: document,
+                      action: '반려',
+                      onConfirm: (opinion) => ref
+                          .read(approvalDashboardControllerProvider.notifier)
+                          .approveDocument(
+                            document.id,
+                            action: '반려',
+                            opinion: opinion,
+                          ),
+                    ),
                   ),
-                ),
-                _ToolbarButton(
-                  icon: Icons.schedule,
-                  label: '보류',
-                  onPressed: () {},
-                ),
-                _ToolbarButton(
-                  icon: Icons.edit_square,
-                  label: '문서 수정',
-                  onPressed: () => context.goNamed(
-                    AppRouteName.draft,
-                    queryParameters: {'reuse': document.id},
+                if (canCancel)
+                  _ToolbarButton(
+                    icon: Icons.undo,
+                    label: '상신취소',
+                    onPressed: () async {
+                      await ref
+                          .read(approvalDashboardControllerProvider.notifier)
+                          .cancelSubmission(document.id);
+                      if (context.mounted) {
+                        context.goNamed(
+                          AppRouteName.box,
+                          pathParameters: {'kind': 'drafts'},
+                        );
+                      }
+                    },
                   ),
-                ),
+                if (canEdit)
+                  _ToolbarButton(
+                    icon: Icons.edit_square,
+                    label: '문서 수정',
+                    onPressed: () => context.goNamed(
+                      AppRouteName.draft,
+                      queryParameters: {'reuse': document.id},
+                    ),
+                  ),
                 _ToolbarButton(
                   icon: Icons.info_outline,
                   label: '결재 정보',
                   onPressed: () => showApprovalInfoDialog(context),
-                ),
-                _ToolbarButton(
-                  icon: Icons.mail_outline,
-                  label: '메일발송',
-                  onPressed: () {},
                 ),
               ],
             ),
@@ -322,13 +394,6 @@ class _ApprovalLineTab extends StatelessWidget {
                       style: TheWeTextStyle.body,
                     ),
                     Text(step.department, style: TheWeTextStyle.caption),
-                    if (step.delegatedBy != null)
-                      Text(
-                        '대결자 승인 후 원결재자(${step.delegatedBy}) 재승인 필요',
-                        style: TheWeTextStyle.caption.copyWith(
-                          color: TheWeColor.pink,
-                        ),
-                      ),
                   ],
                 ),
               ),
@@ -374,17 +439,9 @@ class _HistoryTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('결재선 변경', style: TheWeTextStyle.subtitle),
+        Text('변경 이력', style: TheWeTextStyle.subtitle),
         const SizedBox(height: 8),
-        ...histories
-            .where((history) => history.category.contains('결재선'))
-            .map((history) => _HistoryTile(history: history)),
-        const SizedBox(height: 20),
-        Text('결재문서 변경', style: TheWeTextStyle.subtitle),
-        const SizedBox(height: 8),
-        ...histories
-            .where((history) => history.category.contains('문서'))
-            .map((history) => _HistoryTile(history: history)),
+        ...histories.map((history) => _HistoryTile(history: history)),
       ],
     );
   }
@@ -404,38 +461,16 @@ class _HistoryTile extends StatelessWidget {
         border: Border.all(color: TheWeColor.black300.withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(history.date, style: TheWeTextStyle.caption),
-                Text(history.user, style: TheWeTextStyle.body),
-                Text(
-                  history.description,
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: TheWeColor.black500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text(history.category),
-                content: Text(history.snapshot, style: TheWeTextStyle.body),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('닫기'),
-                  ),
-                ],
-              ),
-            ),
-            child: const Text('보기'),
+          Text(history.date, style: TheWeTextStyle.caption),
+          const SizedBox(height: 4),
+          Text(history.user, style: TheWeTextStyle.body),
+          const SizedBox(height: 2),
+          Text(
+            history.description,
+            style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
           ),
         ],
       ),
@@ -501,4 +536,8 @@ class _SimplePerson extends StatelessWidget {
       title: Text(name, style: TheWeTextStyle.body),
     );
   }
+}
+
+extension<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
 }
