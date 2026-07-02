@@ -190,7 +190,7 @@ class _DelegationSettings extends StatelessWidget {
             FilledButton.icon(
               onPressed: () => context.goNamed(AppRouteName.absence),
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('부재 추가'),
+              label: const Text('근태/부재 관리'),
               style: FilledButton.styleFrom(
                 backgroundColor: TheWeColor.blue300,
               ),
