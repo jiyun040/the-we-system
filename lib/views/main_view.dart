@@ -1,5 +1,5 @@
 import 'package:flutter/widgets.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_home_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/home/approval_home_page.dart';
 
 class MainView extends StatelessWidget {
   const MainView({super.key});

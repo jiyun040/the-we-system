@@ -2,12 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/constants/color.dart';
+import 'package:the_we_system/common/constants/layout.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
-import 'package:the_we_system/features/approval/domain/entities/approval_form.dart';
+import 'package:the_we_system/features/approval/domain/entities/form/approval_form.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
+
+part 'side_bar_sections.dart';
+part 'side_bar_org.dart';
+part 'side_bar_menu.dart';
 
 class SideBar extends ConsumerWidget {
   const SideBar({
@@ -68,9 +73,9 @@ class SideBar extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _Brand(isCompact: isCompact, currentUser: currentUser),
-              const SizedBox(height: 18),
+              TheWeGaps.verticalXxl,
               _NewApprovalButton(isCompact: isCompact),
-              const SizedBox(height: 18),
+              TheWeGaps.verticalXxl,
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -83,7 +88,7 @@ class SideBar extends ConsumerWidget {
                         isCompact: isCompact,
                         onTap: () => context.goNamed(AppRouteName.home),
                       ),
-                      const SizedBox(height: 8),
+                      TheWeGaps.verticalSm,
                       _CategorySection(
                         title: '전자결재',
                         icon: Icons.approval_outlined,
@@ -108,7 +113,7 @@ class SideBar extends ConsumerWidget {
                                 )
                                 .toList(),
                           ),
-                          const SizedBox(height: 18),
+                          TheWeGaps.verticalXxl,
                           _MenuSection(
                             title: '결재하기',
                             isCompact: isCompact,
@@ -162,7 +167,7 @@ class SideBar extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
+                          TheWeGaps.verticalXxl,
                           _MenuSection(
                             title: '개인문서함',
                             isCompact: isCompact,
@@ -199,7 +204,7 @@ class SideBar extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 18),
+                      TheWeGaps.verticalXxl,
                       _CategorySection(
                         title: '근태관리',
                         icon: Icons.schedule_outlined,
@@ -259,7 +264,7 @@ class SideBar extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 18),
+                          TheWeGaps.verticalXxl,
                           _MenuSection(
                             title: '휴가',
                             isCompact: isCompact,
@@ -305,583 +310,6 @@ class SideBar extends ConsumerWidget {
                   color: TheWeColor.black300.withValues(alpha: 0.24),
                 ),
                 _OrgButton(isCompact: isCompact),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CategorySection extends StatelessWidget {
-  const _CategorySection({
-    required this.title,
-    required this.icon,
-    required this.isCompact,
-    required this.children,
-    required this.initiallyExpanded,
-  });
-
-  final String title;
-  final IconData icon;
-  final bool isCompact;
-  final List<Widget> children;
-  final bool initiallyExpanded;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isCompact) {
-      return Column(children: children);
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: TheWeColor.black300.withValues(alpha: 0.18)),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            initiallyExpanded: initiallyExpanded,
-            leading: Icon(icon, color: TheWeColor.black900),
-            title: Text(title, style: TheWeTextStyle.subtitle),
-            childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-            expandedCrossAxisAlignment: CrossAxisAlignment.start,
-            children: children,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Brand extends ConsumerWidget {
-  const _Brand({required this.isCompact, required this.currentUser});
-
-  final bool isCompact;
-  final EmployeeAccount? currentUser;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isPhone = MediaQuery.sizeOf(context).width < 520;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Container(
-              width: isPhone ? 36 : 40,
-              height: isPhone ? 36 : 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: TheWeColor.blue300,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                'W',
-                style: TheWeTextStyle.subtitle.copyWith(color: Colors.white),
-              ),
-            ),
-            if (!isCompact) ...[
-              const SizedBox(width: 12),
-              Expanded(child: Text('경영업무포털', style: TheWeTextStyle.title)),
-            ],
-          ],
-        ),
-        if (!isCompact && currentUser != null) ...[
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F8FC),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: TheWeColor.blue100.withValues(alpha: 0.45),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${currentUser!.name} ${currentUser!.position}',
-                        style: TheWeTextStyle.subtitle,
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => ref
-                          .read(approvalDashboardControllerProvider.notifier)
-                          .logout(),
-                      icon: const Icon(Icons.logout, size: 18),
-                      tooltip: '로그아웃',
-                    ),
-                  ],
-                ),
-                Text(
-                  '${currentUser!.department}  |  ${currentUser!.id}',
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: TheWeColor.black500,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  currentUser!.isAdmin
-                      ? '전체 직원 문서 열람/관리 가능'
-                      : currentUser!.email,
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: currentUser!.isAdmin
-                        ? TheWeColor.blue300
-                        : TheWeColor.black500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-class _NewApprovalButton extends ConsumerWidget {
-  const _NewApprovalButton({required this.isCompact});
-
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    Future<void> openFormPicker() async {
-      final state = ref.read(approvalDashboardControllerProvider).asData?.value;
-      if (state == null) {
-        return;
-      }
-
-      final selected = await showDraftFormSelectionDialog(
-        context,
-        templates: state.formTemplates,
-      );
-      if (selected == null || !context.mounted) {
-        return;
-      }
-
-      context.goNamed(
-        AppRouteName.draft,
-        queryParameters: {'form': selected.id},
-      );
-    }
-
-    if (isCompact) {
-      return SizedBox(
-        width: double.infinity,
-        height: 44,
-        child: IconButton.filled(
-          onPressed: openFormPicker,
-          icon: const Icon(Icons.add, size: 18),
-          tooltip: '새 결재 진행',
-          style: IconButton.styleFrom(
-            backgroundColor: TheWeColor.black900,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return SizedBox(
-      width: double.infinity,
-      height: 46,
-      child: FilledButton.icon(
-        onPressed: openFormPicker,
-        icon: const Icon(Icons.add, size: 18),
-        label: const Text('새 결재 진행'),
-        style: FilledButton.styleFrom(
-          backgroundColor: TheWeColor.black900,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          textStyle: TheWeTextStyle.makeApproval,
-        ),
-      ),
-    );
-  }
-}
-
-class _OrgButton extends ConsumerWidget {
-  const _OrgButton({required this.isCompact});
-
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SizedBox(
-      width: double.infinity,
-      child: isCompact
-          ? IconButton(
-              onPressed: () => _showOrganizationDialog(context),
-              icon: const Icon(Icons.account_tree_outlined),
-              tooltip: '조직도',
-            )
-          : OutlinedButton.icon(
-              onPressed: () => _showOrganizationDialog(context),
-              icon: const Icon(Icons.account_tree_outlined, size: 18),
-              label: const Text('조직도'),
-            ),
-    );
-  }
-
-  void _showOrganizationDialog(BuildContext context) {
-    showDialog<void>(
-      context: context,
-      builder: (context) => const _OrganizationDialog(),
-    );
-  }
-}
-
-class _OrganizationDialog extends ConsumerWidget {
-  const _OrganizationDialog();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
-    final departments = state?.departments ?? const [];
-    final members = state?.selectedDepartmentMembers ?? const [];
-    final selectedMember = state?.selectedOrgMember;
-
-    return Dialog(
-      backgroundColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      child: SizedBox(
-        width: 880,
-        height: 620,
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 4,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text('조직도', style: TheWeTextStyle.title),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: departments.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 8),
-                        itemBuilder: (context, index) {
-                          final department = departments[index];
-                          final selected =
-                              department == state?.selectedOrgDepartment;
-                          return InkWell(
-                            onTap: () => ref
-                                .read(
-                                  approvalDashboardControllerProvider.notifier,
-                                )
-                                .setDepartment(department),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: selected
-                                    ? TheWeColor.blue100.withValues(alpha: 0.4)
-                                    : const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.apartment_outlined,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      department,
-                                      style: TheWeTextStyle.body.copyWith(
-                                        fontWeight: selected
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 18),
-              Expanded(
-                flex: 6,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('구성원', style: TheWeTextStyle.subtitle),
-                    const SizedBox(height: 12),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 4,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: ListView.builder(
-                                padding: const EdgeInsets.all(12),
-                                itemCount: members.length,
-                                itemBuilder: (context, index) {
-                                  final member = members[index];
-                                  final selected =
-                                      member.id == selectedMember?.id;
-                                  return ListTile(
-                                    onTap: () => ref
-                                        .read(
-                                          approvalDashboardControllerProvider
-                                              .notifier,
-                                        )
-                                        .setOrgMember(member.id),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    selected: selected,
-                                    selectedTileColor: TheWeColor.blue100
-                                        .withValues(alpha: 0.45),
-                                    title: Text(
-                                      member.name,
-                                      style: TheWeTextStyle.body,
-                                    ),
-                                    subtitle: Text(
-                                      '${member.position}  |  ${member.id}',
-                                      style: TheWeTextStyle.caption,
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            flex: 5,
-                            child: Container(
-                              padding: const EdgeInsets.all(20),
-                              decoration: BoxDecoration(
-                                color: TheWeColor.white,
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(
-                                  color: TheWeColor.black300.withValues(
-                                    alpha: 0.22,
-                                  ),
-                                ),
-                              ),
-                              child: selectedMember == null
-                                  ? Center(
-                                      child: Text(
-                                        '구성원을 선택해 주세요.',
-                                        style: TheWeTextStyle.body,
-                                      ),
-                                    )
-                                  : Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 30,
-                                          backgroundColor: TheWeColor.blue100,
-                                          child: Text(
-                                            selectedMember
-                                                .name
-                                                .characters
-                                                .first,
-                                            style: TheWeTextStyle.title,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 18),
-                                        Text(
-                                          '${selectedMember.name} ${selectedMember.position}',
-                                          style: TheWeTextStyle.title,
-                                        ),
-                                        const SizedBox(height: 12),
-                                        _ProfileLine(
-                                          label: '부서',
-                                          value: selectedMember.department,
-                                        ),
-                                        _ProfileLine(
-                                          label: '아이디',
-                                          value: selectedMember.id,
-                                        ),
-                                        _ProfileLine(
-                                          label: '이메일',
-                                          value: selectedMember.email,
-                                        ),
-                                        _ProfileLine(
-                                          label: '권한',
-                                          value: selectedMember.isAdmin
-                                              ? '관리자'
-                                              : '일반 직원',
-                                        ),
-                                      ],
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ProfileLine extends StatelessWidget {
-  const _ProfileLine({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TheWeTextStyle.caption),
-          const SizedBox(height: 4),
-          Text(value, style: TheWeTextStyle.body),
-        ],
-      ),
-    );
-  }
-}
-
-class _MenuSection extends StatelessWidget {
-  const _MenuSection({
-    required this.title,
-    required this.children,
-    required this.isCompact,
-  });
-
-  final String title;
-  final List<Widget> children;
-  final bool isCompact;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!isCompact)
-          Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 8),
-            child: Text(
-              title,
-              style: TheWeTextStyle.section.copyWith(
-                color: TheWeColor.black500,
-              ),
-            ),
-          ),
-        ...children,
-      ],
-    );
-  }
-}
-
-class _SideMenuItem extends StatelessWidget {
-  const _SideMenuItem({
-    required this.icon,
-    required this.label,
-    required this.isCompact,
-    this.count,
-    this.selected = false,
-    this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final bool isCompact;
-  final int? count;
-  final bool selected;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final foreground = selected ? TheWeColor.blue300 : TheWeColor.black900;
-    final isPhone = MediaQuery.sizeOf(context).width < 520;
-
-    return Tooltip(
-      message: isCompact ? label : '',
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          height: isPhone ? 38 : 42,
-          margin: const EdgeInsets.only(bottom: 4),
-          padding: EdgeInsets.symmetric(
-            horizontal: isPhone ? 8 : (isCompact ? 10 : 12),
-          ),
-          decoration: BoxDecoration(
-            color: selected
-                ? TheWeColor.blue100.withValues(alpha: 0.45)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Row(
-            mainAxisAlignment: isCompact
-                ? MainAxisAlignment.center
-                : MainAxisAlignment.start,
-            children: [
-              Icon(icon, size: 18, color: foreground),
-              if (!isCompact) ...[
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TheWeTextStyle.body.copyWith(color: foreground),
-                  ),
-                ),
-                if (count != null)
-                  Text(
-                    '$count',
-                    style: TheWeTextStyle.caption.copyWith(
-                      color: selected
-                          ? TheWeColor.blue300
-                          : TheWeColor.black500,
-                    ),
-                  ),
               ],
             ],
           ),

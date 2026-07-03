@@ -1,6 +1,6 @@
 import 'package:the_we_system/features/approval/data/datasources/approval_remote_data_source.dart';
-import 'package:the_we_system/features/approval/domain/entities/approval_dashboard.dart';
-import 'package:the_we_system/features/approval/domain/entities/approval_document.dart';
+import 'package:the_we_system/features/approval/domain/entities/dashboard/approval_dashboard.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/repositories/approval_repository.dart';
 
 class ApprovalRepositoryImpl implements ApprovalRepository {

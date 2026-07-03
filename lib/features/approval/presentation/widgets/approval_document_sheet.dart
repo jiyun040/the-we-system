@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
-import 'package:the_we_system/features/approval/domain/entities/approval_document.dart';
-import 'package:the_we_system/features/approval/domain/entities/approval_step.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 
 class ApprovalDocumentSheet extends StatelessWidget {
   const ApprovalDocumentSheet({super.key, required this.document});

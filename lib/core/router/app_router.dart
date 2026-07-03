@@ -1,12 +1,12 @@
 import 'package:go_router/go_router.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_absence_page.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_box_page.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_detail_page.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_draft_page.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_help_page.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_home_page.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_settings_page.dart';
-import 'package:the_we_system/features/approval/presentation/pages/approval_signup_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/attendance/approval_absence_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/approval/approval_box_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/approval/approval_detail_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/approval/approval_draft_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/settings/approval_help_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/home/approval_home_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/settings/approval_settings_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/auth/approval_signup_page.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_auth_gate.dart';
 
 abstract final class AppRouteName {

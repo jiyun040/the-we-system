@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:the_we_system/core/config/app_env.dart';
-import 'package:the_we_system/features/approval/domain/entities/approval_dashboard.dart';
-import 'package:the_we_system/features/approval/domain/entities/approval_document.dart';
+import 'package:the_we_system/features/approval/domain/entities/dashboard/approval_dashboard.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 
 class ApprovalRemoteDataSource {
   ApprovalRemoteDataSource(this._dio);
