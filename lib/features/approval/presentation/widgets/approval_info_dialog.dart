@@ -117,6 +117,8 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final screen = MediaQuery.sizeOf(context);
+    final isPhone = screen.width < 520;
     final grouped = <String, List<ApprovalFormTemplate>>{};
     for (final template in widget.templates) {
       grouped.putIfAbsent(template.category, () => []).add(template);
@@ -127,10 +129,13 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
       surfaceTintColor: TheWeColor.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: SizedBox(
-        width: 920,
-        height: 560,
+        width: isPhone ? screen.width - 64 : 920,
+        height: isPhone ? screen.height * 0.8 : 560,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 22),
+          padding: EdgeInsets.symmetric(
+            horizontal: isPhone ? 18 : 24,
+            vertical: isPhone ? 18 : 22,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -145,135 +150,22 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
                 ],
               ),
               const SizedBox(height: 12),
-              Text(
-                '새 결재 진행 후 바로 문서로 넘어가지 않고, 여기서 동일한 기안 양식을 먼저 선택합니다.',
-                style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
-              ),
-              const SizedBox(height: 18),
               Expanded(
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 4,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: TheWeColor.black300.withValues(alpha: 0.35),
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: ListView(
-                          padding: const EdgeInsets.all(14),
-                          children: grouped.entries.map((entry) {
-                            return ExpansionTile(
-                              initiallyExpanded: true,
-                              tilePadding: EdgeInsets.zero,
-                              leading: const Icon(Icons.folder_outlined),
-                              title: Text(
-                                entry.key,
-                                style: TheWeTextStyle.body.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              children: entry.value
-                                  .map(
-                                    (template) => ListTile(
-                                      selected:
-                                          template.id == selectedTemplate.id,
-                                      selectedTileColor: TheWeColor.blue100
-                                          .withValues(alpha: 0.45),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                      leading: const Icon(
-                                        Icons.description_outlined,
-                                      ),
-                                      title: Text(
-                                        template.name,
-                                        style: TheWeTextStyle.body,
-                                      ),
-                                      subtitle: Text(
-                                        template.description,
-                                        style: TheWeTextStyle.caption,
-                                      ),
-                                      onTap: () => setState(
-                                        () => selectedTemplate = template,
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            );
-                          }).toList(),
-                        ),
+                child: isPhone
+                    ? ListView(
+                        children: [
+                          SizedBox(height: 280, child: _templateList(grouped)),
+                          const SizedBox(height: 12),
+                          _templateDetail(expandBody: false),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(flex: 4, child: _templateList(grouped)),
+                          const SizedBox(width: 16),
+                          Expanded(flex: 5, child: _templateDetail()),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      flex: 5,
-                      child: Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: TheWeColor.black300.withValues(alpha: 0.35),
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('상세정보', style: TheWeTextStyle.subtitle),
-                            const SizedBox(height: 16),
-                            _DialogInfoRow(
-                              label: '양식명',
-                              value: selectedTemplate.name,
-                            ),
-                            const SizedBox(height: 12),
-                            _DialogInfoRow(
-                              label: '카테고리',
-                              value: selectedTemplate.category,
-                            ),
-                            const SizedBox(height: 12),
-                            _DialogInfoRow(
-                              label: '기안부서',
-                              value: selectedTemplate.cooperationDepartment,
-                            ),
-                            const SizedBox(height: 12),
-                            _DialogInfoRow(
-                              label: '설명',
-                              value: selectedTemplate.description,
-                            ),
-                            const SizedBox(height: 18),
-                            Text('기본 제목', style: TheWeTextStyle.body),
-                            const SizedBox(height: 8),
-                            Text(
-                              selectedTemplate.defaultTitle,
-                              style: TheWeTextStyle.caption,
-                            ),
-                            const SizedBox(height: 16),
-                            Text('기본 본문', style: TheWeTextStyle.body),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: Container(
-                                width: double.infinity,
-                                padding: const EdgeInsets.all(14),
-                                decoration: BoxDecoration(
-                                  color: TheWeColor.white,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  selectedTemplate.defaultContent,
-                                  style: TheWeTextStyle.caption.copyWith(
-                                    height: 1.6,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ),
               const SizedBox(height: 18),
               Row(
@@ -297,6 +189,95 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _templateList(Map<String, List<ApprovalFormTemplate>> grouped) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: TheWeColor.black300.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(14),
+        children: grouped.entries.map((entry) {
+          return ExpansionTile(
+            initiallyExpanded: true,
+            tilePadding: EdgeInsets.zero,
+            leading: const Icon(Icons.folder_outlined),
+            title: Text(
+              entry.key,
+              style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
+            ),
+            children: entry.value.map((template) {
+              return ListTile(
+                selected: template.id == selectedTemplate.id,
+                selectedTileColor: TheWeColor.blue100.withValues(alpha: 0.45),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                leading: const Icon(Icons.description_outlined),
+                title: Text(template.name, style: TheWeTextStyle.body),
+                subtitle: Text(
+                  template.description,
+                  style: TheWeTextStyle.caption,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () => setState(() => selectedTemplate = template),
+              );
+            }).toList(),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _templateDetail({bool expandBody = true}) {
+    final body = Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: TheWeColor.white,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        selectedTemplate.defaultContent,
+        style: TheWeTextStyle.caption.copyWith(height: 1.6),
+      ),
+    );
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        border: Border.all(color: TheWeColor.black300.withValues(alpha: 0.35)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('상세정보', style: TheWeTextStyle.subtitle),
+          const SizedBox(height: 16),
+          _DialogInfoRow(label: '양식명', value: selectedTemplate.name),
+          const SizedBox(height: 12),
+          _DialogInfoRow(label: '카테고리', value: selectedTemplate.category),
+          const SizedBox(height: 12),
+          _DialogInfoRow(
+            label: '기안부서',
+            value: selectedTemplate.cooperationDepartment,
+          ),
+          const SizedBox(height: 12),
+          _DialogInfoRow(label: '설명', value: selectedTemplate.description),
+          const SizedBox(height: 18),
+          Text('기본 제목', style: TheWeTextStyle.body),
+          const SizedBox(height: 8),
+          Text(selectedTemplate.defaultTitle, style: TheWeTextStyle.caption),
+          const SizedBox(height: 16),
+          Text('기본 본문', style: TheWeTextStyle.body),
+          const SizedBox(height: 8),
+          expandBody ? Expanded(child: body) : body,
+        ],
       ),
     );
   }
