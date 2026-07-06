@@ -158,7 +158,7 @@ class _NewApprovalButton extends ConsumerWidget {
         return;
       }
 
-      context.goNamed(
+      context.pushNamed(
         AppRouteName.draft,
         queryParameters: {'form': selected.id},
       );

@@ -89,7 +89,13 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                         child: Text('회원가입', style: TheWeTextStyle.pageTitle),
                       ),
                       TextButton(
-                        onPressed: () => context.goNamed(AppRouteName.home),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                            return;
+                          }
+                          context.goNamed(AppRouteName.home);
+                        },
                         child: Text(
                           '로그인으로 돌아가기',
                           style: TheWeTextStyle.body.copyWith(

@@ -116,7 +116,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => context.goNamed(AppRouteName.signup),
+                      onPressed: () => context.pushNamed(AppRouteName.signup),
                       child: Text(
                         '회원가입',
                         style: TheWeTextStyle.body.copyWith(

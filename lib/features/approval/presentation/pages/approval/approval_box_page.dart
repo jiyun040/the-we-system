@@ -65,7 +65,7 @@ class ApprovalBoxPage extends ConsumerWidget {
                       FilledButton.icon(
                         onPressed: () async {
                           if (formId != null) {
-                            context.goNamed(
+                            context.pushNamed(
                               AppRouteName.draft,
                               queryParameters: {'form': formId!},
                             );
@@ -80,7 +80,7 @@ class ApprovalBoxPage extends ConsumerWidget {
                             return;
                           }
 
-                          context.goNamed(
+                          context.pushNamed(
                             AppRouteName.draft,
                             queryParameters: {'form': selected.id},
                           );
@@ -186,14 +186,43 @@ class _ArchiveTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final returnKind = GoRouterState.of(
+      context,
+    ).uri.queryParameters['returnKind'];
+
     return Wrap(
       spacing: 8,
       children: [
-        _TabButton(label: '받은 결재', routeKind: 'received', selected: selected),
-        _TabButton(label: '보낸 결재', routeKind: 'sent', selected: selected),
-        _TabButton(label: '기안 문서함', routeKind: 'drafts', selected: selected),
-        _TabButton(label: '임시저장함', routeKind: 'temporary', selected: selected),
-        _TabButton(label: '전체 내역', routeKind: 'all', selected: selected),
+        _TabButton(
+          label: '받은 결재',
+          routeKind: 'received',
+          selected: selected,
+          returnKind: returnKind,
+        ),
+        _TabButton(
+          label: '보낸 결재',
+          routeKind: 'sent',
+          selected: selected,
+          returnKind: returnKind,
+        ),
+        _TabButton(
+          label: '기안 문서함',
+          routeKind: 'drafts',
+          selected: selected,
+          returnKind: returnKind,
+        ),
+        _TabButton(
+          label: '임시저장함',
+          routeKind: 'temporary',
+          selected: selected,
+          returnKind: returnKind,
+        ),
+        _TabButton(
+          label: '전체 내역',
+          routeKind: 'all',
+          selected: selected,
+          returnKind: returnKind,
+        ),
       ],
     );
   }
@@ -204,32 +233,61 @@ class _TabButton extends StatelessWidget {
     required this.label,
     required this.routeKind,
     required this.selected,
+    required this.returnKind,
   });
 
   final String label;
   final String routeKind;
   final String selected;
+  final String? returnKind;
+
+  static const _tabKinds = {'received', 'sent', 'drafts', 'temporary', 'all'};
 
   @override
   Widget build(BuildContext context) {
     final isSelected = selected == routeKind;
+    final canReturnFromAll =
+        routeKind == 'all' &&
+        isSelected &&
+        returnKind != null &&
+        !_tabKinds.contains(returnKind);
 
     return isSelected
         ? FilledButton(
-            onPressed: () => context.goNamed(
-              AppRouteName.box,
-              pathParameters: {'kind': 'all'},
+            onPressed: canReturnFromAll
+                ? () => context.goNamed(
+                    AppRouteName.box,
+                    pathParameters: {'kind': returnKind!},
+                  )
+                : null,
+            style: FilledButton.styleFrom(
+              backgroundColor: TheWeColor.blue300,
+              disabledBackgroundColor: TheWeColor.blue300,
+              disabledForegroundColor: TheWeColor.black900,
             ),
-            style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
             child: Text(label, style: TheWeTextStyle.section),
           )
         : OutlinedButton(
-            onPressed: () => routeKind == 'temporary'
-                ? context.goNamed(AppRouteName.temporaryBox)
-                : context.goNamed(
-                    AppRouteName.box,
-                    pathParameters: {'kind': routeKind},
-                  ),
+            onPressed: () {
+              if (routeKind == 'temporary') {
+                context.goNamed(AppRouteName.temporaryBox);
+                return;
+              }
+
+              if (routeKind == 'all' && !_tabKinds.contains(selected)) {
+                context.goNamed(
+                  AppRouteName.box,
+                  pathParameters: {'kind': routeKind},
+                  queryParameters: {'returnKind': selected},
+                );
+                return;
+              }
+
+              context.goNamed(
+                AppRouteName.box,
+                pathParameters: {'kind': routeKind},
+              );
+            },
             child: Text(label, style: TheWeTextStyle.section),
           );
   }
@@ -313,7 +371,7 @@ class _DocumentTable extends ConsumerWidget {
                                 document.drafter == currentUser.name);
 
                         return InkWell(
-                          onTap: () => context.goNamed(
+                          onTap: () => context.pushNamed(
                             AppRouteName.detail,
                             pathParameters: {'id': document.id},
                           ),
@@ -369,7 +427,7 @@ class _DocumentTable extends ConsumerWidget {
                                           ),
                                         ),
                                       OutlinedButton(
-                                        onPressed: () => context.goNamed(
+                                        onPressed: () => context.pushNamed(
                                           AppRouteName.draft,
                                           queryParameters: {
                                             'reuse': document.id,

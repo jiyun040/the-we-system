@@ -68,7 +68,7 @@ class _ProcessingSection extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: ApprovalMobileDocumentCard(
                           document: document,
-                          onTap: () => context.goNamed(
+                          onTap: () => context.pushNamed(
                             AppRouteName.detail,
                             pathParameters: {'id': document.id},
                           ),
@@ -98,7 +98,7 @@ class _ProcessingSection extends StatelessWidget {
                         form: document.form,
                         status: document.status,
                         progress: document.progress,
-                        onTap: () => context.goNamed(
+                        onTap: () => context.pushNamed(
                           AppRouteName.detail,
                           pathParameters: {'id': document.id},
                         ),
@@ -220,7 +220,7 @@ class _DraftProgressSection extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 10),
                         child: ApprovalMobileDocumentCard(
                           document: document,
-                          onTap: () => context.goNamed(
+                          onTap: () => context.pushNamed(
                             AppRouteName.detail,
                             pathParameters: {'id': document.id},
                           ),
@@ -299,7 +299,7 @@ class _DraftProgressRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => context.goNamed(
+      onTap: () => context.pushNamed(
         AppRouteName.detail,
         pathParameters: {'id': document.id},
       ),

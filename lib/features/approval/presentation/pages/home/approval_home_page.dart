@@ -281,13 +281,13 @@ class _Header extends StatelessWidget {
                   _IconAction(
                     icon: Icons.settings_outlined,
                     message: '설정',
-                    onPressed: () => context.goNamed(AppRouteName.settings),
+                    onPressed: () => context.pushNamed(AppRouteName.settings),
                   ),
                   const SizedBox(width: 6),
                   _IconAction(
                     icon: Icons.help_outline,
                     message: '도움말',
-                    onPressed: () => context.goNamed(AppRouteName.help),
+                    onPressed: () => context.pushNamed(AppRouteName.help),
                   ),
                 ],
               ),

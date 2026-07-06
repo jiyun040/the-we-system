@@ -60,7 +60,13 @@ class _DraftToolbar extends StatelessWidget {
               _DraftAction(
                 icon: Icons.close,
                 label: '취소',
-                onPressed: () => context.goNamed(AppRouteName.home),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                    return;
+                  }
+                  context.goNamed(AppRouteName.home);
+                },
               ),
               _DraftAction(
                 icon: Icons.info_outline,

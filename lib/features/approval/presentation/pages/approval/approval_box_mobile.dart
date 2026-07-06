@@ -26,7 +26,7 @@ class _DocumentMobileList extends StatelessWidget {
         final document = documents[index];
         return ApprovalMobileDocumentCard(
           document: document,
-          onTap: () => context.goNamed(
+          onTap: () => context.pushNamed(
             AppRouteName.detail,
             pathParameters: {'id': document.id},
           ),
@@ -45,7 +45,7 @@ class _DocumentMobileList extends StatelessWidget {
                 ),
               ),
             OutlinedButton(
-              onPressed: () => context.goNamed(
+              onPressed: () => context.pushNamed(
                 AppRouteName.draft,
                 queryParameters: {'reuse': document.id},
               ),

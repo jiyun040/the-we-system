@@ -259,7 +259,7 @@ class _DocumentToolbar extends ConsumerWidget {
                   _ToolbarButton(
                     icon: Icons.edit_square,
                     label: '문서 수정',
-                    onPressed: () => context.goNamed(
+                    onPressed: () => context.pushNamed(
                       AppRouteName.draft,
                       queryParameters: {'reuse': document.id},
                     ),

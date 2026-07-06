@@ -99,7 +99,7 @@ class _PortalOverview extends StatelessWidget {
                                     padding: const EdgeInsets.only(bottom: 10),
                                     child: ApprovalMobileDocumentCard(
                                       document: document,
-                                      onTap: () => context.goNamed(
+                                      onTap: () => context.pushNamed(
                                         AppRouteName.detail,
                                         pathParameters: {'id': document.id},
                                       ),
@@ -126,6 +126,10 @@ class _PortalOverview extends StatelessWidget {
                                 form: document.form,
                                 status: document.status,
                                 progress: document.progress,
+                                onTap: () => context.pushNamed(
+                                  AppRouteName.detail,
+                                  pathParameters: {'id': document.id},
+                                ),
                               );
                             },
                           ),

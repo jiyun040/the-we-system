@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/features/approval/presentation/pages/attendance/approval_absence_page.dart';
 import 'package:the_we_system/features/approval/presentation/pages/approval/approval_box_page.dart';
@@ -41,7 +42,7 @@ final appRouter = GoRouter(
       name: AppRouteName.signup,
       path: AppRoutePath.signup,
       pageBuilder: (context, state) =>
-          const NoTransitionPage(child: ApprovalSignupPage()),
+          _buildOverlayPage(state, const ApprovalSignupPage()),
     ),
     GoRoute(
       name: AppRouteName.home,
@@ -54,8 +55,9 @@ final appRouter = GoRouter(
       name: AppRouteName.draft,
       path: AppRoutePath.draft,
       pageBuilder: (context, state) {
-        return NoTransitionPage(
-          child: ApprovalAuthGate(
+        return _buildOverlayPage(
+          state,
+          ApprovalAuthGate(
             child: ApprovalDraftPage(
               reuseDocumentId: state.uri.queryParameters['reuse'],
               selectedFormId: state.uri.queryParameters['form'],
@@ -99,15 +101,17 @@ final appRouter = GoRouter(
     GoRoute(
       name: AppRouteName.settings,
       path: AppRoutePath.settings,
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ApprovalAuthGate(child: ApprovalSettingsPage()),
+      pageBuilder: (context, state) => _buildOverlayPage(
+        state,
+        const ApprovalAuthGate(child: ApprovalSettingsPage()),
       ),
     ),
     GoRoute(
       name: AppRouteName.help,
       path: AppRoutePath.help,
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ApprovalAuthGate(child: ApprovalHelpPage()),
+      pageBuilder: (context, state) => _buildOverlayPage(
+        state,
+        const ApprovalAuthGate(child: ApprovalHelpPage()),
       ),
     ),
     GoRoute(
@@ -123,10 +127,41 @@ final appRouter = GoRouter(
       pageBuilder: (context, state) {
         final id = state.pathParameters['id'] ?? '';
 
-        return NoTransitionPage(
-          child: ApprovalAuthGate(child: ApprovalDetailPage(documentId: id)),
+        return _buildOverlayPage(
+          state,
+          ApprovalAuthGate(child: ApprovalDetailPage(documentId: id)),
         );
       },
     ),
   ],
 );
+
+CustomTransitionPage<void> _buildOverlayPage(
+  GoRouterState state,
+  Widget child,
+) {
+  return CustomTransitionPage<void>(
+    key: state.pageKey,
+    child: child,
+    transitionDuration: const Duration(milliseconds: 220),
+    reverseTransitionDuration: const Duration(milliseconds: 180),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      final curved = CurvedAnimation(
+        parent: animation,
+        curve: Curves.easeOutCubic,
+        reverseCurve: Curves.easeInCubic,
+      );
+
+      return FadeTransition(
+        opacity: curved,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.02),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        ),
+      );
+    },
+  );
+}
