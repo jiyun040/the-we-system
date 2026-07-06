@@ -266,9 +266,6 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
                   _selectedDay = day;
                   _focusedDay = focusedDay;
                 });
-                if (!compact) {
-                  _openAddEventDialog(day);
-                }
               },
               onPageChanged: (focusedDay) {
                 setState(() => _focusedDay = focusedDay);
