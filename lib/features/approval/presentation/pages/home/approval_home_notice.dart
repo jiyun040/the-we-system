@@ -33,28 +33,44 @@ class _PortalNoticePanel extends StatelessWidget {
   void _showDetail(BuildContext context, _PortalNotice notice) {
     showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(notice.title),
-        content: Column(
+      builder: (context) => TheWeModalSurface(
+        maxWidth: 520,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const TheWeModalAlertIcon(
+              icon: Icons.campaign_rounded,
+              foregroundColor: TheWeColor.blue300,
+              backgroundColor: TheWeColor.blueSurface,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              notice.title,
+              textAlign: TextAlign.center,
+              style: TheWeTextStyle.title.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
             Text(
               '${notice.category} · ${notice.date}',
+              textAlign: TextAlign.center,
               style: TheWeTextStyle.caption.copyWith(
                 color: TheWeColor.black500,
               ),
             ),
             const SizedBox(height: 16),
-            Text(notice.body, style: TheWeTextStyle.body),
+            Text(
+              notice.body,
+              textAlign: TextAlign.center,
+              style: TheWeTextStyle.body.copyWith(height: 1.7),
+            ),
+            const SizedBox(height: 22),
+            TheWeModalActions(
+              centered: true,
+              primaryLabel: '확인',
+              onPrimaryPressed: () => Navigator.of(context).pop(),
+            ),
           ],
         ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('확인'),
-          ),
-        ],
       ),
     );
   }

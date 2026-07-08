@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/layout.dart';
@@ -23,73 +24,60 @@ Future<void> showApprovalDecisionDialog(
 
   return showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      titlePadding: const EdgeInsets.fromLTRB(28, 24, 18, 0),
-      contentPadding: const EdgeInsets.fromLTRB(28, 28, 28, 10),
-      actionsPadding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
-      title: Row(
+    builder: (context) => TheWeModalSurface(
+      maxWidth: 640,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$action하기', style: TheWeTextStyle.title),
-          const Spacer(),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close),
+          TheWeModalHeader(
+            title: '$action하기',
+            onClose: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: 600,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _DialogInfoRow(label: '결재문서명', value: document.title),
+                const SizedBox(height: 20),
+                Text('결재의견', style: TheWeTextStyle.body),
+                const SizedBox(height: 8),
+                CustomTextFormField(
+                  controller: opinionController,
+                  minLines: 5,
+                  maxLines: 5,
+                  decoration: const InputDecoration(hintText: '의견을 작성해 주세요.'),
+                ),
+                if (action == '반려') ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '반려 시 기안자에게 수정 요청 알림이 발송됩니다.',
+                    style: TheWeTextStyle.caption.copyWith(
+                      color: TheWeColor.pink,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          TheWeModalActions(
+            primaryLabel: action,
+            secondaryLabel: '취소',
+            primaryColor: action == '승인' ? TheWeColor.green : TheWeColor.pink,
+            onPrimaryPressed: () async {
+              await onConfirm(opinionController.text.trim());
+              if (context.mounted) {
+                Navigator.of(context).pop();
+              }
+            },
+            onSecondaryPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
-      content: SizedBox(
-        width: 600,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _DialogInfoRow(label: '결재문서명', value: document.title),
-            const SizedBox(height: 20),
-            Text('결재의견', style: TheWeTextStyle.body),
-            const SizedBox(height: 8),
-            CustomTextFormField(
-              controller: opinionController,
-              minLines: 5,
-              maxLines: 5,
-              decoration: const InputDecoration(hintText: '의견을 작성해 주세요.'),
-            ),
-            if (action == '반려') ...[
-              const SizedBox(height: 12),
-              Text(
-                '반려 시 기안자에게 수정 요청 알림이 발송됩니다.',
-                style: TheWeTextStyle.caption.copyWith(color: TheWeColor.pink),
-              ),
-            ],
-          ],
-        ),
-      ),
-      actions: [
-        FilledButton(
-          onPressed: () async {
-            await onConfirm(opinionController.text.trim());
-            if (context.mounted) {
-              Navigator.of(context).pop();
-            }
-          },
-          style: FilledButton.styleFrom(
-            backgroundColor: action == '승인'
-                ? TheWeColor.blue300
-                : TheWeColor.pink,
-            foregroundColor: TheWeColor.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-          child: Text(action),
-        ),
-        OutlinedButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
-        ),
-      ],
     ),
   );
 }
@@ -206,43 +194,38 @@ Future<void> showSaveApprovalLineDialog(BuildContext context) {
 
   return showDialog<void>(
     context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      title: Row(
+    builder: (context) => TheWeModalSurface(
+      maxWidth: 420,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text('개인 결재선으로 저장', style: TheWeTextStyle.title),
-          const Spacer(),
-          IconButton(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close),
+          const TheWeModalAlertIcon(),
+          const SizedBox(height: 18),
+          Text(
+            '개인 결재선으로 저장',
+            textAlign: TextAlign.center,
+            style: TheWeTextStyle.title.copyWith(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 18),
+          Row(
+            children: [
+              SizedBox(
+                width: 94,
+                child: Text('결재선 이름', style: TheWeTextStyle.body),
+              ),
+              Expanded(child: CustomTextFormField(controller: controller)),
+            ],
+          ),
+          const SizedBox(height: 22),
+          TheWeModalActions(
+            centered: true,
+            primaryLabel: '확인',
+            secondaryLabel: '취소',
+            onPrimaryPressed: () => Navigator.of(context).pop(),
+            onSecondaryPressed: () => Navigator.of(context).pop(),
           ),
         ],
       ),
-      content: SizedBox(
-        width: 360,
-        child: Row(
-          children: [
-            SizedBox(
-              width: 94,
-              child: Text('결재선 이름', style: TheWeTextStyle.body),
-            ),
-            Expanded(child: CustomTextFormField(controller: controller)),
-          ],
-        ),
-      ),
-      actions: [
-        FilledButton(
-          onPressed: () => Navigator.of(context).pop(),
-          style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
-          child: const Text('확인'),
-        ),
-        OutlinedButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
-        ),
-      ],
     ),
   );
 }
@@ -257,79 +240,77 @@ Future<bool?> showRequestApprovalDialog(
   return showDialog<bool>(
     context: context,
     builder: (context) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        backgroundColor: TheWeColor.white,
-        surfaceTintColor: TheWeColor.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-        title: Row(
+      builder: (context, setState) => TheWeModalSurface(
+        maxWidth: 600,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('결재요청', style: TheWeTextStyle.title),
-            const Spacer(),
-            IconButton(
-              onPressed: () => Navigator.of(context).pop(),
-              icon: const Icon(Icons.close),
+            TheWeModalHeader(
+              title: '결재요청',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: 560,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DialogInfoRow(label: '결재문서명', value: document.title),
+                  const SizedBox(height: 18),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        child: Text('기안의견', style: TheWeTextStyle.body),
+                      ),
+                      Expanded(
+                        child: CustomTextFormField(
+                          controller: controller,
+                          minLines: 5,
+                          maxLines: 5,
+                          decoration: const InputDecoration(
+                            hintText: '의견을 작성해 주세요.',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const SizedBox(width: 100),
+                      Checkbox(
+                        value: urgent,
+                        onChanged: (value) =>
+                            setState(() => urgent = value ?? false),
+                      ),
+                      Text('긴급', style: TheWeTextStyle.body),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          '선택 시 결재자의 대기문서 가장 상단에 표시됩니다.',
+                          style: TheWeTextStyle.caption.copyWith(
+                            color: TheWeColor.black500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 22),
+            TheWeModalActions(
+              primaryLabel: '결재요청',
+              secondaryLabel: '취소',
+              primaryColor: TheWeColor.green,
+              onPrimaryPressed: () => Navigator.of(context).pop(urgent),
+              onSecondaryPressed: () => Navigator.of(context).pop(),
             ),
           ],
         ),
-        content: SizedBox(
-          width: 560,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _DialogInfoRow(label: '결재문서명', value: document.title),
-              const SizedBox(height: 18),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 100,
-                    child: Text('기안의견', style: TheWeTextStyle.body),
-                  ),
-                  Expanded(
-                    child: CustomTextFormField(
-                      controller: controller,
-                      minLines: 5,
-                      maxLines: 5,
-                      decoration: const InputDecoration(
-                        hintText: '의견을 작성해 주세요.',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  const SizedBox(width: 100),
-                  Checkbox(
-                    value: urgent,
-                    onChanged: (value) =>
-                        setState(() => urgent = value ?? false),
-                  ),
-                  Text('긴급', style: TheWeTextStyle.body),
-                  const SizedBox(width: 12),
-                  Text(
-                    '선택 시 결재자의 대기문서 가장 상단에 표시됩니다.',
-                    style: TheWeTextStyle.caption.copyWith(
-                      color: TheWeColor.black500,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(urgent),
-            style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
-            child: const Text('결재요청'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-        ],
       ),
     ),
   );

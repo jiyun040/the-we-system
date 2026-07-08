@@ -103,9 +103,28 @@ class _Brand extends ConsumerWidget {
                       ),
                     ),
                     IconButton(
-                      onPressed: () => ref
-                          .read(approvalDashboardControllerProvider.notifier)
-                          .logout(),
+                      onPressed: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => TheWeConfirmDialog(
+                            title: '로그아웃할까요?',
+                            message: '현재 계정에서 로그아웃됩니다.',
+                            primaryLabel: '로그아웃',
+                            secondaryLabel: '취소',
+                            primaryColor: TheWeColor.green,
+                            onPrimaryPressed: () =>
+                                Navigator.of(context).pop(true),
+                            onSecondaryPressed: () =>
+                                Navigator.of(context).pop(false),
+                          ),
+                        );
+                        if (confirmed != true) {
+                          return;
+                        }
+                        ref
+                            .read(approvalDashboardControllerProvider.notifier)
+                            .logout();
+                      },
                       icon: const Icon(Icons.logout, size: 18),
                       tooltip: '로그아웃',
                     ),

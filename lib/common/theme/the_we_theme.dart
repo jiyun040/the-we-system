@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:the_we_system/common/constants/color.dart';
+import 'package:the_we_system/common/constants/layout.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 
 abstract final class TheWeTheme {
@@ -62,13 +63,16 @@ abstract final class TheWeTheme {
       labelStyle: TheWeTextStyle.caption,
       secondaryLabelStyle: TheWeTextStyle.caption,
       selectedColor: TheWeColor.blue100.withValues(alpha: 0.45),
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: TheWeColor.surface,
       side: BorderSide(color: TheWeColor.black300.withValues(alpha: 0.3)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(TheWeRadius.dialog + 4),
+      ),
       titleTextStyle: TheWeTextStyle.title,
       contentTextStyle: TheWeTextStyle.body,
     ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -31,24 +32,14 @@ class MobileNavigationBar extends ConsumerWidget {
           case 3:
             final confirmed = await showDialog<bool>(
               context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: TheWeColor.white,
-                surfaceTintColor: TheWeColor.white,
-                title: Text('로그아웃', style: TheWeTextStyle.title),
-                content: Text('현재 계정에서 로그아웃할까요?', style: TheWeTextStyle.body),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text('취소'),
-                  ),
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: TheWeColor.blue300,
-                    ),
-                    child: const Text('로그아웃'),
-                  ),
-                ],
+              builder: (context) => TheWeConfirmDialog(
+                title: '로그아웃할까요?',
+                message: '현재 계정에서 로그아웃됩니다.',
+                primaryLabel: '로그아웃',
+                secondaryLabel: '취소',
+                primaryColor: TheWeColor.green,
+                onPrimaryPressed: () => Navigator.of(context).pop(true),
+                onSecondaryPressed: () => Navigator.of(context).pop(false),
               ),
             );
             if (confirmed != true || !context.mounted) {

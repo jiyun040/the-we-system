@@ -14,89 +14,97 @@ class _LinkedDocumentDialogState extends State<_LinkedDocumentDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      title: Text('연결 문서 선택', style: TheWeTextStyle.title),
-      content: SizedBox(
-        width: 540,
-        height: 360,
-        child: widget.documents.isEmpty
-            ? Center(
-                child: Text('연결할 수 있는 문서가 없습니다.', style: TheWeTextStyle.body),
-              )
-            : ListView.separated(
-                itemCount: widget.documents.length,
-                separatorBuilder: (_, _) => Divider(
-                  height: 1,
-                  color: TheWeColor.black300.withValues(alpha: 0.2),
-                ),
-                itemBuilder: (context, index) {
-                  final document = widget.documents[index];
-                  final selected = selectedId == document.id;
-                  return InkWell(
-                    onTap: () => setState(() => selectedId = document.id),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 10,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            selected
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_off,
-                            color: selected
-                                ? TheWeColor.blue300
-                                : TheWeColor.black500,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  document.title,
-                                  style: TheWeTextStyle.body,
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  '${document.documentNo} · ${document.form}',
-                                  style: TheWeTextStyle.caption,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+    return TheWeModalSurface(
+      maxWidth: 600,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TheWeModalHeader(
+            title: '연결 문서 선택',
+            onClose: () => Navigator.of(context).pop(),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: 540,
+            height: 360,
+            child: widget.documents.isEmpty
+                ? Center(
+                    child: Text(
+                      '연결할 수 있는 문서가 없습니다.',
+                      style: TheWeTextStyle.body,
                     ),
-                  );
-                },
-              ),
+                  )
+                : ListView.separated(
+                    itemCount: widget.documents.length,
+                    separatorBuilder: (_, _) => Divider(
+                      height: 1,
+                      color: TheWeColor.black300.withValues(alpha: 0.2),
+                    ),
+                    itemBuilder: (context, index) {
+                      final document = widget.documents[index];
+                      final selected = selectedId == document.id;
+                      return InkWell(
+                        onTap: () => setState(() => selectedId = document.id),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_off,
+                                color: selected
+                                    ? TheWeColor.blue300
+                                    : TheWeColor.black500,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      document.title,
+                                      style: TheWeTextStyle.body,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${document.documentNo} · ${document.form}',
+                                      style: TheWeTextStyle.caption,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+          const SizedBox(height: 22),
+          TheWeModalActions(
+            primaryLabel: '추가',
+            secondaryLabel: '취소',
+            primaryColor: TheWeColor.green,
+            onSecondaryPressed: () => Navigator.of(context).pop(),
+            onPrimaryPressed: selectedId == null
+                ? null
+                : () {
+                    final document = widget.documents
+                        .where((item) => item.id == selectedId)
+                        .first;
+                    Navigator.of(
+                      context,
+                    ).pop('[연결] ${document.documentNo} ${document.title}');
+                  },
+          ),
+        ],
       ),
-      actions: [
-        FilledButton(
-          onPressed: selectedId == null
-              ? null
-              : () {
-                  final document = widget.documents
-                      .where((item) => item.id == selectedId)
-                      .first;
-                  Navigator.of(
-                    context,
-                  ).pop('[연결] ${document.documentNo} ${document.title}');
-                },
-          style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
-          child: const Text('추가'),
-        ),
-        OutlinedButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
-        ),
-      ],
     );
   }
 }

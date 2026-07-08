@@ -16,80 +16,52 @@ class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
 
-    return Dialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 1100,
-          maxHeight: screen.height * 0.86,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('결재 정보', style: TheWeTextStyle.title),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 28),
+    return TheWeModalSurface(
+      maxWidth: 1120,
+      maxHeightFactor: 0.86,
+      child: SizedBox(
+        height: screen.height * 0.78,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: '결재 정보',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 26),
+            Wrap(
+              spacing: 26,
+              runSpacing: 8,
+              children: [
+                for (var index = 0; index < categories.length; index++)
+                  _ApprovalInfoCategory(
+                    label: categories[index],
+                    selected: selectedIndex == index,
+                    onTap: () => setState(() => selectedIndex = index),
                   ),
-                ],
-              ),
-              const SizedBox(height: 26),
-              Wrap(
-                spacing: 26,
-                runSpacing: 8,
-                children: [
-                  for (var index = 0; index < categories.length; index++)
-                    _ApprovalInfoCategory(
-                      label: categories[index],
-                      selected: selectedIndex == index,
-                      onTap: () => setState(() => selectedIndex = index),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: switch (selectedIndex) {
-                  0 => _ApprovalLineSetup(),
-                  1 => const _PeopleSetup(
-                    caption: '참조자는 결재 중에도 문서를 열람할 수 있습니다.',
-                  ),
-                  2 => const _PeopleSetup(caption: '수신자는 접수 대기 문서함에서 확인합니다.'),
-                  3 => const _PeopleSetup(
-                    caption: '열람자는 결재 완료 후 문서를 열람할 수 있습니다.',
-                  ),
-                  _ => _PublicReceiverSetup(),
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: TheWeColor.blue300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    child: const Text('확인'),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('취소'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: switch (selectedIndex) {
+                0 => _ApprovalLineSetup(),
+                1 => const _PeopleSetup(caption: '참조자는 결재 중에도 문서를 열람할 수 있습니다.'),
+                2 => const _PeopleSetup(caption: '수신자는 접수 대기 문서함에서 확인합니다.'),
+                3 => const _PeopleSetup(
+                  caption: '열람자는 결재 완료 후 문서를 열람할 수 있습니다.',
+                ),
+                _ => _PublicReceiverSetup(),
+              },
+            ),
+            const SizedBox(height: 16),
+            TheWeModalActions(
+              primaryLabel: '확인',
+              secondaryLabel: '취소',
+              primaryColor: TheWeColor.green,
+              onPrimaryPressed: () => Navigator.of(context).pop(),
+              onSecondaryPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
@@ -124,70 +96,51 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
       grouped.putIfAbsent(template.category, () => []).add(template);
     }
 
-    return Dialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return TheWeModalSurface(
+      width: isPhone ? screen.width - 36 : null,
+      maxWidth: 920,
+      maxHeightFactor: 0.82,
+      padding: EdgeInsets.symmetric(
+        horizontal: isPhone ? 18 : 24,
+        vertical: isPhone ? 18 : 22,
+      ),
       child: SizedBox(
-        width: isPhone ? screen.width - 64 : 920,
-        height: isPhone ? screen.height * 0.8 : 560,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isPhone ? 18 : 24,
-            vertical: isPhone ? 18 : 22,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('기안 항목선택', style: TheWeTextStyle.title),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: isPhone
-                    ? ListView(
-                        children: [
-                          SizedBox(height: 280, child: _templateList(grouped)),
-                          const SizedBox(height: 12),
-                          _templateDetail(expandBody: false),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          Expanded(flex: 4, child: _templateList(grouped)),
-                          const SizedBox(width: 16),
-                          Expanded(flex: 5, child: _templateDetail()),
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FilledButton(
-                    onPressed: () =>
-                        Navigator.of(context).pop(selectedTemplate),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: TheWeColor.blue300,
+        height: isPhone ? screen.height * 0.76 : 560,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: '기안 항목선택',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: isPhone
+                  ? ListView(
+                      children: [
+                        SizedBox(height: 280, child: _templateList(grouped)),
+                        const SizedBox(height: 12),
+                        _templateDetail(expandBody: false),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(flex: 4, child: _templateList(grouped)),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 5, child: _templateDetail()),
+                      ],
                     ),
-                    child: const Text('확인'),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('취소'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 18),
+            TheWeModalActions(
+              primaryLabel: '확인',
+              secondaryLabel: '취소',
+              primaryColor: TheWeColor.green,
+              onPrimaryPressed: () =>
+                  Navigator.of(context).pop(selectedTemplate),
+              onSecondaryPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );

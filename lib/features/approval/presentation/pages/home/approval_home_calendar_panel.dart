@@ -110,41 +110,63 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
   ) async {
     final action = await showDialog<_CalendarEventAction>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: TheWeColor.white,
-        surfaceTintColor: TheWeColor.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
-        title: Text(event.title, style: TheWeTextStyle.title),
-        content: Column(
+      builder: (context) => TheWeModalSurface(
+        maxWidth: 440,
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _CalendarDetailLine(label: '날짜', value: _formatKoreanDate(day)),
-            _CalendarDetailLine(label: '시간', value: event.time),
-            _CalendarDetailLine(label: '장소', value: event.place),
-            _CalendarColorDetailLine(color: event.color),
+            const TheWeModalAlertIcon(
+              icon: Icons.event_note_rounded,
+              foregroundColor: TheWeColor.blue300,
+              backgroundColor: TheWeColor.blueSurface,
+            ),
+            const SizedBox(height: 18),
+            Text(
+              event.title,
+              textAlign: TextAlign.center,
+              style: TheWeTextStyle.title.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 16),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _CalendarDetailLine(label: '날짜', value: _formatKoreanDate(day)),
+                _CalendarDetailLine(label: '시간', value: event.time),
+                _CalendarDetailLine(label: '장소', value: event.place),
+                _CalendarColorDetailLine(color: event.color),
+              ],
+            ),
+            const SizedBox(height: 22),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(_CalendarEventAction.delete),
+                  child: Text(
+                    '삭제',
+                    style: TheWeTextStyle.body.copyWith(color: TheWeColor.pink),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                OutlinedButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(_CalendarEventAction.edit),
+                  child: const Text('수정'),
+                ),
+                const SizedBox(width: 10),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: TheWeColor.green,
+                  ),
+                  child: const Text('닫기'),
+                ),
+              ],
+            ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_CalendarEventAction.delete),
-            child: Text(
-              '삭제',
-              style: TheWeTextStyle.body.copyWith(color: TheWeColor.pink),
-            ),
-          ),
-          OutlinedButton(
-            onPressed: () =>
-                Navigator.of(context).pop(_CalendarEventAction.edit),
-            child: const Text('수정'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
-            child: const Text('닫기'),
-          ),
-        ],
       ),
     );
 

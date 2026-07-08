@@ -13,65 +13,32 @@ class _LargeDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(TheWeRadius.sm),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: TheWeSpacing.section,
-          vertical: TheWeSpacing.page,
-        ),
-        child: SizedBox(
-          width: 860,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(title, style: TheWeTextStyle.title),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 28),
-                  ),
-                ],
+    return TheWeModalSurface(
+      maxWidth: 920,
+      child: SizedBox(
+        width: 860,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: title,
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            TheWeGaps.verticalSection,
+            child,
+            TheWeGaps.verticalXxl,
+            TheWeModalActions(
+              primaryLabel: actions.firstWhere(
+                (action) => action == '확인',
+                orElse: () => actions.first,
               ),
-              TheWeGaps.verticalSection,
-              child,
-              TheWeGaps.verticalXxl,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: actions
-                    .map(
-                      (action) => Padding(
-                        padding: const EdgeInsets.only(left: TheWeSpacing.sm),
-                        child: action == '확인'
-                            ? FilledButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: TheWeColor.blue300,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      TheWeRadius.sm,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(action),
-                              )
-                            : OutlinedButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: Text(action),
-                              ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
+              secondaryLabel: actions.contains('취소') ? '취소' : null,
+              primaryColor: TheWeColor.green,
+              onPrimaryPressed: () => Navigator.of(context).pop(),
+              onSecondaryPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
