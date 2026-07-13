@@ -17,9 +17,16 @@ class MobileNavigationBar extends ConsumerWidget {
     return NavigationBar(
       selectedIndex: currentIndex,
       backgroundColor: TheWeColor.white,
-      indicatorColor: TheWeColor.blue100.withValues(alpha: 0.7),
-      labelTextStyle: WidgetStatePropertyAll(
-        TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
+      indicatorColor: Colors.transparent,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return TheWeTextStyle.caption.copyWith(
+          color: selected ? TheWeColor.blue300 : TheWeColor.black900,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        );
+      }),
+      overlayColor: WidgetStatePropertyAll(
+        TheWeColor.blue100.withValues(alpha: 0.18),
       ),
       onDestinationSelected: (index) async {
         switch (index) {
@@ -37,7 +44,7 @@ class MobileNavigationBar extends ConsumerWidget {
                 message: '현재 계정에서 로그아웃됩니다.',
                 primaryLabel: '로그아웃',
                 secondaryLabel: '취소',
-                primaryColor: TheWeColor.green,
+                primaryColor: TheWeColor.danger,
                 onPrimaryPressed: () => Navigator.of(context).pop(true),
                 onSecondaryPressed: () => Navigator.of(context).pop(false),
               ),
@@ -50,13 +57,32 @@ class MobileNavigationBar extends ConsumerWidget {
         }
       },
       destinations: const [
-        NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
+        NavigationDestination(
+          icon: Icon(Icons.home_outlined),
+          selectedIcon: Icon(Icons.home_outlined, color: TheWeColor.blue300),
+          label: '홈',
+        ),
         NavigationDestination(
           icon: Icon(Icons.description_outlined),
+          selectedIcon: Icon(
+            Icons.description_outlined,
+            color: TheWeColor.blue300,
+          ),
           label: '결재',
         ),
-        NavigationDestination(icon: Icon(Icons.schedule_outlined), label: '근태'),
-        NavigationDestination(icon: Icon(Icons.logout_outlined), label: '로그아웃'),
+        NavigationDestination(
+          icon: Icon(Icons.schedule_outlined),
+          selectedIcon: Icon(
+            Icons.schedule_outlined,
+            color: TheWeColor.blue300,
+          ),
+          label: '근태',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.logout_outlined),
+          selectedIcon: Icon(Icons.logout_outlined, color: TheWeColor.blue300),
+          label: '로그아웃',
+        ),
       ],
     );
   }

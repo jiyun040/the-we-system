@@ -11,9 +11,11 @@ class ApprovalDocumentSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 980),
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(compact ? 12 : 18),
       decoration: BoxDecoration(
         color: TheWeColor.white,
         border: Border.all(color: TheWeColor.black900),
@@ -25,8 +27,8 @@ class ApprovalDocumentSheet extends StatelessWidget {
             _sheetTitle(document.form),
             textAlign: TextAlign.center,
             style: TheWeTextStyle.pageTitle.copyWith(
-              fontSize: 30,
-              letterSpacing: 6,
+              fontSize: compact ? 24 : 30,
+              letterSpacing: compact ? 3 : 6,
             ),
           ),
           const SizedBox(height: 22),
@@ -56,7 +58,12 @@ class ApprovalDocumentSheet extends StatelessWidget {
           _SectionHeader(title: '상 세 내 용'),
           Container(
             constraints: const BoxConstraints(minHeight: 340),
-            padding: const EdgeInsets.fromLTRB(28, 24, 28, 36),
+            padding: EdgeInsets.fromLTRB(
+              compact ? 14 : 28,
+              compact ? 16 : 24,
+              compact ? 14 : 28,
+              compact ? 24 : 36,
+            ),
             decoration: BoxDecoration(
               border: Border.all(color: TheWeColor.black900),
               borderRadius: const BorderRadius.vertical(
@@ -136,13 +143,88 @@ class ApprovalStampTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final visibleSteps = steps.take(4).toList();
 
-    return IntrinsicHeight(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 520) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 9,
+                ),
+                color: TheWeColor.black300.withValues(alpha: 0.18),
+                child: Text(
+                  '결재 라인',
+                  style: TheWeTextStyle.caption.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              ...visibleSteps.map((step) => _MobileStampRow(step: step)),
+            ],
+          );
+        }
+
+        return IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _VerticalCell(label: '결\n재'),
+              ...visibleSteps.map(
+                (step) => Expanded(child: _StampCell(step: step)),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _MobileStampRow extends StatelessWidget {
+  const _MobileStampRow({required this.step});
+
+  final ApprovalStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    final approved = step.status == '완료' || step.status == '진행중';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        border: Border(
+          left: BorderSide(color: TheWeColor.black900),
+          right: BorderSide(color: TheWeColor.black900),
+          bottom: BorderSide(color: TheWeColor.black900),
+        ),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _VerticalCell(label: '결\n재'),
-          ...visibleSteps.map(
-            (step) => Expanded(child: _StampCell(step: step)),
+          SizedBox(
+            width: 58,
+            child: Text(
+              step.role.isEmpty ? step.type : step.role,
+              style: TheWeTextStyle.caption.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          Expanded(child: Text(step.name, style: TheWeTextStyle.body)),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: (approved ? TheWeColor.green : TheWeColor.surface),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              step.approvedAt ?? step.status,
+              style: TheWeTextStyle.caption.copyWith(
+                color: approved ? Colors.white : TheWeColor.black500,
+              ),
+            ),
           ),
         ],
       ),
@@ -277,6 +359,8 @@ class _WideRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+
     return Container(
       constraints: const BoxConstraints(minHeight: 36),
       decoration: BoxDecoration(
@@ -290,7 +374,7 @@ class _WideRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 124,
+            width: compact ? 82 : 124,
             alignment: Alignment.center,
             constraints: const BoxConstraints(minHeight: 36),
             decoration: BoxDecoration(
@@ -309,7 +393,7 @@ class _WideRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Text(
                 value.isEmpty ? '-' : value,
-                style: TheWeTextStyle.body,
+                style: compact ? TheWeTextStyle.caption : TheWeTextStyle.body,
               ),
             ),
           ),

@@ -117,12 +117,14 @@ class _DraftInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+
     return Container(
       decoration: BoxDecoration(border: Border.all(color: TheWeColor.black900)),
       child: Row(
         children: [
           Container(
-            width: 110,
+            width: compact ? 82 : 110,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             color: TheWeColor.black300.withValues(alpha: 0.18),
             child: Text(
@@ -152,12 +154,14 @@ class _DraftInputRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+
     return Container(
       decoration: BoxDecoration(border: Border.all(color: TheWeColor.black900)),
       child: Row(
         children: [
           Container(
-            width: 110,
+            width: compact ? 82 : 110,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             color: TheWeColor.black300.withValues(alpha: 0.18),
             child: Text(

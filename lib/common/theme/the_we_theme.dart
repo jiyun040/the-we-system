@@ -79,6 +79,18 @@ abstract final class TheWeTheme {
     inputDecorationTheme: InputDecorationTheme(
       hintStyle: TheWeTextStyle.body.copyWith(color: TheWeColor.black300),
       labelStyle: TheWeTextStyle.body,
+      filled: true,
+      fillColor: TheWeColor.surfaceAlt,
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(
+          color: TheWeColor.black300.withValues(alpha: 0.55),
+        ),
+        borderRadius: BorderRadius.circular(TheWeRadius.lg),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: TheWeColor.blue300),
+        borderRadius: BorderRadius.circular(TheWeRadius.lg),
+      ),
     ),
     dropdownMenuTheme: DropdownMenuThemeData(
       textStyle: TheWeTextStyle.body,

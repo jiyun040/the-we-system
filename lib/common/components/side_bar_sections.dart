@@ -111,7 +111,7 @@ class _Brand extends ConsumerWidget {
                             message: '현재 계정에서 로그아웃됩니다.',
                             primaryLabel: '로그아웃',
                             secondaryLabel: '취소',
-                            primaryColor: TheWeColor.green,
+                            primaryColor: TheWeColor.danger,
                             onPrimaryPressed: () =>
                                 Navigator.of(context).pop(true),
                             onSecondaryPressed: () =>

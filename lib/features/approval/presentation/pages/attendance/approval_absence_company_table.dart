@@ -24,6 +24,10 @@ class _CompanyAttendanceTable extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 640) {
+          if (rows.isEmpty) {
+            return const _MobileEmptyTable(message: '검색 결과가 없습니다.');
+          }
+
           return Column(
             children: rows
                 .map(
@@ -91,6 +95,18 @@ class _CompanyAttendanceTable extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (rows.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 32),
+                    child: Text(
+                      '검색 결과가 없습니다.',
+                      textAlign: TextAlign.center,
+                      style: TheWeTextStyle.body.copyWith(
+                        color: TheWeColor.black500,
+                      ),
+                    ),
+                  ),
                 ...rows.map(
                   (row) => Container(
                     height: 52,

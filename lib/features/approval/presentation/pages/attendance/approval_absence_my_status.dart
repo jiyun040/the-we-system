@@ -290,21 +290,89 @@ class _CompanyAttendanceSection extends StatefulWidget {
 
 class _CompanyAttendanceSectionState extends State<_CompanyAttendanceSection> {
   DateTime _focusedDate = DateTime(2026, 6, 29);
+  DateTime _periodStart = DateTime(2026, 6, 1);
+  DateTime _periodEnd = DateTime(2026, 6, 30);
   bool _periodMode = false;
+  String _employmentStatus = '재직';
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   void _moveDate(int direction) {
     setState(() {
-      _focusedDate = _periodMode
-          ? DateTime(_focusedDate.year, _focusedDate.month + direction)
-          : _focusedDate.add(Duration(days: direction));
+      if (_periodMode) {
+        final dayCount = _periodEnd.difference(_periodStart).inDays + 1;
+        final offset = Duration(days: dayCount * direction);
+        _periodStart = _periodStart.add(offset);
+        _periodEnd = _periodEnd.add(offset);
+      } else {
+        _focusedDate = _focusedDate.add(Duration(days: direction));
+      }
     });
+  }
+
+  Future<void> _pickDate() async {
+    if (_periodMode) {
+      final isPhone = MediaQuery.sizeOf(context).width < 520;
+      final range = isPhone
+          ? await showModalBottomSheet<DateTimeRange>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: TheWeColor.white,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              builder: (context) => _MobileDateRangeSheet(
+                initialStart: _periodStart,
+                initialEnd: _periodEnd,
+              ),
+            )
+          : await showDateRangePicker(
+              context: context,
+              firstDate: DateTime(2020),
+              lastDate: DateTime(2035),
+              initialDateRange: DateTimeRange(
+                start: _periodStart,
+                end: _periodEnd,
+              ),
+              helpText: '조회 기간 선택',
+            );
+      if (range != null && mounted) {
+        setState(() {
+          _periodStart = range.start;
+          _periodEnd = range.end;
+        });
+      }
+      return;
+    }
+
+    final date = await showDatePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
+      initialDate: _focusedDate,
+      helpText: '조회 일자 선택',
+    );
+    if (date != null && mounted) {
+      setState(() => _focusedDate = date);
+    }
+  }
+
+  Future<void> _setPeriodMode(bool periodMode) async {
+    setState(() => _periodMode = periodMode);
+    if (periodMode) {
+      await _pickDate();
+    }
   }
 
   String get _dateLabel {
     if (_periodMode) {
-      final firstDay = DateTime(_focusedDate.year, _focusedDate.month);
-      final lastDay = DateTime(_focusedDate.year, _focusedDate.month + 1, 0);
-      return '${_formatDate(firstDay)} ~ ${_formatDate(lastDay)}';
+      return '${_formatDate(_periodStart)} ~ ${_formatDate(_periodEnd)}';
     }
 
     return _formatDate(_focusedDate);
@@ -312,6 +380,18 @@ class _CompanyAttendanceSectionState extends State<_CompanyAttendanceSection> {
 
   @override
   Widget build(BuildContext context) {
+    final normalizedQuery = _searchQuery.trim().toLowerCase();
+    final visibleRows = widget.rows.where((row) {
+      if (_employmentStatus != '재직') {
+        return false;
+      }
+      if (normalizedQuery.isEmpty) {
+        return true;
+      }
+      return row.account.id.toLowerCase().contains(normalizedQuery) ||
+          row.account.name.toLowerCase().contains(normalizedQuery) ||
+          row.account.department.toLowerCase().contains(normalizedQuery);
+    }).toList();
     final normalCount = widget.rows
         .where((row) => row.stateLabel == '정상')
         .length;
@@ -335,29 +415,51 @@ class _CompanyAttendanceSectionState extends State<_CompanyAttendanceSection> {
           subtitle: null,
           child: Column(
             children: [
-              Wrap(
-                spacing: 8,
-                runSpacing: 10,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              Column(
                 children: [
-                  IconButton(
-                    onPressed: () => _moveDate(-1),
-                    icon: const Icon(Icons.chevron_left),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () => _moveDate(-1),
+                        icon: const Icon(Icons.chevron_left),
+                      ),
+                      Expanded(
+                        child: InkWell(
+                          onTap: _pickDate,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              _dateLabel,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              style: TheWeTextStyle.title,
+                            ),
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => _moveDate(1),
+                        icon: const Icon(Icons.chevron_right),
+                      ),
+                    ],
                   ),
-                  Text(_dateLabel, style: TheWeTextStyle.title),
-                  IconButton(
-                    onPressed: () => _moveDate(1),
-                    icon: const Icon(Icons.chevron_right),
-                  ),
-                  _ModeToggle(
-                    label: '일자별',
-                    selected: !_periodMode,
-                    onTap: () => setState(() => _periodMode = false),
-                  ),
-                  _ModeToggle(
-                    label: '기간별',
-                    selected: _periodMode,
-                    onTap: () => setState(() => _periodMode = true),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _ModeToggle(
+                        label: '일자별',
+                        selected: !_periodMode,
+                        onTap: () => _setPeriodMode(false),
+                      ),
+                      const SizedBox(width: 8),
+                      _ModeToggle(
+                        label: '기간별',
+                        selected: _periodMode,
+                        onTap: () => _setPeriodMode(true),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -440,18 +542,21 @@ class _CompanyAttendanceSectionState extends State<_CompanyAttendanceSection> {
                   final stacked = constraints.maxWidth < 520;
                   final filter = SizedBox(
                     width: stacked ? double.infinity : 140,
-                    child: DropdownButtonFormField<String>(
-                      initialValue: '재직',
-                      items: const [
-                        DropdownMenuItem(value: '재직', child: Text('재직')),
-                        DropdownMenuItem(value: '휴직', child: Text('휴직')),
-                        DropdownMenuItem(value: '퇴사', child: Text('퇴사')),
-                      ],
-                      onChanged: (_) {},
+                    child: TheWeDropdown<String>(
+                      value: _employmentStatus,
+                      items: const ['재직', '휴직', '퇴사'],
+                      labelBuilder: (value) => value,
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() => _employmentStatus = value);
+                        }
+                      },
                     ),
                   );
-                  final search = const TextField(
-                    decoration: InputDecoration(
+                  final search = CustomTextFormField(
+                    controller: _searchController,
+                    onChanged: (value) => setState(() => _searchQuery = value),
+                    decoration: const InputDecoration(
                       hintText: '부서, 사번, 이름을 검색하세요.',
                       prefixIcon: Icon(Icons.search),
                     ),
@@ -490,11 +595,316 @@ class _CompanyAttendanceSectionState extends State<_CompanyAttendanceSection> {
                 },
               ),
               const SizedBox(height: 16),
-              _CompanyAttendanceTable(rows: widget.rows),
+              _CompanyAttendanceTable(rows: visibleRows),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class _MobileDateRangeSheet extends StatefulWidget {
+  const _MobileDateRangeSheet({
+    required this.initialStart,
+    required this.initialEnd,
+  });
+
+  final DateTime initialStart;
+  final DateTime initialEnd;
+
+  @override
+  State<_MobileDateRangeSheet> createState() => _MobileDateRangeSheetState();
+}
+
+class _MobileDateRangeSheetState extends State<_MobileDateRangeSheet> {
+  late DateTime _start;
+  late DateTime _end;
+  late DateTime _focusedMonth;
+  bool _editingStart = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _start = _dateOnly(widget.initialStart);
+    _end = _dateOnly(widget.initialEnd);
+    _focusedMonth = DateTime(_start.year, _start.month);
+  }
+
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
+
+  bool _sameDay(DateTime first, DateTime second) =>
+      first.year == second.year &&
+      first.month == second.month &&
+      first.day == second.day;
+
+  void _selectDay(DateTime day) {
+    setState(() {
+      if (_editingStart) {
+        _start = day;
+        if (_end.isBefore(_start)) {
+          _end = day;
+        }
+        _editingStart = false;
+        return;
+      }
+
+      if (day.isBefore(_start)) {
+        _end = _start;
+        _start = day;
+      } else {
+        _end = day;
+      }
+    });
+  }
+
+  void _moveMonth(int direction) {
+    setState(() {
+      _focusedMonth = DateTime(
+        _focusedMonth.year,
+        _focusedMonth.month + direction,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month);
+    final startOffset = firstDay.weekday % 7;
+    final daysInMonth = DateTime(
+      _focusedMonth.year,
+      _focusedMonth.month + 1,
+      0,
+    ).day;
+    const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+
+    return SafeArea(
+      top: false,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.sizeOf(context).height * 0.82,
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: TheWeColor.black300.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('조회 기간 선택', style: TheWeTextStyle.title),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _DateRangeField(
+                      label: '시작일',
+                      date: _start,
+                      selected: _editingStart,
+                      onTap: () => setState(() => _editingStart = true),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: TheWeColor.black500,
+                    ),
+                  ),
+                  Expanded(
+                    child: _DateRangeField(
+                      label: '종료일',
+                      date: _end,
+                      selected: !_editingStart,
+                      onTap: () => setState(() => _editingStart = false),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  IconButton(
+                    onPressed: () => _moveMonth(-1),
+                    icon: const Icon(Icons.chevron_left_rounded),
+                  ),
+                  Expanded(
+                    child: Text(
+                      '${_focusedMonth.year}년 ${_focusedMonth.month}월',
+                      textAlign: TextAlign.center,
+                      style: TheWeTextStyle.subtitle,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _moveMonth(1),
+                    icon: const Icon(Icons.chevron_right_rounded),
+                  ),
+                ],
+              ),
+              Row(
+                children: weekDays
+                    .map(
+                      (label) => Expanded(
+                        child: Text(
+                          label,
+                          textAlign: TextAlign.center,
+                          style: TheWeTextStyle.caption.copyWith(
+                            color: label == '일' || label == '토'
+                                ? TheWeColor.pink
+                                : TheWeColor.black500,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 6),
+              Expanded(
+                child: GridView.builder(
+                  padding: EdgeInsets.zero,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 42,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    childAspectRatio: 1,
+                  ),
+                  itemBuilder: (context, index) {
+                    final dayNumber = index - startOffset + 1;
+                    if (dayNumber < 1 || dayNumber > daysInMonth) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final day = DateTime(
+                      _focusedMonth.year,
+                      _focusedMonth.month,
+                      dayNumber,
+                    );
+                    final selected =
+                        _sameDay(day, _start) || _sameDay(day, _end);
+                    final inRange = !day.isBefore(_start) && !day.isAfter(_end);
+
+                    return InkWell(
+                      onTap: () => _selectDay(day),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        margin: const EdgeInsets.all(2),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? TheWeColor.blue300
+                              : inRange
+                              ? TheWeColor.blue100.withValues(alpha: 0.55)
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$dayNumber',
+                          style: TheWeTextStyle.body.copyWith(
+                            color: selected
+                                ? Colors.white
+                                : TheWeColor.black900,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('취소'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: () => Navigator.of(
+                        context,
+                      ).pop(DateTimeRange(start: _start, end: _end)),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: TheWeColor.blue300,
+                      ),
+                      child: const Text('적용'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DateRangeField extends StatelessWidget {
+  const _DateRangeField({
+    required this.label,
+    required this.date,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final DateTime date;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? TheWeColor.blueSurface : TheWeColor.surfaceAlt,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? TheWeColor.blue300
+                : TheWeColor.black300.withValues(alpha: 0.35),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TheWeTextStyle.caption.copyWith(
+                color: TheWeColor.black500,
+              ),
+            ),
+            const SizedBox(height: 3),
+            Text(_formatDate(date), style: TheWeTextStyle.body),
+          ],
+        ),
+      ),
     );
   }
 }

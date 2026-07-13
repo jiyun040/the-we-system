@@ -5,6 +5,7 @@ import 'package:the_we_system/common/components/mobile_navigation.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -106,26 +107,33 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final isNarrow = constraints.maxWidth < 760;
-                      final catalog = SizedBox(
-                        width: isNarrow ? double.infinity : 320,
-                        height: isNarrow ? 300 : null,
-                        child: _FormCatalog(
-                          templates: appState.formTemplates,
-                          selectedFormId: currentFormId,
-                          onFormSelected: (formId) {
-                            setState(() {
-                              selectedFormId = formId;
-                              final template = appState.formTemplates
-                                  .where((item) => item.id == formId)
-                                  .first;
-                              titleController.text = template.defaultTitle;
-                              contentController.text = template.defaultContent;
-                              linkedDocuments = [];
-                              editingDocumentId = null;
-                            });
-                          },
-                        ),
-                      );
+                      void selectForm(String formId) {
+                        setState(() {
+                          selectedFormId = formId;
+                          final template = appState.formTemplates
+                              .where((item) => item.id == formId)
+                              .first;
+                          titleController.text = template.defaultTitle;
+                          contentController.text = template.defaultContent;
+                          linkedDocuments = [];
+                          editingDocumentId = null;
+                        });
+                      }
+
+                      final catalog = isNarrow
+                          ? _CompactFormSelector(
+                              templates: appState.formTemplates,
+                              selectedFormId: currentFormId,
+                              onFormSelected: selectForm,
+                            )
+                          : SizedBox(
+                              width: 320,
+                              child: _FormCatalog(
+                                templates: appState.formTemplates,
+                                selectedFormId: currentFormId,
+                                onFormSelected: selectForm,
+                              ),
+                            );
                       final sheet = SingleChildScrollView(
                         padding: EdgeInsets.all(isNarrow ? 16 : 28),
                         child: Center(

@@ -19,9 +19,11 @@ class _EditableDraftSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+
     return Container(
       constraints: const BoxConstraints(maxWidth: 980),
-      padding: const EdgeInsets.all(18),
+      padding: EdgeInsets.all(compact ? 12 : 18),
       decoration: BoxDecoration(
         color: TheWeColor.white,
         border: Border.all(color: TheWeColor.black900),
@@ -33,8 +35,8 @@ class _EditableDraftSheet extends StatelessWidget {
             document.form.contains('휴가') ? '휴 가 신 청' : '기 안 용 지',
             textAlign: TextAlign.center,
             style: TheWeTextStyle.pageTitle.copyWith(
-              fontSize: 32,
-              letterSpacing: 6,
+              fontSize: compact ? 24 : 32,
+              letterSpacing: compact ? 3 : 6,
             ),
           ),
           const SizedBox(height: 22),

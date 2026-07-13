@@ -181,21 +181,42 @@ class _DocumentToolbar extends ConsumerWidget {
               const TheWeBackButton(),
               const SizedBox(width: 8),
               Expanded(
-                child: RichText(
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    style: TheWeTextStyle.pageTitle,
-                    children: [
-                      TextSpan(text: document.title),
-                      TextSpan(
-                        text: '  in ${document.form}',
-                        style: TheWeTextStyle.caption.copyWith(
-                          color: TheWeColor.black500,
+                child: compact
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            document.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.fade,
+                            style: TheWeTextStyle.title,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            document.form,
+                            maxLines: 1,
+                            overflow: TextOverflow.fade,
+                            style: TheWeTextStyle.caption.copyWith(
+                              color: TheWeColor.black500,
+                            ),
+                          ),
+                        ],
+                      )
+                    : RichText(
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          style: TheWeTextStyle.pageTitle,
+                          children: [
+                            TextSpan(text: document.title),
+                            TextSpan(
+                              text: '  in ${document.form}',
+                              style: TheWeTextStyle.caption.copyWith(
+                                color: TheWeColor.black500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),

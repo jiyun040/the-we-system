@@ -17,28 +17,34 @@ class _OvertimeDateTimeRow extends StatelessWidget {
   final ValueChanged<int?> onHourChanged;
   final ValueChanged<int?> onMinuteChanged;
 
+  Future<void> _pickTime(BuildContext context) async {
+    final selected = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: hour, minute: minute),
+      helpText: '$label 시간 선택',
+      cancelText: '취소',
+      confirmText: '선택',
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (selected == null) {
+      return;
+    }
+    onHourChanged(selected.hour);
+    onMinuteChanged(selected.minute);
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final stacked = constraints.maxWidth < 520;
-        final timeControls = Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _TimeDropdown(
-              value: hour,
-              values: List.generate(24, (index) => index),
-              onChanged: onHourChanged,
-            ),
-            const SizedBox(width: 8),
-            const Text(':'),
-            const SizedBox(width: 8),
-            _TimeDropdown(
-              value: minute,
-              values: const [0, 30],
-              onChanged: onMinuteChanged,
-            ),
-          ],
+        final timeField = _TimePickerField(
+          hour: hour,
+          minute: minute,
+          onTap: () => _pickTime(context),
         );
 
         if (stacked) {
@@ -49,9 +55,9 @@ class _OvertimeDateTimeRow extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _InlineBox(text: date)),
+                  Expanded(flex: 3, child: _InlineBox(text: date)),
                   const SizedBox(width: 8),
-                  timeControls,
+                  Expanded(flex: 2, child: timeField),
                 ],
               ),
             ],
@@ -66,7 +72,7 @@ class _OvertimeDateTimeRow extends StatelessWidget {
             ),
             Expanded(child: _InlineBox(text: date)),
             const SizedBox(width: 10),
-            timeControls,
+            SizedBox(width: 140, child: timeField),
           ],
         );
       },
@@ -74,34 +80,53 @@ class _OvertimeDateTimeRow extends StatelessWidget {
   }
 }
 
-class _TimeDropdown extends StatelessWidget {
-  const _TimeDropdown({
-    required this.value,
-    required this.values,
-    required this.onChanged,
+class _TimePickerField extends StatelessWidget {
+  const _TimePickerField({
+    required this.hour,
+    required this.minute,
+    required this.onTap,
   });
 
-  final int value;
-  final List<int> values;
-  final ValueChanged<int?> onChanged;
+  final int hour;
+  final int minute;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.sizeOf(context).width < 520;
+    final time =
+        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
 
-    return SizedBox(
-      width: compact ? 64 : 88,
-      child: DropdownButtonFormField<int>(
-        initialValue: value,
-        items: values
-            .map(
-              (item) => DropdownMenuItem(
-                value: item,
-                child: Text(item.toString().padLeft(2, '0')),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(10),
+        child: Container(
+          height: 48,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: TheWeColor.surfaceAlt,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: TheWeColor.black300.withValues(alpha: 0.55),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.schedule_rounded, size: 18, color: TheWeColor.blue300),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  time,
+                  maxLines: 1,
+                  style: TheWeTextStyle.body.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ),
-            )
-            .toList(),
-        onChanged: onChanged,
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -287,7 +287,7 @@ class _TheWeModalButton extends StatelessWidget {
       fontFamily: 'SUIT-Variable',
       fontSize: 15,
       fontWeight: FontWeight.w700,
-      color: filled ? Colors.white : TheWeColor.black900,
+      color: filled ? Colors.white : TheWeColor.black500,
     );
 
     final child = SizedBox(
@@ -313,13 +313,13 @@ class _TheWeModalButton extends StatelessWidget {
           : OutlinedButton(
               onPressed: onPressed,
               style: OutlinedButton.styleFrom(
-                foregroundColor: TheWeColor.black900,
+                foregroundColor: TheWeColor.black500,
                 side: BorderSide(
                   color: TheWeColor.black300.withValues(alpha: 0.35),
                 ),
                 textStyle: style,
                 elevation: 0,
-                backgroundColor: Colors.white,
+                backgroundColor: TheWeColor.surface,
                 padding: const EdgeInsets.symmetric(horizontal: 18),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),

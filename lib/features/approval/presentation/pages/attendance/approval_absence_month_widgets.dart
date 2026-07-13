@@ -51,6 +51,7 @@ class _MonthAttendanceGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
     final firstDay = DateTime(now.year, now.month, 1);
     final startOffset = firstDay.weekday % 7;
     final startDate = firstDay.subtract(Duration(days: startOffset));
@@ -88,11 +89,11 @@ class _MonthAttendanceGrid extends StatelessWidget {
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: cells.length,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 0.95,
+            mainAxisSpacing: compact ? 5 : 10,
+            crossAxisSpacing: compact ? 4 : 10,
+            childAspectRatio: compact ? 0.62 : 0.95,
           ),
           itemBuilder: (context, index) {
             final date = cells[index];
@@ -105,9 +106,16 @@ class _MonthAttendanceGrid extends StatelessWidget {
                 date.weekday == DateTime.saturday ||
                 date.weekday == DateTime.sunday;
             final holiday = isCurrentMonth ? holidays[date.day] : null;
+            final scheduleColor = holiday != null
+                ? TheWeColor.pink
+                : date.weekday == DateTime.sunday
+                ? const Color(0xFF60A5FA)
+                : date.weekday == DateTime.saturday
+                ? const Color(0xFF93C5FD)
+                : const Color(0xFF34D399);
 
             return Container(
-              padding: const EdgeInsets.all(12),
+              padding: EdgeInsets.all(compact ? 3 : 12),
               decoration: BoxDecoration(
                 color: TheWeColor.white,
                 borderRadius: BorderRadius.circular(14),
@@ -123,8 +131,8 @@ class _MonthAttendanceGrid extends StatelessWidget {
                   Align(
                     alignment: Alignment.topRight,
                     child: Container(
-                      width: 30,
-                      height: 30,
+                      width: compact ? 27 : 30,
+                      height: compact ? 27 : 30,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: isToday
@@ -147,8 +155,20 @@ class _MonthAttendanceGrid extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  if (holiday != null)
+                  SizedBox(height: compact ? 4 : 10),
+                  if (compact)
+                    Align(
+                      alignment: Alignment.center,
+                      child: Container(
+                        width: 7,
+                        height: 7,
+                        decoration: BoxDecoration(
+                          color: scheduleColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    )
+                  else if (holiday != null)
                     _MonthScheduleTag(label: holiday, color: TheWeColor.pink)
                   else if (date.weekday == DateTime.sunday)
                     _MonthScheduleTag(
@@ -170,6 +190,19 @@ class _MonthAttendanceGrid extends StatelessWidget {
             );
           },
         ),
+        if (compact) ...[
+          const SizedBox(height: 12),
+          const Wrap(
+            spacing: 12,
+            runSpacing: 6,
+            children: [
+              _LegendDot(label: '정상근무', color: Color(0xFF34D399)),
+              _LegendDot(label: '휴일', color: Color(0xFF60A5FA)),
+              _LegendDot(label: '휴무', color: Color(0xFF93C5FD)),
+              _LegendDot(label: '공휴일', color: TheWeColor.pink),
+            ],
+          ),
+        ],
       ],
     );
   }

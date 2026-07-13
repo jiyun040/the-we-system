@@ -103,6 +103,55 @@ class _DraftAction extends StatelessWidget {
   }
 }
 
+class _CompactFormSelector extends StatelessWidget {
+  const _CompactFormSelector({
+    required this.templates,
+    required this.selectedFormId,
+    required this.onFormSelected,
+  });
+
+  final List<ApprovalFormTemplate> templates;
+  final String selectedFormId;
+  final ValueChanged<String> onFormSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = templates
+        .where((template) => template.id == selectedFormId)
+        .first;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('기안 양식', style: TheWeTextStyle.section),
+          const SizedBox(height: 8),
+          TheWeDropdown<String>(
+            value: selectedFormId,
+            width: double.infinity,
+            items: templates.map((template) => template.id).toList(),
+            labelBuilder: (id) =>
+                templates.where((template) => template.id == id).first.name,
+            onChanged: (id) {
+              if (id != null) {
+                onFormSelected(id);
+              }
+            },
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${selected.category} · ${selected.description}',
+            maxLines: 1,
+            overflow: TextOverflow.fade,
+            style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _FormCatalog extends StatelessWidget {
   const _FormCatalog({
     required this.templates,

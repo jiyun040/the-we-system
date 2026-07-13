@@ -360,41 +360,6 @@ class _AttendanceControlPanel extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: () => showDialog<void>(
-              context: context,
-              builder: (context) {
-                final title = snapshot.isClockedIn ? '근무상태 변경' : '근태체크 불가';
-                final message = snapshot.isClockedIn
-                    ? '근무상태 변경은 전자결재 상신 후 반영됩니다.'
-                    : '출근시간이 체크되지 않았습니다.';
-                return AlertDialog(
-                  backgroundColor: TheWeColor.white,
-                  surfaceTintColor: TheWeColor.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  title: Text(title, style: TheWeTextStyle.title),
-                  content: Text(message, style: TheWeTextStyle.body),
-                  actions: [
-                    FilledButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: TheWeColor.blue300,
-                      ),
-                      child: const Text('확인'),
-                    ),
-                  ],
-                );
-              },
-            ),
-            icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-            label: const Text('근무상태변경'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(46),
-            ),
-          ),
           const SizedBox(height: 18),
           Divider(color: TheWeColor.black300.withValues(alpha: 0.24)),
           const SizedBox(height: 14),
