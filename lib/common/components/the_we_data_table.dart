@@ -40,9 +40,9 @@ class TheWeDataTable extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: TheWeColor.surfaceAlt,
+                  color: Colors.white,
                   border: Border.all(
-                    color: TheWeColor.blue200.withValues(alpha: .38),
+                    color: TheWeColor.blue200.withValues(alpha: .58),
                   ),
                   borderRadius: BorderRadius.circular(18),
                 ),
@@ -77,8 +77,8 @@ class TheWeDataTable extends StatelessWidget {
                       TableRow(
                         decoration: BoxDecoration(
                           color: rowIndex.isEven
-                              ? TheWeColor.surfaceAlt
-                              : TheWeColor.background,
+                              ? Colors.white
+                              : TheWeColor.blueSurface.withValues(alpha: .55),
                         ),
                         children: [
                           for (
@@ -127,10 +127,10 @@ class _TableCell extends StatelessWidget {
       decoration: BoxDecoration(
         border: Border(
           right: rightBorder
-              ? BorderSide(color: TheWeColor.black300.withValues(alpha: .14))
+              ? BorderSide(color: TheWeColor.black300.withValues(alpha: .26))
               : BorderSide.none,
           bottom: bottomBorder
-              ? BorderSide(color: TheWeColor.black300.withValues(alpha: .14))
+              ? BorderSide(color: TheWeColor.black300.withValues(alpha: .26))
               : BorderSide.none,
         ),
       ),
