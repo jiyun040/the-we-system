@@ -34,9 +34,19 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
         keyword: '',
         selectedOrgDepartment: account.department,
         selectedOrgUserId: account.id,
+        adminMode: false,
       ),
     );
     return true;
+  }
+
+  bool hasValidAdminCredentials(String id, String password) {
+    final current = _currentState;
+    if (current == null) return false;
+    return current.accounts.any(
+      (account) =>
+          account.id == id && account.password == password && account.isAdmin,
+    );
   }
 
   Future<String?> registerAccount({
@@ -98,6 +108,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
         clearCurrentUser: true,
         loginError: '',
         keyword: '',
+        adminMode: false,
         selectedOrgDepartment: current.accounts.first.department,
         selectedOrgUserId: current.accounts.first.id,
       ),

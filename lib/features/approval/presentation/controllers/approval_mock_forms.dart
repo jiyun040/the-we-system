@@ -115,6 +115,7 @@ const _accounts = [
     department: '교육관리팀',
     position: '과장',
     email: 'edu_manager@thewe.co.kr',
+    isAdmin: true,
   ),
   EmployeeAccount(
     id: 'lee_jaeo',

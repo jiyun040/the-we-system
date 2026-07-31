@@ -6,6 +6,7 @@ class EmployeeAccount {
     required this.department,
     required this.position,
     required this.email,
+    this.hireDate = '2024-01-15',
     this.isAdmin = false,
   });
 
@@ -15,6 +16,7 @@ class EmployeeAccount {
   final String department;
   final String position;
   final String email;
+  final String hireDate;
   final bool isAdmin;
 
   EmployeeAccount copyWith({
@@ -24,6 +26,7 @@ class EmployeeAccount {
     String? department,
     String? position,
     String? email,
+    String? hireDate,
     bool? isAdmin,
   }) {
     return EmployeeAccount(
@@ -33,6 +36,7 @@ class EmployeeAccount {
       department: department ?? this.department,
       position: position ?? this.position,
       email: email ?? this.email,
+      hireDate: hireDate ?? this.hireDate,
       isAdmin: isAdmin ?? this.isAdmin,
     );
   }
@@ -66,6 +70,43 @@ class ApprovalFormTemplate {
   final List<String> publicReceivers;
   final String cooperationDepartment;
   final String agreement;
+
+  ApprovalFormTemplate copyWith({
+    String? id,
+    String? category,
+    String? name,
+    String? description,
+    String? defaultTitle,
+    String? defaultContent,
+    List<String>? receivers,
+    List<String>? references,
+    List<String>? viewers,
+    List<String>? publicReceivers,
+    String? cooperationDepartment,
+    String? agreement,
+  }) {
+    return ApprovalFormTemplate(
+      id: id ?? this.id,
+      category: category ?? this.category,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      defaultTitle: defaultTitle ?? this.defaultTitle,
+      defaultContent: defaultContent ?? this.defaultContent,
+      receivers: receivers ?? this.receivers,
+      references: references ?? this.references,
+      viewers: viewers ?? this.viewers,
+      publicReceivers: publicReceivers ?? this.publicReceivers,
+      cooperationDepartment:
+          cooperationDepartment ?? this.cooperationDepartment,
+      agreement: agreement ?? this.agreement,
+    );
+  }
+}
+
+abstract final class PortalAppId {
+  static const approval = 'approval';
+  static const attendance = 'attendance';
+  static const leave = 'leave';
 }
 
 class ApprovalRequestDraft {
@@ -75,6 +116,7 @@ class ApprovalRequestDraft {
     required this.content,
     required this.urgent,
     required this.linkedDocuments,
+    this.departmentVisible = true,
   });
 
   final String formId;
@@ -82,4 +124,38 @@ class ApprovalRequestDraft {
   final String content;
   final bool urgent;
   final List<String> linkedDocuments;
+  final bool departmentVisible;
+}
+
+class LeaveRequest {
+  const LeaveRequest({
+    required this.id,
+    required this.userId,
+    required this.type,
+    required this.startDate,
+    required this.endDate,
+    required this.days,
+    required this.reason,
+    this.status = '승인대기',
+  });
+
+  final String id;
+  final String userId;
+  final String type;
+  final String startDate;
+  final String endDate;
+  final double days;
+  final String reason;
+  final String status;
+
+  LeaveRequest copyWith({String? status}) => LeaveRequest(
+    id: id,
+    userId: userId,
+    type: type,
+    startDate: startDate,
+    endDate: endDate,
+    days: days,
+    reason: reason,
+    status: status ?? this.status,
+  );
 }

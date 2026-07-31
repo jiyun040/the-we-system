@@ -43,6 +43,9 @@ class _PortalOverview extends StatelessWidget {
           children: [
             LayoutBuilder(
               builder: (context, innerConstraints) {
+                if (!state.isAdminMode) {
+                  return const _PortalSurface(child: _PortalCalendarPanel());
+                }
                 final compact = innerConstraints.maxWidth < 720;
                 if (compact) {
                   return Column(
@@ -67,78 +70,82 @@ class _PortalOverview extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 18),
-            _PortalSurface(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('전자결재 진행현황', style: TheWeTextStyle.title),
-                  const SizedBox(height: 18),
-                  if (state.dashboard.processingDocuments.isEmpty)
-                    SizedBox(
-                      height: 120,
-                      child: Center(
-                        child: Text(
-                          '목록이 없습니다.',
-                          style: TheWeTextStyle.body.copyWith(
-                            color: TheWeColor.black500,
+            if (state.isAppEnabled(PortalAppId.approval)) ...[
+              const SizedBox(height: 18),
+              _PortalSurface(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('전자결재 진행현황', style: TheWeTextStyle.title),
+                    const SizedBox(height: 18),
+                    if (state.dashboard.processingDocuments.isEmpty)
+                      SizedBox(
+                        height: 120,
+                        child: Center(
+                          child: Text(
+                            '목록이 없습니다.',
+                            style: TheWeTextStyle.body.copyWith(
+                              color: TheWeColor.black500,
+                            ),
                           ),
                         ),
-                      ),
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final documents = state.dashboard.processingDocuments;
-                        if (constraints.maxWidth < 520) {
-                          return Column(
-                            children: documents
-                                .take(3)
-                                .map(
-                                  (document) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: ApprovalMobileDocumentCard(
-                                      document: document,
-                                      onTap: () => context.pushNamed(
-                                        AppRouteName.detail,
-                                        pathParameters: {'id': document.id},
+                      )
+                    else
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final documents = state.dashboard.processingDocuments;
+                          if (constraints.maxWidth < 520) {
+                            return Column(
+                              children: documents
+                                  .take(3)
+                                  .map(
+                                    (document) => Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
+                                      child: ApprovalMobileDocumentCard(
+                                        document: document,
+                                        onTap: () => context.pushNamed(
+                                          AppRouteName.detail,
+                                          pathParameters: {'id': document.id},
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                )
-                                .toList(),
-                          );
-                        }
+                                  )
+                                  .toList(),
+                            );
+                          }
 
-                        return SizedBox(
-                          height: 292,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: documents.length.clamp(0, 4),
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(width: 12),
-                            itemBuilder: (context, index) {
-                              final document = documents[index];
-                              return ProcessingCard(
-                                title: document.title,
-                                drafter: document.drafter,
-                                date: document.draftedAt,
-                                form: document.form,
-                                status: document.status,
-                                progress: document.progress,
-                                onTap: () => context.pushNamed(
-                                  AppRouteName.detail,
-                                  pathParameters: {'id': document.id},
-                                ),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                ],
+                          return SizedBox(
+                            height: 292,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: documents.length.clamp(0, 4),
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(width: 12),
+                              itemBuilder: (context, index) {
+                                final document = documents[index];
+                                return ProcessingCard(
+                                  title: document.title,
+                                  drafter: document.drafter,
+                                  date: document.draftedAt,
+                                  form: document.form,
+                                  status: document.status,
+                                  progress: document.progress,
+                                  onTap: () => context.pushNamed(
+                                    AppRouteName.detail,
+                                    pathParameters: {'id': document.id},
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         );
         const rightChild = _PortalSurface(child: _PortalNoticePanel());

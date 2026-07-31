@@ -15,7 +15,7 @@ class ApprovalLoginPage extends ConsumerStatefulWidget {
 }
 
 class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
-  final idController = TextEditingController(text: 'edu_teacher');
+  final idController = TextEditingController(text: 'edu_manager');
   final passwordController = TextEditingController(text: '1234');
   bool showPassword = false;
 
@@ -55,6 +55,21 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('로그인', style: TheWeTextStyle.pageTitle),
+                  const SizedBox(height: 12),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: TheWeColor.blueSurface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '관리자 계정은 아이디·비밀번호 확인 후 OTP 인증을 진행합니다.',
+                      style: TheWeTextStyle.caption.copyWith(
+                        color: TheWeColor.black500,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 24),
                   Text('아이디', style: TheWeTextStyle.body),
                   const SizedBox(height: 8),
@@ -91,12 +106,29 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                     height: 48,
                     child: FilledButton(
                       onPressed: () async {
-                        await ref
-                            .read(approvalDashboardControllerProvider.notifier)
-                            .login(
-                              idController.text.trim(),
-                              passwordController.text.trim(),
-                            );
+                        final notifier = ref.read(
+                          approvalDashboardControllerProvider.notifier,
+                        );
+                        final id = idController.text.trim();
+                        final password = passwordController.text.trim();
+                        String? verifiedOtp;
+                        if (notifier.hasValidAdminCredentials(id, password)) {
+                          verifiedOtp = await _requestAdminLoginOtp(
+                            context,
+                            notifier,
+                          );
+                          if (verifiedOtp == null || !context.mounted) return;
+                        }
+                        final success = await notifier.login(id, password);
+                        if (!success || !context.mounted) return;
+                        if (verifiedOtp != null) {
+                          notifier.enterAdminMode(verifiedOtp);
+                        }
+                        context.goNamed(
+                          verifiedOtp != null
+                              ? AppRouteName.admin
+                              : AppRouteName.home,
+                        );
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: TheWeColor.black900,
@@ -134,4 +166,78 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
       ),
     );
   }
+}
+
+Future<String?> _requestAdminLoginOtp(
+  BuildContext context,
+  ApprovalDashboardController notifier,
+) {
+  final controller = TextEditingController();
+  var error = '';
+  final mobile = MediaQuery.sizeOf(context).width < 600;
+  return showDialog<String>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: mobile ? 22 : 40,
+          vertical: 24,
+        ),
+        backgroundColor: TheWeColor.surfaceAlt,
+        title: const Text('관리자 OTP 인증'),
+        content: SizedBox(
+          width: mobile ? double.maxFinite : 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('관리자 OTP 앱에 표시된 6자리 번호를 입력하세요.'),
+              const SizedBox(height: 6),
+              Text(
+                '프로토타입 인증번호: 123456',
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.blue300,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 6,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'OTP 인증번호',
+                  errorText: error.isEmpty ? null : error,
+                ),
+                onSubmitted: (_) {
+                  if (notifier.verifyAdminOtp(controller.text)) {
+                    Navigator.pop(context, controller.text);
+                  } else {
+                    setDialogState(() => error = 'OTP 번호가 올바르지 않습니다.');
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (notifier.verifyAdminOtp(controller.text)) {
+                Navigator.pop(context, controller.text);
+              } else {
+                setDialogState(() => error = 'OTP 번호가 올바르지 않습니다.');
+              }
+            },
+            child: const Text('인증'),
+          ),
+        ],
+      ),
+    ),
+  );
 }

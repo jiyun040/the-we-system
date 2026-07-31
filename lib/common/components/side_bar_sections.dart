@@ -54,28 +54,24 @@ class _Brand extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isPhone = MediaQuery.sizeOf(context).width < 520;
+    final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Container(
-              width: isPhone ? 36 : 40,
-              height: isPhone ? 36 : 40,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: TheWeColor.blue300,
-                borderRadius: BorderRadius.circular(TheWeRadius.md),
-              ),
-              child: Text(
-                'W',
-                style: TheWeTextStyle.subtitle.copyWith(color: Colors.white),
-              ),
-            ),
+            TheWeLogo(height: isPhone ? 30 : 34),
             if (!isCompact) ...[
               TheWeGaps.horizontalLg,
-              Expanded(child: Text('경영업무포털', style: TheWeTextStyle.title)),
+              Expanded(
+                child: Text(
+                  state?.portalName ?? '더우리기술 전자결재',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TheWeTextStyle.title,
+                ),
+              ),
             ],
           ],
         ),
@@ -138,15 +134,51 @@ class _Brand extends ConsumerWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  currentUser!.isAdmin
-                      ? '전체 직원 문서 열람/관리 가능'
+                  state?.isAdminMode == true
+                      ? '관리자 모드 · 전체 관리 가능'
                       : currentUser!.email,
                   style: TheWeTextStyle.caption.copyWith(
-                    color: currentUser!.isAdmin
+                    color: state?.isAdminMode == true
                         ? TheWeColor.blue300
                         : TheWeColor.black500,
                   ),
                 ),
+                if (currentUser!.isAdmin) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final notifier = ref.read(
+                          approvalDashboardControllerProvider.notifier,
+                        );
+                        if (state?.isAdminMode == true) {
+                          notifier.leaveAdminMode();
+                          context.goNamed(AppRouteName.home);
+                          return;
+                        }
+                        final otp = await _showAdminOtpDialog(context);
+                        if (otp == null || !context.mounted) return;
+                        if (notifier.enterAdminMode(otp)) {
+                          context.goNamed(AppRouteName.admin);
+                          return;
+                        }
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('OTP 번호가 올바르지 않습니다.')),
+                        );
+                      },
+                      icon: Icon(
+                        state?.isAdminMode == true
+                            ? Icons.person_outline
+                            : Icons.admin_panel_settings_outlined,
+                        size: 18,
+                      ),
+                      label: Text(
+                        state?.isAdminMode == true ? '일반 계정 화면' : '관리자 계정 전환',
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -154,6 +186,50 @@ class _Brand extends ConsumerWidget {
       ],
     );
   }
+}
+
+Future<String?> _showAdminOtpDialog(BuildContext context) {
+  final controller = TextEditingController();
+  return showDialog<String>(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.white,
+      title: const Text('OTP 2차 인증'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('관리자 OTP 앱의 6자리 번호를 입력하세요.'),
+            const SizedBox(height: 6),
+            Text(
+              '프로토타입 인증번호: 123456',
+              style: TheWeTextStyle.caption.copyWith(color: TheWeColor.blue300),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              maxLength: 6,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'OTP 인증번호'),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(context, controller.text),
+          child: const Text('인증'),
+        ),
+      ],
+    ),
+  );
 }
 
 class _NewApprovalButton extends ConsumerWidget {
@@ -171,7 +247,7 @@ class _NewApprovalButton extends ConsumerWidget {
 
       final selected = await showDraftFormSelectionDialog(
         context,
-        templates: state.formTemplates,
+        templates: state.activeFormTemplates,
       );
       if (selected == null || !context.mounted) {
         return;

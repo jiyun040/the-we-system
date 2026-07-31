@@ -1,0 +1,466 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:the_we_system/common/components/mobile_navigation.dart';
+import 'package:the_we_system/common/components/side_bar.dart';
+import 'package:the_we_system/common/components/the_we_back_button.dart';
+import 'package:the_we_system/common/components/the_we_data_table.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
+import 'package:the_we_system/common/constants/color.dart';
+import 'package:the_we_system/common/constants/text_style.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+
+class ApprovalLeavePage extends ConsumerWidget {
+  const ApprovalLeavePage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncState = ref.watch(approvalDashboardControllerProvider);
+    return Scaffold(
+      backgroundColor: TheWeColor.white,
+      bottomNavigationBar: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationBar(currentIndex: 3)
+          : null,
+      body: asyncState.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, stackTrace) =>
+            const Center(child: Text('휴가 정보를 불러오지 못했습니다.')),
+        data: (state) {
+          final dashboard = state.dashboard;
+          final sidebar = SideBar(
+            frequentForms: dashboard.frequentForms,
+            pendingDocument: dashboard.pendingCount,
+            receiveDocument: dashboard.receivedCount,
+            openPendingDocument: dashboard.referenceCount,
+            scheduledDocument: dashboard.scheduledCount,
+          );
+          final content = _LeaveContent(state: state);
+          if (MediaQuery.sizeOf(context).width < 520) return content;
+          return Row(
+            children: [
+              sidebar,
+              const VerticalDivider(width: 1),
+              Expanded(child: content),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _LeaveContent extends ConsumerWidget {
+  const _LeaveContent({required this.state});
+  final ApprovalDashboardState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final total = state.totalAnnualLeave.toDouble();
+    final used = state.usedAnnualLeave;
+    final pending = state.pendingAnnualLeave;
+    final remaining = state.remainingAnnualLeave;
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: EdgeInsets.all(
+          MediaQuery.sizeOf(context).width < 520 ? 18 : 32,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1240),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _LeaveHeader(
+                  userName: state.currentUser?.name ?? '',
+                  onRequest: () => _showLeaveRequestDialog(context, ref),
+                ),
+                const SizedBox(height: 28),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: _surfaceDecoration(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 8,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.badge_outlined,
+                            color: TheWeColor.blue300,
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            '입사일 ${state.currentUser?.hireDate ?? '-'}',
+                            style: TheWeTextStyle.subtitle,
+                          ),
+                          Chip(label: Text('${state.currentServiceYear}년차')),
+                        ],
+                      ),
+                      const SizedBox(height: 22),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final width = constraints.maxWidth < 720
+                              ? constraints.maxWidth
+                              : (constraints.maxWidth - 36) / 4;
+                          return Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              _MetricCard(
+                                width: width,
+                                label: '총 연차',
+                                value: _days(total),
+                                color: TheWeColor.blue300,
+                              ),
+                              _MetricCard(
+                                width: width,
+                                label: '사용 연차',
+                                value: _days(used),
+                                color: TheWeColor.pink,
+                              ),
+                              _MetricCard(
+                                width: width,
+                                label: '잔여 연차',
+                                value: _days(remaining),
+                                color: TheWeColor.green,
+                              ),
+                              _MetricCard(
+                                width: width,
+                                label: '승인 대기',
+                                value: _days(pending),
+                                color: Colors.orange,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 20),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(999),
+                        child: LinearProgressIndicator(
+                          minHeight: 10,
+                          value: total == 0
+                              ? 0
+                              : ((used + pending) / total).clamp(0.0, 1.0),
+                          backgroundColor: TheWeColor.surface,
+                          color: TheWeColor.blue300,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text('휴가 신청 내역', style: TheWeTextStyle.title),
+                const SizedBox(height: 12),
+                if (state.currentUserLeaveRequests.isEmpty)
+                  Container(
+                    width: double.infinity,
+                    decoration: _surfaceDecoration(),
+                    padding: const EdgeInsets.all(48),
+                    child: const Center(child: Text('신청 내역이 없습니다.')),
+                  )
+                else
+                  TheWeDataTable(
+                    headers: const ['상태', '휴가 종류', '기간', '사용 일수', '신청 사유'],
+                    columnFlexes: const [1.05, 1.15, 2.3, .9, 2.2],
+                    minWidth: 940,
+                    rows: state.currentUserLeaveRequests
+                        .map(
+                          (request) => <Widget>[
+                            _StatusChip(status: request.status),
+                            Text(request.type),
+                            Text('${request.startDate} ~ ${request.endDate}'),
+                            Text(_days(request.days)),
+                            Text(request.reason),
+                          ],
+                        )
+                        .toList(),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showLeaveRequestDialog(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final reason = TextEditingController();
+    var type = '연차';
+    var start = DateTime.now().add(const Duration(days: 1));
+    var end = start;
+    var halfDay = false;
+    var reasonError = '';
+    var requestError = '';
+    final submitted = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          Future<void> pickDate(bool isStart) async {
+            final picked = await showDatePicker(
+              context: context,
+              initialDate: isStart ? start : end,
+              firstDate: DateTime.now(),
+              lastDate: DateTime(DateTime.now().year + 2),
+            );
+            if (picked == null) return;
+            setDialogState(() {
+              requestError = '';
+              if (isStart) {
+                start = picked;
+                if (end.isBefore(start)) end = start;
+              } else {
+                end = picked;
+              }
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text('휴가 신청서'),
+            content: SizedBox(
+              width: 520,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '휴가 종류',
+                        style: TheWeTextStyle.caption.copyWith(
+                          color: TheWeColor.black500,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TheWeDropdown<String>(
+                      value: type,
+                      width: double.infinity,
+                      items: const ['연차', '반차', '경조 휴가', '휴가'],
+                      labelBuilder: (value) => value,
+                      onChanged: (value) => setDialogState(() {
+                        type = value ?? '연차';
+                        halfDay = type == '반차';
+                        requestError = '';
+                      }),
+                    ),
+                    if (requestError.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          requestError,
+                          style: TheWeTextStyle.caption.copyWith(
+                            color: TheWeColor.danger,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => pickDate(true),
+                            icon: const Icon(Icons.event),
+                            label: Text(DateFormat('yyyy-MM-dd').format(start)),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('~'),
+                        ),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: halfDay ? null : () => pickDate(false),
+                            icon: const Icon(Icons.event),
+                            label: Text(DateFormat('yyyy-MM-dd').format(end)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: reason,
+                      maxLines: 3,
+                      onChanged: (_) {
+                        if (reasonError.isNotEmpty) {
+                          setDialogState(() => reasonError = '');
+                        }
+                      },
+                      decoration: InputDecoration(
+                        labelText: '신청 사유 (필수)',
+                        hintText: '휴가 사유를 입력하세요.',
+                        errorText: reasonError.isEmpty ? null : reasonError,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('취소'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (reason.text.trim().isEmpty) {
+                    setDialogState(() => reasonError = '신청 사유를 입력해 주세요.');
+                    return;
+                  }
+                  final requestedDays = halfDay
+                      ? .5
+                      : end.difference(start).inDays + 1.0;
+                  if (requestedDays > state.remainingAnnualLeave) {
+                    setDialogState(
+                      () => requestError =
+                          '잔여 연차 ${_days(state.remainingAnnualLeave)}를 초과했습니다.',
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, true);
+                },
+                child: const Text('신청'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (submitted != true || !context.mounted) return;
+    final days = halfDay ? .5 : end.difference(start).inDays + 1.0;
+    ref
+        .read(approvalDashboardControllerProvider.notifier)
+        .requestLeave(
+          type: type,
+          startDate: DateFormat('yyyy-MM-dd').format(start),
+          endDate: DateFormat('yyyy-MM-dd').format(halfDay ? start : end),
+          days: days,
+          reason: reason.text.trim(),
+        );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('휴가 신청이 등록되었습니다.')));
+  }
+}
+
+class _LeaveHeader extends StatelessWidget {
+  const _LeaveHeader({required this.userName, required this.onRequest});
+  final String userName;
+  final VoidCallback onRequest;
+
+  @override
+  Widget build(BuildContext context) {
+    final mobile = MediaQuery.sizeOf(context).width < 520;
+    final title = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('휴가 현황', style: TheWeTextStyle.pageTitle),
+        const SizedBox(height: 4),
+        Text(
+          '$userName님의 연차와 신청 내역을 확인하세요.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+      ],
+    );
+    final button = FilledButton.icon(
+      onPressed: onRequest,
+      icon: const Icon(Icons.add),
+      label: const Text('휴가 신청'),
+      style: FilledButton.styleFrom(backgroundColor: TheWeColor.black900),
+    );
+    if (mobile) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              const TheWeBackButton(),
+              Expanded(child: title),
+            ],
+          ),
+          const SizedBox(height: 14),
+          button,
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: title),
+        button,
+      ],
+    );
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  const _MetricCard({
+    required this.width,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+  final double width;
+  final String label;
+  final String value;
+  final Color color;
+  @override
+  Widget build(BuildContext context) => Container(
+    width: width,
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: .08),
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 8),
+        Text(value, style: TheWeTextStyle.metric.copyWith(color: color)),
+      ],
+    ),
+  );
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+  final String status;
+  @override
+  Widget build(BuildContext context) {
+    final color = status == '승인완료'
+        ? TheWeColor.green
+        : status == '반려'
+        ? TheWeColor.danger
+        : Colors.orange;
+    return Chip(
+      backgroundColor: color.withValues(alpha: .1),
+      side: BorderSide.none,
+      label: Text(status, style: TheWeTextStyle.caption.copyWith(color: color)),
+    );
+  }
+}
+
+BoxDecoration _surfaceDecoration() => BoxDecoration(
+  color: Colors.white,
+  borderRadius: BorderRadius.circular(18),
+  border: Border.all(color: TheWeColor.black300.withValues(alpha: .25)),
+  boxShadow: const [
+    BoxShadow(color: Color(0x0A000000), blurRadius: 16, offset: Offset(0, 8)),
+  ],
+);
+
+String _days(double value) => value == value.roundToDouble()
+    ? '${value.toInt()}일'
+    : '${value.toStringAsFixed(1)}일';

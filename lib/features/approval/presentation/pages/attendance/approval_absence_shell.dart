@@ -25,6 +25,9 @@ class ApprovalAbsencePage extends ConsumerWidget {
           if (user == null) {
             return const SizedBox.shrink();
           }
+          final currentSection = value.isAdminMode
+              ? section
+              : AttendanceSection.myStatus;
 
           final attendanceMap = ref.watch(attendanceControllerProvider);
           final snapshot = attendanceMap[user.id] ?? _seedState[user.id]!;
@@ -42,7 +45,7 @@ class ApprovalAbsencePage extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
-                    _PageHeader(section: section),
+                    _PageHeader(section: currentSection),
                     const SizedBox(height: 18),
                     Expanded(
                       child: LayoutBuilder(
@@ -51,8 +54,9 @@ class ApprovalAbsencePage extends ConsumerWidget {
                           final controlPanel = _AttendanceControlPanel(
                             user: user,
                             snapshot: snapshot,
-                            currentSection: section,
+                            currentSection: currentSection,
                             currentView: view,
+                            showManagementLinks: value.isAdminMode,
                             onNavigate: (nextSection) => _goToSection(
                               context,
                               nextSection,
@@ -68,7 +72,7 @@ class ApprovalAbsencePage extends ConsumerWidget {
                                 _openRequestDialog(context, ref, user, kind),
                           );
                           final sectionContent = _AttendanceSectionContent(
-                            section: section,
+                            section: currentSection,
                             view: view,
                             user: user,
                             snapshot: snapshot,
@@ -76,14 +80,14 @@ class ApprovalAbsencePage extends ConsumerWidget {
                             companyRows: companyRows,
                             onChangeView: (nextView) => _goToSection(
                               context,
-                              section,
+                              currentSection,
                               currentView: nextView,
                             ),
                             onOpenRequest: (kind) =>
                                 _openRequestDialog(context, ref, user, kind),
                           );
 
-                          if (!section.showsControlPanel) {
+                          if (!currentSection.showsControlPanel) {
                             return SingleChildScrollView(child: sectionContent);
                           }
 
@@ -241,6 +245,7 @@ class _AttendanceControlPanel extends StatelessWidget {
     required this.onClockIn,
     required this.onClockOut,
     required this.onOpenRequest,
+    required this.showManagementLinks,
   });
 
   final EmployeeAccount user;
@@ -251,6 +256,7 @@ class _AttendanceControlPanel extends StatelessWidget {
   final VoidCallback onClockIn;
   final VoidCallback onClockOut;
   final ValueChanged<AttendanceRequestKind> onOpenRequest;
+  final bool showManagementLinks;
 
   @override
   Widget build(BuildContext context) {
@@ -391,9 +397,11 @@ class _AttendanceControlPanel extends StatelessWidget {
           const SizedBox(height: 8),
           ...[
             AttendanceSection.myStatus,
-            AttendanceSection.companyStatus,
-            AttendanceSection.workGroup,
-            AttendanceSection.leavePolicy,
+            if (showManagementLinks) ...[
+              AttendanceSection.companyStatus,
+              AttendanceSection.workGroup,
+              AttendanceSection.leavePolicy,
+            ],
           ].map(
             (section) => _QuickLinkTile(
               label: section.title,

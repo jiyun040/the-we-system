@@ -15,6 +15,7 @@ import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_empty_state.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_mobile_document_card.dart';
 
@@ -102,6 +103,12 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                         child: _Header(
                           userName: approvalState.currentUser?.name ?? '사용자',
                           controller: searchController,
+                          showAdminAction:
+                              isPhone &&
+                              approvalState.currentUser?.isAdmin == true &&
+                              !approvalState.isAdminMode,
+                          onAdminPressed: () =>
+                              context.goNamed(AppRouteName.admin),
                           onChanged: ref
                               .read(
                                 approvalDashboardControllerProvider.notifier,
@@ -121,39 +128,41 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                         child: _PortalOverview(state: approvalState),
                       ),
                     ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        0,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: _ProcessingSection(
-                          title: '결재 대기 문서',
-                          documents: waitingDocuments,
-                          controller: waitingScrollController,
-                          onScrollLeft: () => _scrollWaitingDocuments(-300),
-                          onScrollRight: () => _scrollWaitingDocuments(300),
+                    if (approvalState.isAppEnabled(PortalAppId.approval))
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          0,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _ProcessingSection(
+                            title: '결재 대기 문서',
+                            documents: waitingDocuments,
+                            controller: waitingScrollController,
+                            onScrollLeft: () => _scrollWaitingDocuments(-300),
+                            onScrollRight: () => _scrollWaitingDocuments(300),
+                          ),
                         ),
                       ),
-                    ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: _DraftProgressSection(
-                          documents: dashboard.processingDocuments
-                              .take(10)
-                              .toList(),
-                          totalCount: dashboard.processingDocuments.length,
+                    if (approvalState.isAppEnabled(PortalAppId.approval))
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _DraftProgressSection(
+                            documents: dashboard.processingDocuments
+                                .take(10)
+                                .toList(),
+                            totalCount: dashboard.processingDocuments.length,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 ),
               ),
@@ -213,11 +222,15 @@ class _Header extends StatelessWidget {
     required this.userName,
     required this.controller,
     required this.onChanged,
+    required this.showAdminAction,
+    required this.onAdminPressed,
   });
 
   final String userName;
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final bool showAdminAction;
+  final VoidCallback onAdminPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -252,6 +265,14 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (showAdminAction) ...[
+                    const Spacer(),
+                    IconButton(
+                      onPressed: onAdminPressed,
+                      tooltip: '관리자 계정 전환',
+                      icon: const Icon(Icons.admin_panel_settings_outlined),
+                    ),
+                  ],
                 ],
               ),
             ),

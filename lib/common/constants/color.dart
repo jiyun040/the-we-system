@@ -19,6 +19,7 @@ abstract final class TheWeColor {
   static const Color white = Color(0xFFF8F8F8);
   static const Color surface = Color(0xFFF4F6FA);
   static const Color surfaceAlt = Color(0xFFF8FAFC);
+  static const Color background = surface;
   static const Color danger = Color(0xFFD62027);
   static const Color dangerSurface = Color(0xFFFCE5E8);
 }

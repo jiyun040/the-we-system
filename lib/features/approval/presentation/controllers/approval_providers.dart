@@ -10,6 +10,7 @@ part 'approval_dashboard_state.dart';
 part 'approval_dashboard_auth_actions.dart';
 part 'approval_dashboard_draft_actions.dart';
 part 'approval_dashboard_approval_actions.dart';
+part 'approval_dashboard_admin_actions.dart';
 part 'approval_mock_forms.dart';
 part 'approval_mock_documents.dart';
 part 'approval_provider_helpers.dart';
@@ -62,6 +63,40 @@ class ApprovalDashboardController
       frequentForms: _frequentForms,
       formTemplates: [..._templates],
       documents: [..._seedDocuments],
+      leaveRequests: const [
+        LeaveRequest(
+          id: 'LEAVE-SEED-1',
+          userId: 'edu_teacher',
+          type: '연차',
+          startDate: '2026-05-04',
+          endDate: '2026-05-04',
+          days: 1,
+          reason: '개인 일정',
+          status: '승인완료',
+        ),
+        LeaveRequest(
+          id: 'LEAVE-SEED-2',
+          userId: 'edu_teacher',
+          type: '연차',
+          startDate: '2026-06-12',
+          endDate: '2026-06-13',
+          days: 2,
+          reason: '가족 행사',
+          status: '승인완료',
+        ),
+      ],
+      annualLeaveByYear: const {
+        1: 15,
+        2: 15,
+        3: 16,
+        4: 16,
+        5: 17,
+        6: 17,
+        7: 18,
+        8: 18,
+        9: 19,
+        10: 19,
+      },
       selectedOrgDepartment: accounts.first.department,
       selectedOrgUserId: accounts.first.id,
     );
