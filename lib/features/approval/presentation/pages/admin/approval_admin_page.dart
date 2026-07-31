@@ -937,33 +937,143 @@ Future<void> _selectHireDate(
   TextEditingController controller,
 ) async {
   final initialDate = DateTime.tryParse(controller.text) ?? DateTime.now();
-  final selected = await showDatePicker(
-    context: context,
-    initialDate: initialDate,
-    firstDate: DateTime(1950),
-    lastDate: DateTime.now(),
-    helpText: '입사일 선택',
-    cancelText: '취소',
-    confirmText: '선택',
-    builder: (context, child) => Theme(
-      data: Theme.of(context).copyWith(
-        colorScheme: const ColorScheme.light(
-          primary: TheWeColor.blue300,
-          onPrimary: Colors.white,
-          surface: TheWeColor.surfaceAlt,
-          onSurface: TheWeColor.black900,
-        ),
-        datePickerTheme: const DatePickerThemeData(
-          backgroundColor: TheWeColor.surfaceAlt,
-          headerBackgroundColor: TheWeColor.blueSurface,
-          headerForegroundColor: TheWeColor.black900,
-        ),
-      ),
-      child: child!,
-    ),
-  );
+  final selected = await _showHireDatePicker(context, initialDate);
   if (selected == null) return;
   controller.text = selected.toIso8601String().substring(0, 10);
+}
+
+Future<DateTime?> _showHireDatePicker(
+  BuildContext context,
+  DateTime initialDate,
+) {
+  var selectedDate = initialDate;
+  return showDialog<DateTime>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setDialogState) {
+        final compact = MediaQuery.sizeOf(context).width < 600;
+        return Dialog(
+          key: const ValueKey('hire-date-picker'),
+          backgroundColor: TheWeColor.surfaceAlt,
+          insetPadding: EdgeInsets.all(compact ? 16 : 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: SizedBox(
+            width: 420,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 14 : 22,
+                compact ? 16 : 20,
+                compact ? 14 : 22,
+                compact ? 14 : 18,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: TheWeColor.blueSurface,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.calendar_month_outlined,
+                          color: TheWeColor.blue300,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text('입사일 선택', style: TheWeTextStyle.subtitle),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        icon: const Icon(Icons.close),
+                        tooltip: '닫기',
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: compact ? 12 : 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: TheWeColor.blueSurface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      _formatKoreanDate(selectedDate),
+                      textAlign: TextAlign.center,
+                      style: TheWeTextStyle.body.copyWith(
+                        color: TheWeColor.blue300,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: compact ? 4 : 8),
+                  Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.light(
+                        primary: TheWeColor.blue300,
+                        onPrimary: Colors.white,
+                        surface: TheWeColor.surfaceAlt,
+                        onSurface: TheWeColor.black900,
+                      ),
+                    ),
+                    child: CalendarDatePicker(
+                      initialDate: initialDate,
+                      firstDate: DateTime(1950),
+                      lastDate: DateTime.now(),
+                      onDateChanged: (date) =>
+                          setDialogState(() => selectedDate = date),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('취소'),
+                      ),
+                      SizedBox(width: compact ? 4 : 8),
+                      FilledButton(
+                        onPressed: () =>
+                            Navigator.pop(dialogContext, selectedDate),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: TheWeColor.black900,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: compact ? 20 : 24,
+                            vertical: 13,
+                          ),
+                        ),
+                        child: const Text('선택'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+String _formatKoreanDate(DateTime date) {
+  const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+  return '${date.year}년 ${date.month}월 ${date.day}일 '
+      '(${weekdays[date.weekday - 1]})';
 }
 
 class _OrganizationManagement extends StatelessWidget {

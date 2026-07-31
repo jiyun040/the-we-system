@@ -41,6 +41,7 @@ void main() {
     await tester.tap(find.widgetWithText(TextField, '입사일'));
     await tester.pumpAndSettle();
     expect(find.text('입사일 선택'), findsOneWidget);
+    expect(find.byKey(const ValueKey('hire-date-picker')), findsOneWidget);
     await tester.tap(find.text('취소').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('취소').last);
@@ -109,6 +110,16 @@ void main() {
       find.byKey(const ValueKey('employee-card-edu_manager')),
       findsOneWidget,
     );
+    await tester.tap(find.text('직원 추가'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextField, '입사일'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('hire-date-picker')), findsOneWidget);
+    expect(find.byType(CalendarDatePicker), findsOneWidget);
+    await tester.tap(find.text('취소').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('취소').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('APP 관리').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('양식 관리'));
