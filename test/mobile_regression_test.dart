@@ -16,6 +16,8 @@ void main() {
       appRouter.go('/');
       await tester.pumpWidget(const ProviderScope(child: MyApp()));
       await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).at(0), 'edu_teacher');
+      await tester.enterText(find.byType(TextFormField).at(1), '1234');
       await tester.tap(find.text('로그인').last);
       await tester.pumpAndSettle();
 
@@ -69,19 +71,18 @@ void main() {
 
       appRouter.go('/approval/absence?section=company-status');
       await tester.pumpAndSettle();
-      expect(find.text('전사 근태현황'), findsWidgets);
-      expect(find.text('일자별'), findsOneWidget);
-      expect(find.text('기간별'), findsOneWidget);
+      expect(find.text('내 근태현황'), findsWidgets);
+      expect(find.text('전사 근태현황'), findsNothing);
       expect(tester.takeException(), isNull);
-      await tester.tap(find.text('기간별'));
+
+      appRouter.go('/leave');
       await tester.pumpAndSettle();
-      expect(find.text('조회 기간 선택'), findsOneWidget);
-      expect(find.text('2026년 6월'), findsOneWidget);
-      expect(find.text('시작일'), findsOneWidget);
-      expect(find.text('종료일'), findsOneWidget);
+      expect(find.text('휴가 현황'), findsOneWidget);
+      expect(find.text('총 연차'), findsOneWidget);
+      expect(find.text('잔여 연차'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_back_ios_new), findsOneWidget);
       expect(tester.takeException(), isNull);
-      await tester.tap(find.byIcon(Icons.close_rounded).last);
-      await tester.pumpAndSettle();
 
       appRouter.go('/approval/settings');
       await tester.pumpAndSettle();

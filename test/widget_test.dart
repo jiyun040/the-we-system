@@ -1,4 +1,4 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/main.dart';
@@ -23,6 +23,8 @@ void main() {
       expect(find.text('로그인'), findsWidgets);
       expect(find.text('회원가입'), findsOneWidget);
 
+      await tester.enterText(find.byType(TextFormField).at(0), 'edu_teacher');
+      await tester.enterText(find.byType(TextFormField).at(1), '1234');
       await tester.ensureVisible(find.text('로그인').last);
       await tester.tap(find.text('로그인').last);
       await tester.pumpAndSettle();
@@ -30,7 +32,7 @@ void main() {
       expect(find.text('홈'), findsWidgets);
       expect(find.text('캘린더'), findsOneWidget);
       expect(find.text('공지사항'), findsOneWidget);
-      expect(find.text('인력 현황'), findsOneWidget);
+      expect(find.text('인력 현황'), findsNothing);
       expect(find.text('업무 포털'), findsNothing);
     });
   }
