@@ -74,7 +74,7 @@ class ApprovalBoxPage extends ConsumerWidget {
 
                           final selected = await showDraftFormSelectionDialog(
                             context,
-                            templates: value.formTemplates,
+                            templates: value.activeFormTemplates,
                           );
                           if (selected == null || !context.mounted) {
                             return;
@@ -133,6 +133,7 @@ class ApprovalBoxPage extends ConsumerWidget {
       'reference' => '참조/열람 대기',
       'scheduled' => '결재 예정 문서',
       'drafts' => '공용 기안 문서함',
+      'department' => '부서 문서함',
       'temporary' => '임시저장함',
       _ => '전체 결재 내역',
     };
@@ -164,6 +165,7 @@ class ApprovalBoxPage extends ConsumerWidget {
       'reference' => state.referenceDocuments,
       'scheduled' => state.scheduledDocuments,
       'drafts' => state.sharedDraftDocuments,
+      'department' => state.departmentDocuments,
       'temporary' =>
         state.authoredDocuments
             .where(
@@ -193,6 +195,12 @@ class _ArchiveTabs extends StatelessWidget {
     return Wrap(
       spacing: 8,
       children: [
+        _TabButton(
+          label: '부서 문서함',
+          routeKind: 'department',
+          selected: selected,
+          returnKind: returnKind,
+        ),
         _TabButton(
           label: '받은 결재',
           routeKind: 'received',
@@ -241,7 +249,14 @@ class _TabButton extends StatelessWidget {
   final String selected;
   final String? returnKind;
 
-  static const _tabKinds = {'received', 'sent', 'drafts', 'temporary', 'all'};
+  static const _tabKinds = {
+    'received',
+    'sent',
+    'drafts',
+    'department',
+    'temporary',
+    'all',
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -316,7 +331,8 @@ class _DocumentTable extends ConsumerWidget {
             canCancelForCurrentUser: (document) =>
                 currentUser != null &&
                 _canCancelDocument(document) &&
-                (currentUser.isAdmin || document.drafter == currentUser.name),
+                (appState?.isAdminMode == true ||
+                    document.drafter == currentUser.name),
             onCancel: (id) => ref
                 .read(approvalDashboardControllerProvider.notifier)
                 .cancelSubmission(id),
@@ -367,7 +383,7 @@ class _DocumentTable extends ConsumerWidget {
                         final canCancel =
                             currentUser != null &&
                             _canCancelDocument(document) &&
-                            (currentUser.isAdmin ||
+                            (appState?.isAdminMode == true ||
                                 document.drafter == currentUser.name);
 
                         return InkWell(

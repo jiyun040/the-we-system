@@ -44,15 +44,15 @@ class ApprovalDetailPage extends ConsumerWidget {
         .firstOrNull;
     final canApprove =
         currentUser != null &&
-        (currentUser.isAdmin || activeStep?.name == currentUser.name);
+        (appState.isAdminMode || activeStep?.name == currentUser.name);
     final canCancel =
         currentUser != null &&
-        (currentUser.isAdmin || document.drafter == currentUser.name) &&
+        (appState.isAdminMode || document.drafter == currentUser.name) &&
         document.canCancel &&
         !document.steps.skip(1).any((step) => step.status == '완료');
     final canEdit =
         currentUser != null &&
-        (currentUser.isAdmin || document.drafter == currentUser.name);
+        (appState.isAdminMode || document.drafter == currentUser.name);
 
     return Scaffold(
       backgroundColor: TheWeColor.white,

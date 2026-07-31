@@ -39,6 +39,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   String? selectedFormId;
   String? editingDocumentId;
   List<String> linkedDocuments = [];
+  bool departmentVisible = true;
   bool initialized = false;
 
   @override
@@ -152,6 +153,10 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                                 ];
                               });
                             },
+                            departmentVisible: departmentVisible,
+                            onDepartmentVisibilityChanged: (value) {
+                              setState(() => departmentVisible = value);
+                            },
                           ),
                         ),
                       );
@@ -260,6 +265,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
             content: contentController.text.trim(),
             urgent: urgent,
             linkedDocuments: linkedDocuments,
+            departmentVisible: departmentVisible,
           ),
         );
     if (id != null && mounted) {

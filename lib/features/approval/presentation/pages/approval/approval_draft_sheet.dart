@@ -8,6 +8,8 @@ class _EditableDraftSheet extends StatelessWidget {
     required this.onAddAttachment,
     required this.onAddLinkedDocument,
     required this.onRemoveLinkedDocument,
+    required this.departmentVisible,
+    required this.onDepartmentVisibilityChanged,
   });
 
   final ApprovalDocument document;
@@ -16,6 +18,8 @@ class _EditableDraftSheet extends StatelessWidget {
   final VoidCallback onAddAttachment;
   final VoidCallback onAddLinkedDocument;
   final ValueChanged<String> onRemoveLinkedDocument;
+  final bool departmentVisible;
+  final ValueChanged<bool> onDepartmentVisibilityChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -108,6 +112,38 @@ class _EditableDraftSheet extends StatelessWidget {
               maxLines: 18,
               decoration: const InputDecoration(
                 hintText: '결재 내용을 양식 안에 직접 입력하세요.',
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: departmentVisible
+                  ? TheWeColor.blueSurface
+                  : TheWeColor.dangerSurface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: departmentVisible
+                    ? TheWeColor.blue300.withValues(alpha: .35)
+                    : TheWeColor.danger.withValues(alpha: .35),
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: departmentVisible,
+                onChanged: onDepartmentVisibilityChanged,
+                title: Text('부서 문서함 열람 허용', style: TheWeTextStyle.subtitle),
+                subtitle: Text(
+                  departmentVisible
+                      ? '기본값 · 같은 부서 구성원이 문서를 열람할 수 있습니다.'
+                      : '보안 문서 · 기안자와 결재자만 열람할 수 있습니다.',
+                  style: TheWeTextStyle.caption.copyWith(
+                    color: TheWeColor.black500,
+                  ),
+                ),
               ),
             ),
           ),

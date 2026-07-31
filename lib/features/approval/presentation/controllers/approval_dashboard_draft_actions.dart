@@ -182,7 +182,16 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
         ...value.documents.where((item) => item.id != document.id),
         document,
       ]..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
-      return value.copyWith(documents: documents);
+      final restrictedIds = {...value.restrictedDocumentIds};
+      if (draft.departmentVisible) {
+        restrictedIds.remove(document.id);
+      } else {
+        restrictedIds.add(document.id);
+      }
+      return value.copyWith(
+        documents: documents,
+        restrictedDocumentIds: restrictedIds,
+      );
     });
 
     return id;
