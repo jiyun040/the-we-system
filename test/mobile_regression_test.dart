@@ -23,7 +23,12 @@ void main() {
 
       appRouter.go('/approval/new?form=purchase-request');
       await tester.pumpAndSettle();
-      expect(find.text('구매 요청서'), findsWidgets);
+      expect(find.text('비품/소모품 구입신청서'), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('document-line-0-date')),
+        findsOneWidget,
+      );
+      expect(find.text('합    계'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       appRouter.go('/approval/APR-260629-001');

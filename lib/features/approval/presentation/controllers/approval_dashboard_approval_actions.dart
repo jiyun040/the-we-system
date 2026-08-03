@@ -27,7 +27,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
     }
 
     final activeStep = document.steps[activeIndex];
-    if (!current.isAdminMode && activeStep.name != user.name) {
+    if (!current.hasAdminDocumentAccess && activeStep.name != user.name) {
       return;
     }
 
@@ -113,7 +113,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
       return;
     }
 
-    if (!current.isAdminMode && document.drafter != user.name) {
+    if (!current.hasAdminDocumentAccess && document.drafter != user.name) {
       return;
     }
 

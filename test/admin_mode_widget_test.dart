@@ -26,12 +26,52 @@ void main() {
     await tester.tap(find.text('인증'));
     await tester.pumpAndSettle();
 
-    expect(find.text('관리 홈'), findsWidgets);
+    expect(find.text('근태 관리'), findsWidgets);
     expect(
       tester.widget<Scaffold>(find.byType(Scaffold)).backgroundColor,
       TheWeColor.background,
     );
     expect(find.text('회사 운영 현황'), findsOneWidget);
+    await tester.tap(find.text('전체 직원'));
+    await tester.pumpAndSettle();
+    expect(find.text('전체 직원 연차 현황'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '교육강사'));
+    await tester.pumpAndSettle();
+    expect(find.text('교육강사 휴가 현황'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('admin-direct-leave-button')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('admin-direct-leave-reason')),
+      '관리자 직접 반영 테스트',
+    );
+    await tester.tap(find.byKey(const ValueKey('admin-direct-leave-submit')));
+    await tester.pumpAndSettle();
+    expect(find.text('관리자 등록'), findsOneWidget);
+    expect(find.textContaining('관리자 직접 반영 테스트'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byKey(const ValueKey('employee-leave-back')));
+    await tester.pumpAndSettle();
+    expect(find.text('전체 직원 연차 현황'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, '교육관리자'));
+    await tester.pumpAndSettle();
+    expect(find.text('교육관리자 휴가 현황'), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.close).last);
+    await tester.pumpAndSettle();
+    expect(find.text('전자결재 문서 관리'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('admin-document-filter-전체')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('admin-document-filter-결재대기')),
+      findsOneWidget,
+    );
+    expect(find.text('상세'), findsNWidgets(6));
+    await tester.tap(find.text('상세').first);
+    await tester.pumpAndSettle();
+    expect(find.text('결재 정보'), findsOneWidget);
+    appRouter.pop();
+    await tester.pumpAndSettle();
 
     await tester.tap(find.text('사원 관리').first);
     await tester.pumpAndSettle();
@@ -46,6 +86,18 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('취소').last);
     await tester.pumpAndSettle();
+
+    await tester.tap(find.text('조직 관리').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('부서명 수정').first);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('department-name-field')),
+      '교육운영팀',
+    );
+    await tester.tap(find.text('저장').last);
+    await tester.pumpAndSettle();
+    expect(find.text('교육운영팀'), findsWidgets);
 
     await tester.tap(find.text('APP 관리').first);
     await tester.pumpAndSettle();
@@ -71,13 +123,38 @@ void main() {
     await tester.tap(find.text('통합설정 열기'));
     await tester.pumpAndSettle();
     expect(find.text('근속연수별 연차 설정'), findsOneWidget);
-    expect(find.text('포털 및 로고'), findsNothing);
-    expect(find.text('로고 변경'), findsNothing);
-    expect(find.text('임직원 포털 명'), findsNothing);
-    expect(find.text('사용 중'), findsNWidgets(2));
+    expect(find.text('포털 및 로고'), findsOneWidget);
+    expect(find.text('로고 변경'), findsOneWidget);
+    expect(find.text('임직원 포털 명'), findsOneWidget);
+    expect(find.text('조직도 설정'), findsOneWidget);
+    expect(find.text('APP 설정'), findsOneWidget);
+    expect(find.text('관리자 권한 설정'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('integrated-app-switch-approval')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('admin-permission-admin_master')),
+      findsOneWidget,
+    );
+    const otpPolicyKey = ValueKey('security-admin-otp');
+    expect(find.byKey(otpPolicyKey), findsOneWidget);
+    final otpSwitch = find.descendant(
+      of: find.byKey(otpPolicyKey),
+      matching: find.byType(Switch),
+    );
+    expect(tester.widget<Switch>(otpSwitch).value, isTrue);
+    await tester.ensureVisible(otpSwitch);
+    await tester.pumpAndSettle();
+    await tester.tap(otpSwitch);
+    await tester.pumpAndSettle();
+    expect(tester.widget<Switch>(otpSwitch).value, isFalse);
+    await tester.tap(otpSwitch);
+    await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('annual-leave-10')), findsOneWidget);
     expect(find.byKey(const ValueKey('annual-leave-11')), findsNothing);
 
+    await tester.ensureVisible(find.byKey(const ValueKey('annual-leave-1')));
     await tester.enterText(find.byKey(const ValueKey('annual-leave-1')), '16');
     await tester.pump();
     await tester.tap(find.text('연차 설정 저장'));
@@ -101,7 +178,7 @@ void main() {
     await tester.tap(find.text('인증'));
     await tester.pumpAndSettle();
 
-    expect(find.text('관리 홈'), findsOneWidget);
+    expect(find.text('근태 관리'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
     await tester.tap(find.text('사원 관리').last);
     await tester.pumpAndSettle();

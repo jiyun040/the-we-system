@@ -9,6 +9,7 @@ import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 
 class ApprovalLeavePage extends ConsumerWidget {
   const ApprovalLeavePage({super.key});
@@ -95,7 +96,11 @@ class _LeaveContent extends ConsumerWidget {
                             '입사일 ${state.currentUser?.hireDate ?? '-'}',
                             style: TheWeTextStyle.subtitle,
                           ),
-                          Chip(label: Text('${state.currentServiceYear}년차')),
+                          Chip(
+                            label: Text(
+                              state.servicePeriodLabelFor(state.currentUser),
+                            ),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 22),
@@ -110,19 +115,25 @@ class _LeaveContent extends ConsumerWidget {
                             children: [
                               _MetricCard(
                                 width: width,
-                                label: '총 연차',
+                                label: state.leaveEntitlementLabelFor(
+                                  state.currentUser,
+                                ),
                                 value: _days(total),
                                 color: TheWeColor.blue300,
                               ),
                               _MetricCard(
                                 width: width,
-                                label: '사용 연차',
+                                label: state.leaveUsedLabelFor(
+                                  state.currentUser,
+                                ),
                                 value: _days(used),
                                 color: TheWeColor.pink,
                               ),
                               _MetricCard(
                                 width: width,
-                                label: '잔여 연차',
+                                label: state.leaveRemainingLabelFor(
+                                  state.currentUser,
+                                ),
                                 value: _days(remaining),
                                 color: TheWeColor.green,
                               ),
@@ -169,7 +180,15 @@ class _LeaveContent extends ConsumerWidget {
                     rows: state.currentUserLeaveRequests
                         .map(
                           (request) => <Widget>[
-                            _StatusChip(status: request.status),
+                            _StatusChip(
+                              status: request.status,
+                              onTap: request.status == '승인대기'
+                                  ? () => _showLeaveProgressDialog(
+                                      context,
+                                      request,
+                                    )
+                                  : null,
+                            ),
                             Text(request.type),
                             Text('${request.startDate} ~ ${request.endDate}'),
                             Text(_days(request.days)),
@@ -191,7 +210,11 @@ class _LeaveContent extends ConsumerWidget {
     WidgetRef ref,
   ) async {
     final reason = TextEditingController();
-    var type = '연차';
+    final isMonthlyLeave = state.isUnderOneYear(state.currentUser);
+    final leaveTypes = isMonthlyLeave
+        ? const ['월차', '반차', '경조 휴가', '휴가']
+        : const ['연차', '반차', '경조 휴가', '휴가'];
+    var type = leaveTypes.first;
     var start = DateTime.now().add(const Duration(days: 1));
     var end = start;
     var halfDay = false;
@@ -243,10 +266,10 @@ class _LeaveContent extends ConsumerWidget {
                     TheWeDropdown<String>(
                       value: type,
                       width: double.infinity,
-                      items: const ['연차', '반차', '경조 휴가', '휴가'],
+                      items: leaveTypes,
                       labelBuilder: (value) => value,
                       onChanged: (value) => setDialogState(() {
-                        type = value ?? '연차';
+                        type = value ?? leaveTypes.first;
                         halfDay = type == '반차';
                         requestError = '';
                       }),
@@ -322,7 +345,7 @@ class _LeaveContent extends ConsumerWidget {
                   if (requestedDays > state.remainingAnnualLeave) {
                     setDialogState(
                       () => requestError =
-                          '잔여 연차 ${_days(state.remainingAnnualLeave)}를 초과했습니다.',
+                          '${isMonthlyLeave ? '잔여 월차' : '잔여 연차'} ${_days(state.remainingAnnualLeave)}를 초과했습니다.',
                     );
                     return;
                   }
@@ -349,6 +372,62 @@ class _LeaveContent extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('휴가 신청이 등록되었습니다.')));
+  }
+
+  Future<void> _showLeaveProgressDialog(
+    BuildContext context,
+    LeaveRequest request,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: TheWeColor.surfaceAlt,
+        title: const Text('결재 진행중'),
+        content: SizedBox(
+          width: 430,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${request.type} · ${request.startDate} ~ ${request.endDate}',
+                style: TheWeTextStyle.subtitle,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                request.reason,
+                style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+              ),
+              const SizedBox(height: 20),
+              _LeaveApprovalProgressRow(
+                role: '이사',
+                name: '정효정',
+                status: request.directorStatus,
+              ),
+              const SizedBox(height: 10),
+              _LeaveApprovalProgressRow(
+                role: '대표이사',
+                name: '조상훈',
+                status: request.ceoStatus,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '이사 결재 후 대표이사 결재 창으로 자동 전달됩니다.',
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.black500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -435,8 +514,9 @@ class _MetricCard extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.status});
+  const _StatusChip({required this.status, this.onTap});
   final String status;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     final color = status == '승인완료'
@@ -444,10 +524,80 @@ class _StatusChip extends StatelessWidget {
         : status == '반려'
         ? TheWeColor.danger
         : Colors.orange;
-    return Chip(
+    return ActionChip(
+      onPressed: onTap,
       backgroundColor: color.withValues(alpha: .1),
       side: BorderSide.none,
-      label: Text(status, style: TheWeTextStyle.caption.copyWith(color: color)),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(status, style: TheWeTextStyle.caption.copyWith(color: color)),
+          if (onTap != null) ...[
+            const SizedBox(width: 3),
+            Icon(Icons.chevron_right, size: 15, color: color),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _LeaveApprovalProgressRow extends StatelessWidget {
+  const _LeaveApprovalProgressRow({
+    required this.role,
+    required this.name,
+    required this.status,
+  });
+
+  final String role;
+  final String name;
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = status == '완료';
+    final active = status == '진행중';
+    final rejected = status == '반려';
+    final color = rejected
+        ? TheWeColor.danger
+        : completed
+        ? TheWeColor.green
+        : active
+        ? TheWeColor.blue300
+        : TheWeColor.black300;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: .25)),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: color.withValues(alpha: .15),
+            child: Icon(
+              completed
+                  ? Icons.check
+                  : rejected
+                  ? Icons.close
+                  : Icons.hourglass_top,
+              size: 18,
+              color: color,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text('$role $name', style: TheWeTextStyle.subtitle)),
+          Text(
+            status,
+            style: TheWeTextStyle.caption.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

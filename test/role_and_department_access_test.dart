@@ -67,6 +67,44 @@ void main() {
     );
   });
 
+  test('임시저장 문서와 보안 문서는 부서 비결재자에게 노출되지 않는다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+
+    await notifier.login('edu_teacher', '1234');
+    final draftId = await notifier.saveDraft(
+      formId: 'business-draft',
+      title: '작성 중 문서',
+      content: '아직 상신하지 않은 내용',
+      linkedDocuments: const [],
+      departmentVisible: false,
+      formFields: const {},
+      lineItems: const [],
+    );
+    expect(draftId, isNotNull);
+
+    notifier.logout();
+    await notifier.login('edu_manager', '1234');
+    notifier.leaveAdminMode();
+    final coworkerState = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    expect(
+      coworkerState.departmentDocuments.any(
+        (document) => document.id == draftId,
+      ),
+      isFalse,
+    );
+    expect(
+      coworkerState.visibleDocuments.any((document) => document.id == draftId),
+      isFalse,
+    );
+  });
+
   test('관리자는 직원을 추가하고 새 계정으로 로그인할 수 있다', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -156,7 +194,107 @@ void main() {
         .requireValue;
     expect(updated.annualLeaveByYear[1], 18);
     expect(updated.annualLeaveByYear[2], 19);
+    expect(
+      notifier.updateAnnualLeavePolicies(policy, monthlyLeavePerMonth: 2),
+      isNull,
+    );
+    expect(
+      container
+          .read(approvalDashboardControllerProvider)
+          .requireValue
+          .monthlyLeavePerMonth,
+      2,
+    );
     expect(notifier.updateAnnualLeavePolicies({...policy, 3: 0}), isNotNull);
+  });
+
+  test('1년 미만 직원은 근속월에 따라 월차가 발생한다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+    final now = DateTime.now();
+    final hireDate = DateTime(now.year, now.month - 3, 1);
+    final hireDateText =
+        '${hireDate.year.toString().padLeft(4, '0')}-${hireDate.month.toString().padLeft(2, '0')}-${hireDate.day.toString().padLeft(2, '0')}';
+
+    expect(
+      notifier.addEmployee(
+        id: 'monthly_employee',
+        password: '1234',
+        name: '월차직원',
+        department: '교육관리팀',
+        position: '사원',
+        email: 'monthly@thewe.co.kr',
+        hireDate: hireDateText,
+        isAdmin: false,
+      ),
+      isNull,
+    );
+
+    final state = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    final employee = state.accounts.firstWhere(
+      (account) => account.id == 'monthly_employee',
+    );
+    expect(state.isUnderOneYear(employee), isTrue);
+    expect(state.completedServiceMonthsFor(employee), 3);
+    expect(state.totalAnnualLeaveFor(employee), 3);
+    expect(state.leaveEntitlementLabelFor(employee), '발생 월차');
+  });
+
+  test('관리자 직접 휴가 등록은 승인 없이 즉시 차감되고 사유가 남는다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+    expect(await notifier.login('admin_master', 'admin1234'), isTrue);
+    expect(notifier.enterAdminMode('123456'), isTrue);
+
+    final before = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    final employee = before.accounts.firstWhere(
+      (account) => account.id == 'edu_teacher',
+    );
+    final remainingBefore = before.remainingAnnualLeaveFor(employee);
+
+    expect(
+      notifier.addLeaveForEmployee(
+        userId: employee.id,
+        type: '연차',
+        startDate: '2026-08-03',
+        endDate: '2026-08-03',
+        days: 1,
+        reason: '결재 시스템 미사용분 관리자 반영',
+      ),
+      isNull,
+    );
+    final updated = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    final registered = updated.leaveRequests.first;
+    expect(registered.status, '승인완료');
+    expect(registered.directEntry, isTrue);
+    expect(registered.registeredBy, '시스템관리자');
+    expect(registered.reason, '결재 시스템 미사용분 관리자 반영');
+    expect(updated.remainingAnnualLeaveFor(employee), remainingBefore - 1);
+    expect(
+      notifier.addLeaveForEmployee(
+        userId: employee.id,
+        type: '연차',
+        startDate: '2026-08-04',
+        endDate: '2026-08-04',
+        days: 1,
+        reason: '  ',
+      ),
+      isNotNull,
+    );
   });
 
   test('휴가 신청 즉시 잔여 연차가 차감되고 반려되면 복구된다', () async {
@@ -192,5 +330,99 @@ void main() {
     state = container.read(approvalDashboardControllerProvider).requireValue;
     expect(state.pendingAnnualLeave, 0);
     expect(state.remainingAnnualLeave, remainingBefore);
+  });
+
+  test('휴가는 이사 승인 후 대표이사 결재로 순차 전달된다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+
+    await notifier.login('edu_teacher', '1234');
+    notifier.requestLeave(
+      type: '연차',
+      startDate: '2026-08-10',
+      endDate: '2026-08-10',
+      days: 1,
+      reason: '개인 일정',
+    );
+    var state = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    final requestId = state.currentUserLeaveRequests.first.id;
+    expect(state.currentUserLeaveRequests.first.directorStatus, '진행중');
+    expect(state.currentUserLeaveRequests.first.ceoStatus, '결재 예정');
+
+    notifier.logout();
+    await notifier.login('director', '1234');
+    expect(notifier.actOnLeave(requestId, approve: true), isTrue);
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    var request = state.leaveRequests
+        .where((item) => item.id == requestId)
+        .first;
+    expect(request.status, '승인대기');
+    expect(request.directorStatus, '완료');
+    expect(request.ceoStatus, '진행중');
+
+    notifier.logout();
+    await notifier.login('ceo', '1234');
+    expect(notifier.actOnLeave(requestId, approve: true), isTrue);
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    request = state.leaveRequests.where((item) => item.id == requestId).first;
+    expect(request.status, '승인완료');
+    expect(request.ceoStatus, '완료');
+  });
+
+  test('PDF형 결재 문서는 상신취소와 반려 후에도 입력 내용을 유지한다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+
+    await notifier.login('edu_teacher', '1234');
+    const draft = ApprovalRequestDraft(
+      formId: 'expense-slip',
+      title: '교육비 지출결의',
+      content: '교육비 지급을 요청합니다.',
+      urgent: false,
+      linkedDocuments: ['[첨부] 거래명세서.pdf'],
+      documentLayout: ApprovalDocumentLayout.expense,
+      formFields: {'note': '교육 운영비'},
+      lineItems: [
+        {
+          'date': '2026-08-01',
+          'item': '교육비',
+          'purpose': '직무교육',
+          'amount': '300000',
+        },
+      ],
+    );
+    final documentId = await notifier.requestApproval(draft: draft);
+    expect(documentId, isNotNull);
+
+    await notifier.cancelSubmission(documentId!);
+    var state = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    var document = state.documents.where((item) => item.id == documentId).first;
+    expect(document.status, '작성중');
+    expect(document.content, draft.content);
+    expect(document.lineItems.first['amount'], '300000');
+    expect(document.linkedDocuments, contains('[첨부] 거래명세서.pdf'));
+
+    await notifier.requestApproval(documentId: documentId, draft: draft);
+    notifier.logout();
+    await notifier.login('edu_manager', '1234');
+    expect(notifier.enterAdminMode('123456'), isTrue);
+    await notifier.approveDocument(documentId, action: '반려', opinion: '증빙 보완');
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    document = state.documents.where((item) => item.id == documentId).first;
+    expect(document.status, '반려');
+    expect(document.steps.any((step) => step.status == '반려'), isTrue);
+    expect(document.formFields['note'], '교육 운영비');
   });
 }

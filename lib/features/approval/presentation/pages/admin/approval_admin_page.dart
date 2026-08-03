@@ -1,11 +1,17 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_logo.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 
@@ -21,7 +27,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
   bool settingsUnlocked = false;
 
   static const destinations = [
-    (Icons.dashboard_outlined, '관리 홈'),
+    (Icons.dashboard_outlined, '근태 관리'),
     (Icons.people_outline, '사원 관리'),
     (Icons.account_tree_outlined, '조직 관리'),
     (Icons.apps_outlined, 'APP 관리'),
@@ -59,6 +65,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                   _AdminNavigation(
                     selectedIndex: selectedIndex,
                     portalName: state.portalName,
+                    logoBytes: state.customLogoBytes,
                     onSelected: (value) =>
                         setState(() => selectedIndex = value),
                     onLeave: _leaveAdmin,
@@ -90,7 +97,8 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                   2 => _OrganizationManagement(state: state),
                                   3 => _AppManagement(state: state),
                                   _ =>
-                                    settingsUnlocked
+                                    !state.settingsPasswordEnabled ||
+                                            settingsUnlocked
                                         ? _IntegratedSettings(state: state)
                                         : _SettingsPasswordGate(
                                             onUnlocked: () => setState(
@@ -145,6 +153,8 @@ class _AdminAccessGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mobile = MediaQuery.sizeOf(context).width < 600;
+    final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
+    final otpEnabled = state?.adminOtpEnabled ?? true;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(mobile ? 18 : 0),
@@ -169,7 +179,9 @@ class _AdminAccessGate extends ConsumerWidget {
               ),
               const SizedBox(height: 7),
               Text(
-                '관리자 권한 계정에서 OTP 인증 후 접근할 수 있습니다.',
+                otpEnabled
+                    ? '관리자 권한 계정에서 OTP 인증 후 접근할 수 있습니다.'
+                    : '관리자 권한이 확인되어 바로 관리자 화면으로 이동할 수 있습니다.',
                 textAlign: TextAlign.center,
                 style: TheWeTextStyle.caption.copyWith(
                   color: TheWeColor.black500,
@@ -178,8 +190,12 @@ class _AdminAccessGate extends ConsumerWidget {
               SizedBox(height: mobile ? 15 : 22),
               FilledButton(
                 onPressed: () async {
-                  final otp = await _requestOtp(context);
-                  if (otp == null) return;
+                  var otp = '';
+                  if (otpEnabled) {
+                    final verified = await _requestOtp(context);
+                    if (verified == null) return;
+                    otp = verified;
+                  }
                   final success = ref
                       .read(approvalDashboardControllerProvider.notifier)
                       .enterAdminMode(otp);
@@ -192,7 +208,7 @@ class _AdminAccessGate extends ConsumerWidget {
                     );
                   }
                 },
-                child: const Text('OTP 인증'),
+                child: Text(otpEnabled ? 'OTP 인증' : '관리자 화면 열기'),
               ),
               TextButton(
                 onPressed: () => context.goNamed(AppRouteName.home),
@@ -210,11 +226,13 @@ class _AdminNavigation extends StatelessWidget {
   const _AdminNavigation({
     required this.selectedIndex,
     required this.portalName,
+    required this.logoBytes,
     required this.onSelected,
     required this.onLeave,
   });
   final int selectedIndex;
   final String portalName;
+  final Uint8List? logoBytes;
   final ValueChanged<int> onSelected;
   final VoidCallback onLeave;
 
@@ -233,7 +251,7 @@ class _AdminNavigation extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const TheWeLogo(),
+          TheWeLogo(bytes: logoBytes),
           const SizedBox(height: 8),
           Text(
             portalName,
@@ -349,6 +367,13 @@ class _AdminDashboard extends ConsumerWidget {
         .where((item) => item.status == '승인대기')
         .toList();
     final mobile = MediaQuery.sizeOf(context).width < 600;
+    final currentUser = state.currentUser;
+    final isLeaveDecisionAccount =
+        currentUser?.id == 'director' ||
+        currentUser?.id == 'ceo' ||
+        currentUser?.position.contains('이사') == true ||
+        currentUser?.position.contains('상무') == true ||
+        currentUser?.position.contains('대표') == true;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -375,6 +400,7 @@ class _AdminDashboard extends ConsumerWidget {
                   icon: Icons.people_outline,
                   label: '전체 직원',
                   value: '${state.accounts.length}명',
+                  onTap: () => _showEmployeeLeaveDirectory(context, state),
                 ),
                 _AdminMetric(
                   width: width,
@@ -400,6 +426,24 @@ class _AdminDashboard extends ConsumerWidget {
         ),
         SizedBox(height: mobile ? 22 : 28),
         Text(
+          '전자결재 문서 관리',
+          style: mobile
+              ? TheWeTextStyle.title.copyWith(fontSize: 19)
+              : TheWeTextStyle.title,
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '전체 결재 대기·완료·반려·작성 문서를 조회하고 현재 결재를 처리할 수 있습니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 12),
+        _AdminDocumentManagement(
+          documents: state.hasAdminDocumentAccess
+              ? state.documents
+              : state.visibleDocuments,
+        ),
+        SizedBox(height: mobile ? 22 : 28),
+        Text(
           '휴가 승인 관리',
           style: mobile
               ? TheWeTextStyle.title.copyWith(fontSize: 19)
@@ -421,14 +465,34 @@ class _AdminDashboard extends ConsumerWidget {
             return _PendingLeaveCard(
               employee: employee,
               request: request,
+              showDetails: isLeaveDecisionAccount,
+              canAct: state.canActOnLeave(request),
               onReject: () => ref
                   .read(approvalDashboardControllerProvider.notifier)
-                  .updateLeaveStatus(request.id, '반려'),
+                  .actOnLeave(request.id, approve: false),
               onApprove: () => ref
                   .read(approvalDashboardControllerProvider.notifier)
-                  .updateLeaveStatus(request.id, '승인완료'),
+                  .actOnLeave(request.id, approve: true),
             );
           })
+        else if (!isLeaveDecisionAccount)
+          TheWeDataTable(
+            headers: const ['신청 직원', '결재 상태'],
+            columnFlexes: const [1.8, 1.2],
+            minWidth: 620,
+            rows: pendingLeaves.map((request) {
+              final employee = state.accounts
+                  .where((item) => item.id == request.userId)
+                  .firstOrNull;
+              return <Widget>[
+                Text(
+                  '${employee?.name ?? request.userId} · ${employee?.department ?? ''}',
+                  textAlign: TextAlign.center,
+                ),
+                const Text('대표·이사 결재 진행중'),
+              ];
+            }).toList(),
+          )
         else
           TheWeDataTable(
             headers: const ['직원', '종류', '기간', '일수', '처리'],
@@ -445,24 +509,30 @@ class _AdminDashboard extends ConsumerWidget {
                 Text(request.type),
                 Text('${request.startDate} ~ ${request.endDate}'),
                 Text('${request.days}일'),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextButton(
-                      onPressed: () => ref
-                          .read(approvalDashboardControllerProvider.notifier)
-                          .updateLeaveStatus(request.id, '반려'),
-                      child: const Text('반려'),
-                    ),
-                    const SizedBox(width: 6),
-                    FilledButton(
-                      onPressed: () => ref
-                          .read(approvalDashboardControllerProvider.notifier)
-                          .updateLeaveStatus(request.id, '승인완료'),
-                      child: const Text('승인'),
-                    ),
-                  ],
-                ),
+                state.canActOnLeave(request)
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextButton(
+                            onPressed: () => ref
+                                .read(
+                                  approvalDashboardControllerProvider.notifier,
+                                )
+                                .actOnLeave(request.id, approve: false),
+                            child: const Text('반려'),
+                          ),
+                          const SizedBox(width: 6),
+                          FilledButton(
+                            onPressed: () => ref
+                                .read(
+                                  approvalDashboardControllerProvider.notifier,
+                                )
+                                .actOnLeave(request.id, approve: true),
+                            child: const Text('승인'),
+                          ),
+                        ],
+                      )
+                    : const Text('다음 결재 대기'),
               ];
             }).toList(),
           ),
@@ -471,16 +541,234 @@ class _AdminDashboard extends ConsumerWidget {
   }
 }
 
+class _AdminDocumentManagement extends StatefulWidget {
+  const _AdminDocumentManagement({required this.documents});
+
+  final List<ApprovalDocument> documents;
+
+  @override
+  State<_AdminDocumentManagement> createState() =>
+      _AdminDocumentManagementState();
+}
+
+class _AdminDocumentManagementState extends State<_AdminDocumentManagement> {
+  String selectedStatus = '전체';
+
+  @override
+  Widget build(BuildContext context) {
+    final mobile = MediaQuery.sizeOf(context).width < 700;
+    final sorted = [...widget.documents]
+      ..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
+    final visible = selectedStatus == '전체'
+        ? sorted
+        : sorted
+              .where((document) => document.status == selectedStatus)
+              .toList();
+    final statuses = ['전체', '결재대기', '완료', '반려', '작성중'];
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(mobile ? 14 : 18),
+      decoration: _adminSurface(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: statuses.map((status) {
+              final count = status == '전체'
+                  ? sorted.length
+                  : sorted
+                        .where((document) => document.status == status)
+                        .length;
+              return ChoiceChip(
+                key: ValueKey('admin-document-filter-$status'),
+                selected: selectedStatus == status,
+                label: Text('${_adminDocumentStatusLabel(status)} $count'),
+                onSelected: (_) => setState(() => selectedStatus = status),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 14),
+          if (visible.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30),
+              child: Center(
+                child: Text(
+                  '해당 상태의 전자결재 문서가 없습니다.',
+                  style: TheWeTextStyle.body.copyWith(
+                    color: TheWeColor.black500,
+                  ),
+                ),
+              ),
+            )
+          else if (mobile)
+            ...visible.map((document) => _AdminDocumentCard(document: document))
+          else
+            TheWeDataTable(
+              headers: const ['상태', '문서명', '기안자/부서', '양식', '기안일', '진행률', '관리'],
+              columnFlexes: const [1, 2.6, 1.45, 1.4, 1.1, .8, 1],
+              minWidth: 1080,
+              rows: visible
+                  .map(
+                    (document) => <Widget>[
+                      _AdminDocumentStatus(status: document.status),
+                      Text(
+                        document.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
+                        '${document.drafter}\n${document.department}',
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(
+                        document.form,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                      Text(document.draftedAt),
+                      Text('${document.progress}%'),
+                      OutlinedButton(
+                        onPressed: () => _openAdminDocument(context, document),
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(76, 40),
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                        ),
+                        child: const Text('상세', maxLines: 1, softWrap: false),
+                      ),
+                    ],
+                  )
+                  .toList(),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AdminDocumentCard extends StatelessWidget {
+  const _AdminDocumentCard({required this.document});
+
+  final ApprovalDocument document;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: ValueKey('admin-document-${document.id}'),
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: TheWeColor.surfaceAlt,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: TheWeColor.black300.withValues(alpha: .24)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            _AdminDocumentStatus(status: document.status),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                document.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TheWeTextStyle.subtitle.copyWith(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(
+          '${document.drafter} · ${document.department} · ${document.form}',
+          style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: LinearProgressIndicator(
+                value: document.progress / 100,
+                minHeight: 6,
+                borderRadius: BorderRadius.circular(999),
+                color: TheWeColor.blue300,
+                backgroundColor: TheWeColor.blueSurface,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text('${document.progress}%'),
+            const SizedBox(width: 10),
+            OutlinedButton(
+              onPressed: () => _openAdminDocument(context, document),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(68, 38),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              child: const Text('상세', maxLines: 1, softWrap: false),
+            ),
+          ],
+        ),
+      ],
+    ),
+  );
+}
+
+class _AdminDocumentStatus extends StatelessWidget {
+  const _AdminDocumentStatus({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status) {
+      '완료' => TheWeColor.green,
+      '반려' => TheWeColor.danger,
+      '작성중' => TheWeColor.black500,
+      _ => TheWeColor.blue300,
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: .1),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: .28)),
+      ),
+      child: Text(
+        _adminDocumentStatusLabel(status),
+        style: TheWeTextStyle.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+}
+
+String _adminDocumentStatusLabel(String status) =>
+    status == '결재대기' ? '결재 대기' : status;
+
+void _openAdminDocument(BuildContext context, ApprovalDocument document) {
+  context.pushNamed(AppRouteName.detail, pathParameters: {'id': document.id});
+}
+
 class _PendingLeaveCard extends StatelessWidget {
   const _PendingLeaveCard({
     required this.employee,
     required this.request,
+    required this.showDetails,
+    required this.canAct,
     required this.onReject,
     required this.onApprove,
   });
 
   final EmployeeAccount? employee;
   final LeaveRequest request;
+  final bool showDetails;
+  final bool canAct;
   final VoidCallback onReject;
   final VoidCallback onApprove;
 
@@ -501,35 +789,40 @@ class _PendingLeaveCard extends StatelessWidget {
                 style: TheWeTextStyle.subtitle.copyWith(fontSize: 16),
               ),
             ),
-            Chip(
-              label: Text(request.type),
-              visualDensity: VisualDensity.compact,
-            ),
+            if (showDetails)
+              Chip(
+                label: Text(request.type),
+                visualDensity: VisualDensity.compact,
+              ),
           ],
         ),
         const SizedBox(height: 6),
         Text(
-          '${request.startDate} ~ ${request.endDate} · ${request.days}일',
+          showDetails
+              ? '${request.startDate} ~ ${request.endDate} · ${request.days}일'
+              : '대표·이사 결재 진행중',
           style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
         ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: onReject,
-                child: const Text('반려'),
+        if (canAct) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: onReject,
+                  child: const Text('반려'),
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: FilledButton(
-                onPressed: onApprove,
-                child: const Text('승인'),
+              const SizedBox(width: 8),
+              Expanded(
+                child: FilledButton(
+                  onPressed: onApprove,
+                  child: const Text('승인'),
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ],
     ),
   );
@@ -1076,11 +1369,11 @@ String _formatKoreanDate(DateTime date) {
       '(${weekdays[date.weekday - 1]})';
 }
 
-class _OrganizationManagement extends StatelessWidget {
+class _OrganizationManagement extends ConsumerWidget {
   const _OrganizationManagement({required this.state});
   final ApprovalDashboardState state;
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context, WidgetRef ref) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text('조직도 및 부서 관리', style: TheWeTextStyle.title),
@@ -1123,6 +1416,12 @@ class _OrganizationManagement extends StatelessWidget {
                           ),
                         ),
                         Chip(label: Text('${members.length}명')),
+                        IconButton(
+                          onPressed: () =>
+                              _renameDepartment(context, ref, department),
+                          icon: const Icon(Icons.edit_outlined, size: 19),
+                          tooltip: '부서명 수정',
+                        ),
                       ],
                     ),
                     const Divider(height: 26),
@@ -1146,6 +1445,90 @@ class _OrganizationManagement extends StatelessWidget {
       ),
     ],
   );
+}
+
+Future<void> _renameDepartment(
+  BuildContext context,
+  WidgetRef ref,
+  String department,
+) async {
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => _RenameDepartmentDialog(
+      department: department,
+      onSave: (nextName) => ref
+          .read(approvalDashboardControllerProvider.notifier)
+          .renameDepartment(department, nextName),
+    ),
+  );
+}
+
+class _RenameDepartmentDialog extends StatefulWidget {
+  const _RenameDepartmentDialog({
+    required this.department,
+    required this.onSave,
+  });
+
+  final String department;
+  final String? Function(String nextName) onSave;
+
+  @override
+  State<_RenameDepartmentDialog> createState() =>
+      _RenameDepartmentDialogState();
+}
+
+class _RenameDepartmentDialogState extends State<_RenameDepartmentDialog> {
+  late final TextEditingController _controller;
+  String _error = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.department);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: TheWeColor.surfaceAlt,
+      title: const Text('부서명 수정'),
+      content: SizedBox(
+        width: 420,
+        child: TextField(
+          key: const ValueKey('department-name-field'),
+          controller: _controller,
+          autofocus: true,
+          decoration: InputDecoration(
+            labelText: '부서명',
+            errorText: _error.isEmpty ? null : _error,
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final message = widget.onSave(_controller.text);
+            if (message != null) {
+              setState(() => _error = message);
+              return;
+            }
+            Navigator.pop(context);
+          },
+          child: const Text('저장'),
+        ),
+      ],
+    );
+  }
 }
 
 class _AppManagement extends ConsumerWidget {
@@ -1555,7 +1938,7 @@ class _FormTemplateDescription extends StatelessWidget {
       Text(template.name, style: TheWeTextStyle.subtitle),
       const SizedBox(height: 3),
       Text(
-        '${template.category} · ${template.description}',
+        '${template.category} · ${ApprovalDocumentLayout.labels[template.documentLayout]} · ${template.description}',
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
@@ -1605,6 +1988,10 @@ Future<void> _showFormEditor(
   final description = TextEditingController(text: template?.description);
   final defaultTitle = TextEditingController(text: template?.defaultTitle);
   final defaultContent = TextEditingController(text: template?.defaultContent);
+  final lineItemRows = TextEditingController(
+    text: '${template?.lineItemRows ?? 8}',
+  );
+  var documentLayout = template?.documentLayout ?? ApprovalDocumentLayout.basic;
   var error = '';
 
   await showDialog<void>(
@@ -1646,6 +2033,30 @@ Future<void> _showFormEditor(
                   maxLines: 6,
                   decoration: const InputDecoration(labelText: '기본 본문'),
                 ),
+                const SizedBox(height: 10),
+                TheWeDropdown<String>(
+                  value: documentLayout,
+                  width: double.infinity,
+                  items: ApprovalDocumentLayout.labels.keys.toList(),
+                  labelBuilder: (value) =>
+                      ApprovalDocumentLayout.labels[value] ?? value,
+                  onChanged: (value) => setDialogState(
+                    () =>
+                        documentLayout = value ?? ApprovalDocumentLayout.basic,
+                  ),
+                ),
+                if (documentLayout != ApprovalDocumentLayout.basic &&
+                    documentLayout != ApprovalDocumentLayout.payroll) ...[
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: lineItemRows,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: '문서 표 입력 행 수',
+                      helperText: 'PDF형 문서에 표시할 입력 행 수를 설정합니다.',
+                    ),
+                  ),
+                ],
                 if (error.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Align(
@@ -1678,6 +2089,9 @@ Future<void> _showFormEditor(
                     description: description.text,
                     defaultTitle: defaultTitle.text,
                     defaultContent: defaultContent.text,
+                    documentLayout: documentLayout,
+                    lineItemRows:
+                        int.tryParse(lineItemRows.text)?.clamp(1, 30) ?? 8,
                   );
               if (message != null) {
                 setDialogState(() => error = message);
@@ -1759,50 +2173,407 @@ class _IntegratedSettings extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('로그인 및 권한 보안', style: TheWeTextStyle.title),
+        Text('포털 및 로고', style: TheWeTextStyle.title),
         const SizedBox(height: 6),
         Text(
-          '아래 보안 정책은 현재 관리자 인증 흐름에 필수로 적용되어 있습니다.',
+          '일반 계정과 관리자 계정에 공통으로 표시할 포털명과 로고를 관리합니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 12),
+        _BrandingSettingsCard(state: state),
+        const SizedBox(height: 24),
+        Text('조직도 설정', style: TheWeTextStyle.title),
+        const SizedBox(height: 6),
+        Text(
+          '부서 구성과 소속 인원을 확인하고 부서명을 수정합니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 12),
+        _IntegratedOrganizationSettings(state: state),
+        const SizedBox(height: 24),
+        Text('APP 설정', style: TheWeTextStyle.title),
+        const SizedBox(height: 6),
+        Text(
+          '일반 계정 홈과 메뉴에 표시할 업무 APP을 설정합니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 12),
+        _IntegratedAppSettings(state: state),
+        const SizedBox(height: 24),
+        Text('로그인·권한·2차 인증', style: TheWeTextStyle.title),
+        const SizedBox(height: 6),
+        Text(
+          '관리자 로그인과 민감 설정, 전체 문서 접근 정책을 관리합니다.',
           style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
         ),
         const SizedBox(height: 12),
         Container(
           decoration: _adminSurface(),
-          child: const Column(
+          child: Column(
             children: [
               _SecurityPolicyTile(
+                key: const ValueKey('security-admin-otp'),
                 icon: Icons.phonelink_lock_outlined,
                 title: '관리자 OTP 2차 인증',
-                subtitle: '관리자 모드 전환 시 6자리 OTP 인증을 필수로 요구합니다.',
+                subtitle: '관리자 로그인 및 관리자 모드 전환 시 OTP 인증을 요구합니다.',
+                value: state.adminOtpEnabled,
+                onChanged: (value) => ref
+                    .read(approvalDashboardControllerProvider.notifier)
+                    .updateSecurityPolicy(adminOtpEnabled: value),
               ),
-              Divider(height: 1),
+              const Divider(height: 1),
               _SecurityPolicyTile(
+                key: const ValueKey('security-settings-password'),
                 icon: Icons.password_outlined,
                 title: '통합설정 비밀번호 재확인',
                 subtitle: '통합설정 진입 전에 현재 계정 비밀번호를 다시 확인합니다.',
+                value: state.settingsPasswordEnabled,
+                onChanged: (value) => ref
+                    .read(approvalDashboardControllerProvider.notifier)
+                    .updateSecurityPolicy(settingsPasswordEnabled: value),
+              ),
+              const Divider(height: 1),
+              _SecurityPolicyTile(
+                key: const ValueKey('security-admin-documents'),
+                icon: Icons.folder_shared_outlined,
+                title: '관리자 전체 결재 문서 열람·처리',
+                subtitle: '관리자가 모든 결재 대기·완료 문서를 조회하고 현재 결재를 처리합니다.',
+                value: state.adminDocumentAccessEnabled,
+                onChanged: (value) => ref
+                    .read(approvalDashboardControllerProvider.notifier)
+                    .updateSecurityPolicy(adminDocumentAccessEnabled: value),
               ),
             ],
           ),
         ),
         const SizedBox(height: 24),
+        Text('관리자 권한 설정', style: TheWeTextStyle.title),
+        const SizedBox(height: 6),
+        Text(
+          '관리자 모드와 통합설정에 접근할 계정을 지정합니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 12),
+        _AdminPermissionSettings(state: state),
+        const SizedBox(height: 24),
         Text('근속연수별 연차 설정', style: TheWeTextStyle.title),
         const SizedBox(height: 12),
-        _AnnualLeavePolicyEditor(policy: state.annualLeaveByYear),
+        _AnnualLeavePolicyEditor(
+          policy: state.annualLeaveByYear,
+          monthlyLeavePerMonth: state.monthlyLeavePerMonth,
+        ),
       ],
+    );
+  }
+}
+
+class _IntegratedOrganizationSettings extends ConsumerWidget {
+  const _IntegratedOrganizationSettings({required this.state});
+
+  final ApprovalDashboardState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Container(
+    decoration: _adminSurface(),
+    clipBehavior: Clip.antiAlias,
+    child: Material(
+      color: Colors.transparent,
+      child: Column(
+        children: [
+          for (var index = 0; index < state.departments.length; index++) ...[
+            Builder(
+              builder: (context) {
+                final department = state.departments[index];
+                final members =
+                    state.accounts
+                        .where((account) => account.department == department)
+                        .toList()
+                      ..sort((a, b) => a.name.compareTo(b.name));
+                return ExpansionTile(
+                  key: PageStorageKey('organization-$department'),
+                  tilePadding: const EdgeInsets.only(left: 12, right: 10),
+                  childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+                  leading: const Icon(
+                    Icons.folder_shared_outlined,
+                    color: TheWeColor.blue300,
+                  ),
+                  title: Text(department, style: TheWeTextStyle.subtitle),
+                  subtitle: Text('${members.length}명 소속 · 눌러서 구성원 확인'),
+                  trailing: IconButton(
+                    onPressed: () =>
+                        _renameDepartment(context, ref, department),
+                    icon: const Icon(Icons.edit_outlined),
+                    tooltip: '부서명 수정',
+                  ),
+                  children: [
+                    if (members.isEmpty)
+                      const ListTile(
+                        dense: true,
+                        leading: Icon(Icons.person_off_outlined),
+                        title: Text('소속 직원이 없습니다.'),
+                      )
+                    else
+                      ...members.map(
+                        (member) => Padding(
+                          padding: const EdgeInsets.only(top: 7),
+                          child: Material(
+                            color: TheWeColor.surfaceAlt,
+                            clipBehavior: Clip.antiAlias,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: TheWeColor.black300.withValues(
+                                  alpha: .3,
+                                ),
+                              ),
+                            ),
+                            child: ListTile(
+                              dense: true,
+                              leading: CircleAvatar(
+                                radius: 18,
+                                backgroundColor: TheWeColor.blueSurface,
+                                child: Text(member.name.substring(0, 1)),
+                              ),
+                              title: Text(
+                                member.name,
+                                style: TheWeTextStyle.body.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${member.position} · ${member.id}',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            if (index != state.departments.length - 1) const Divider(height: 1),
+          ],
+        ],
+      ),
+    ),
+  );
+}
+
+class _BrandingSettingsCard extends ConsumerStatefulWidget {
+  const _BrandingSettingsCard({required this.state});
+
+  final ApprovalDashboardState state;
+
+  @override
+  ConsumerState<_BrandingSettingsCard> createState() =>
+      _BrandingSettingsCardState();
+}
+
+class _BrandingSettingsCardState extends ConsumerState<_BrandingSettingsCard> {
+  late final TextEditingController portalNameController;
+
+  @override
+  void initState() {
+    super.initState();
+    portalNameController = TextEditingController(text: widget.state.portalName);
+  }
+
+  @override
+  void didUpdateWidget(covariant _BrandingSettingsCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.portalName != widget.state.portalName &&
+        portalNameController.text != widget.state.portalName) {
+      portalNameController.text = widget.state.portalName;
+    }
+  }
+
+  @override
+  void dispose() {
+    portalNameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mobile = MediaQuery.sizeOf(context).width < 600;
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(mobile ? 15 : 22),
+      decoration: _adminSurface(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (mobile)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TheWeLogo(height: 66, bytes: widget.state.customLogoBytes),
+                const SizedBox(height: 12),
+                _logoActions(context),
+              ],
+            )
+          else
+            Row(
+              children: [
+                TheWeLogo(height: 76, bytes: widget.state.customLogoBytes),
+                const SizedBox(width: 22),
+                Expanded(
+                  child: Text(
+                    widget.state.customLogoFileName ?? '기본 프로젝트 로고 사용 중',
+                    style: TheWeTextStyle.body.copyWith(
+                      color: TheWeColor.black500,
+                    ),
+                  ),
+                ),
+                _logoActions(context),
+              ],
+            ),
+          const SizedBox(height: 18),
+          TextField(
+            key: const ValueKey('portal-name-field'),
+            controller: portalNameController,
+            decoration: const InputDecoration(labelText: '임직원 포털 명'),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: _savePortalName,
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: const Text('포털 명 저장'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _logoActions(BuildContext context) => Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: [
+      OutlinedButton.icon(
+        key: const ValueKey('portal-logo-upload'),
+        onPressed: _pickLogo,
+        icon: const Icon(Icons.upload_file_outlined, size: 18),
+        label: const Text('로고 변경'),
+      ),
+      TextButton(
+        onPressed: widget.state.customLogoBytes == null
+            ? null
+            : () => ref
+                  .read(approvalDashboardControllerProvider.notifier)
+                  .resetPortalLogo(),
+        child: const Text('기본 로고'),
+      ),
+    ],
+  );
+
+  Future<void> _pickLogo() async {
+    const imageTypes = XTypeGroup(
+      label: '로고 이미지',
+      extensions: ['png', 'jpg', 'jpeg', 'webp'],
+    );
+    final file = await openFile(acceptedTypeGroups: [imageTypes]);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    final message = ref
+        .read(approvalDashboardControllerProvider.notifier)
+        .updatePortalLogo(bytes, file.name);
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message ?? '로고가 변경되었습니다.')));
+  }
+
+  void _savePortalName() {
+    if (portalNameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('포털 명을 입력해 주세요.')));
+      return;
+    }
+    ref
+        .read(approvalDashboardControllerProvider.notifier)
+        .updatePortalName(portalNameController.text);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('포털 명이 저장되었습니다.')));
+  }
+}
+
+class _IntegratedAppSettings extends ConsumerWidget {
+  const _IntegratedAppSettings({required this.state});
+
+  final ApprovalDashboardState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    const apps = [
+      (PortalAppId.approval, '전자결재', Icons.approval_outlined),
+      (PortalAppId.attendance, '근태', Icons.schedule_outlined),
+      (PortalAppId.leave, '휴가', Icons.beach_access_outlined),
+    ];
+    return Container(
+      decoration: _adminSurface(),
+      child: Column(
+        children: [
+          for (var index = 0; index < apps.length; index++) ...[
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 5,
+              ),
+              leading: Icon(apps[index].$3, color: TheWeColor.blue300),
+              title: Text(apps[index].$2, style: TheWeTextStyle.subtitle),
+              subtitle: Text(
+                apps[index].$1 == PortalAppId.approval
+                    ? '${state.activeFormTemplates.length}개 양식 사용 중'
+                    : '일반 계정 홈과 메뉴 노출',
+              ),
+              trailing: Switch(
+                key: ValueKey('integrated-app-switch-${apps[index].$1}'),
+                value: state.isAppEnabled(apps[index].$1),
+                onChanged: (value) => ref
+                    .read(approvalDashboardControllerProvider.notifier)
+                    .toggleApp(apps[index].$1, value),
+              ),
+            ),
+            if (apps[index].$1 == PortalAppId.approval)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showFormManagementDialog(context, ref),
+                    icon: const Icon(Icons.description_outlined, size: 18),
+                    label: const Text('전자결재 양식 관리'),
+                  ),
+                ),
+              ),
+            if (index != apps.length - 1) const Divider(height: 1),
+          ],
+        ],
+      ),
     );
   }
 }
 
 class _SecurityPolicyTile extends StatelessWidget {
   const _SecurityPolicyTile({
+    super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.value,
+    required this.onChanged,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final bool value;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) => ListTile(
@@ -1818,23 +2589,71 @@ class _SecurityPolicyTile extends StatelessWidget {
     ),
     title: Text(title, style: TheWeTextStyle.subtitle),
     subtitle: Text(subtitle),
-    trailing: Chip(
-      avatar: const Icon(
-        Icons.check_circle_outline,
-        size: 17,
-        color: TheWeColor.green,
-      ),
-      label: const Text('사용 중'),
-      side: BorderSide(color: TheWeColor.green.withValues(alpha: .28)),
-      backgroundColor: TheWeColor.green.withValues(alpha: .08),
+    trailing: Switch(value: value, onChanged: onChanged),
+  );
+}
+
+class _AdminPermissionSettings extends ConsumerWidget {
+  const _AdminPermissionSettings({required this.state});
+
+  final ApprovalDashboardState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Container(
+    decoration: _adminSurface(),
+    child: Column(
+      children: [
+        for (var index = 0; index < state.accounts.length; index++) ...[
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 20,
+              vertical: 4,
+            ),
+            leading: CircleAvatar(
+              backgroundColor: TheWeColor.blueSurface,
+              child: Text(state.accounts[index].name.substring(0, 1)),
+            ),
+            title: Text(
+              state.accounts[index].name,
+              style: TheWeTextStyle.subtitle,
+            ),
+            subtitle: Text(
+              '${state.accounts[index].department} · ${state.accounts[index].position} · ${state.accounts[index].id}',
+            ),
+            trailing: Switch(
+              key: ValueKey('admin-permission-${state.accounts[index].id}'),
+              value: state.accounts[index].isAdmin,
+              onChanged:
+                  state.currentUser?.id == state.accounts[index].id &&
+                      state.accounts[index].isAdmin
+                  ? null
+                  : (value) {
+                      final message = ref
+                          .read(approvalDashboardControllerProvider.notifier)
+                          .setAdminPermission(state.accounts[index].id, value);
+                      if (message != null) {
+                        ScaffoldMessenger.of(
+                          context,
+                        ).showSnackBar(SnackBar(content: Text(message)));
+                      }
+                    },
+            ),
+          ),
+          if (index != state.accounts.length - 1) const Divider(height: 1),
+        ],
+      ],
     ),
   );
 }
 
 class _AnnualLeavePolicyEditor extends ConsumerStatefulWidget {
-  const _AnnualLeavePolicyEditor({required this.policy});
+  const _AnnualLeavePolicyEditor({
+    required this.policy,
+    required this.monthlyLeavePerMonth,
+  });
 
   final Map<int, int> policy;
+  final int monthlyLeavePerMonth;
 
   @override
   ConsumerState<_AnnualLeavePolicyEditor> createState() =>
@@ -1844,6 +2663,7 @@ class _AnnualLeavePolicyEditor extends ConsumerStatefulWidget {
 class _AnnualLeavePolicyEditorState
     extends ConsumerState<_AnnualLeavePolicyEditor> {
   late final Map<int, TextEditingController> controllers;
+  late final TextEditingController monthlyLeaveController;
   bool dirty = false;
   String error = '';
 
@@ -1854,6 +2674,9 @@ class _AnnualLeavePolicyEditorState
       for (final entry in widget.policy.entries.where((item) => item.key <= 10))
         entry.key: TextEditingController(text: entry.value.toString()),
     };
+    monthlyLeaveController = TextEditingController(
+      text: widget.monthlyLeavePerMonth.toString(),
+    );
   }
 
   @override
@@ -1861,6 +2684,7 @@ class _AnnualLeavePolicyEditorState
     for (final controller in controllers.values) {
       controller.dispose();
     }
+    monthlyLeaveController.dispose();
     super.dispose();
   }
 
@@ -1908,6 +2732,21 @@ class _AnnualLeavePolicyEditorState
               ],
             ),
           const SizedBox(height: 14),
+          TextField(
+            key: const ValueKey('monthly-leave-per-month'),
+            controller: monthlyLeaveController,
+            keyboardType: TextInputType.number,
+            onChanged: (_) => setState(() {
+              dirty = true;
+              error = '';
+            }),
+            decoration: const InputDecoration(
+              labelText: '1년 미만 월차 (매월 지급)',
+              suffixText: '일',
+              helperText: '입사 후 완료된 근속월마다 설정한 일수가 발생합니다.',
+            ),
+          ),
+          const SizedBox(height: 14),
           LayoutBuilder(
             builder: (context, constraints) {
               final itemWidth = constraints.maxWidth < 600
@@ -1952,6 +2791,11 @@ class _AnnualLeavePolicyEditorState
   }
 
   void _save() {
+    final monthlyDays = int.tryParse(monthlyLeaveController.text.trim());
+    if (monthlyDays == null || monthlyDays < 1 || monthlyDays > 31) {
+      setState(() => error = '1년 미만 직원의 월차 지급 일수를 확인해 주세요.');
+      return;
+    }
     final policy = <int, int>{};
     for (final entry in controllers.entries) {
       final days = int.tryParse(entry.value.text.trim());
@@ -1963,7 +2807,7 @@ class _AnnualLeavePolicyEditorState
     }
     final message = ref
         .read(approvalDashboardControllerProvider.notifier)
-        .updateAnnualLeavePolicies(policy);
+        .updateAnnualLeavePolicies(policy, monthlyLeavePerMonth: monthlyDays);
     if (message != null) {
       setState(() => error = message);
       return;
@@ -1978,46 +2822,575 @@ class _AnnualLeavePolicyEditorState
   }
 }
 
+Future<void> _showEmployeeLeaveDirectory(
+  BuildContext context,
+  ApprovalDashboardState state,
+) async {
+  await showDialog<void>(
+    context: context,
+    builder: (context) => _EmployeeLeaveBrowserDialog(initialState: state),
+  );
+}
+
+class _EmployeeLeaveBrowserDialog extends ConsumerStatefulWidget {
+  const _EmployeeLeaveBrowserDialog({required this.initialState});
+
+  final ApprovalDashboardState initialState;
+
+  @override
+  ConsumerState<_EmployeeLeaveBrowserDialog> createState() =>
+      _EmployeeLeaveBrowserDialogState();
+}
+
+class _EmployeeLeaveBrowserDialogState
+    extends ConsumerState<_EmployeeLeaveBrowserDialog> {
+  EmployeeAccount? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final state =
+        ref.watch(approvalDashboardControllerProvider).asData?.value ??
+        widget.initialState;
+    final account = selected;
+    if (account == null) {
+      return _EmployeeLeaveDirectoryDialog(
+        state: state,
+        onSelected: (value) => setState(() => selected = value),
+      );
+    }
+    return _EmployeeLeaveOverviewDialog(
+      state: state,
+      account: account,
+      onBack: () => setState(() => selected = null),
+      onDirectLeave: () => _showAdminDirectLeaveDialog(context, ref, account),
+    );
+  }
+}
+
+class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
+  const _EmployeeLeaveDirectoryDialog({
+    required this.state,
+    required this.onSelected,
+  });
+
+  final ApprovalDashboardState state;
+  final ValueChanged<EmployeeAccount> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final mobile = MediaQuery.sizeOf(context).width < 700;
+    return Dialog(
+      backgroundColor: TheWeColor.surfaceAlt,
+      insetPadding: EdgeInsets.all(mobile ? 12 : 32),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1040, maxHeight: 720),
+        child: Padding(
+          padding: EdgeInsets.all(mobile ? 16 : 24),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text('전체 직원 연차 현황', style: TheWeTextStyle.title),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                    tooltip: '닫기',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: mobile
+                    ? ListView.separated(
+                        itemCount: state.accounts.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final account = state.accounts[index];
+                          return ListTile(
+                            tileColor: TheWeColor.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(
+                                color: TheWeColor.black300.withValues(
+                                  alpha: .25,
+                                ),
+                              ),
+                            ),
+                            title: Text(account.name),
+                            subtitle: Text(
+                              '${account.position} · ${account.department}',
+                            ),
+                            trailing: Text(
+                              '${state.isUnderOneYear(account) ? '월차' : '연차'} 잔여 ${_leaveDays(state.remainingAnnualLeaveFor(account))}',
+                            ),
+                            onTap: () => onSelected(account),
+                          );
+                        },
+                      )
+                    : TheWeDataTable(
+                        headers: const ['이름', '직급', '부서', '연차 현황'],
+                        columnFlexes: const [1.4, 1.1, 1.5, 2.4],
+                        minWidth: 860,
+                        rows: state.accounts.map((account) {
+                          final total = state.totalAnnualLeaveFor(account);
+                          final used = state.usedAnnualLeaveFor(account.id);
+                          final pending = state.pendingAnnualLeaveFor(
+                            account.id,
+                          );
+                          return <Widget>[
+                            TextButton(
+                              onPressed: () => onSelected(account),
+                              child: Text(account.name),
+                            ),
+                            Text(account.position),
+                            Text(account.department),
+                            Text(
+                              '${state.isUnderOneYear(account) ? '월차' : '연차'} $total일 · 사용 ${_leaveDays(used)} · 대기 ${_leaveDays(pending)} · 잔여 ${_leaveDays(state.remainingAnnualLeaveFor(account))}',
+                              textAlign: TextAlign.center,
+                            ),
+                          ];
+                        }).toList(),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmployeeLeaveOverviewDialog extends StatelessWidget {
+  const _EmployeeLeaveOverviewDialog({
+    required this.state,
+    required this.account,
+    required this.onBack,
+    required this.onDirectLeave,
+  });
+
+  final ApprovalDashboardState state;
+  final EmployeeAccount account;
+  final VoidCallback onBack;
+  final VoidCallback onDirectLeave;
+
+  @override
+  Widget build(BuildContext context) {
+    final requests = state.leaveRequestsFor(account.id);
+    final total = state.totalAnnualLeaveFor(account);
+    final used = state.usedAnnualLeaveFor(account.id);
+    final pending = state.pendingAnnualLeaveFor(account.id);
+    final remaining = state.remainingAnnualLeaveFor(account);
+    final mobile = MediaQuery.sizeOf(context).width < 700;
+    return Dialog(
+      backgroundColor: TheWeColor.background,
+      insetPadding: EdgeInsets.all(mobile ? 12 : 32),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1060, maxHeight: 760),
+        child: Padding(
+          padding: EdgeInsets.all(mobile ? 16 : 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    key: const ValueKey('employee-leave-back'),
+                    onPressed: onBack,
+                    icon: const Icon(Icons.arrow_back_ios_new),
+                    tooltip: '전체 직원으로 돌아가기',
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${account.name} 휴가 현황',
+                          style: TheWeTextStyle.title,
+                        ),
+                        Text(
+                          '${account.department} · ${account.position} · 입사일 ${account.hireDate}',
+                          style: TheWeTextStyle.caption.copyWith(
+                            color: TheWeColor.black500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: mobile ? double.infinity : null,
+                child: FilledButton.icon(
+                  key: const ValueKey('admin-direct-leave-button'),
+                  onPressed: onDirectLeave,
+                  icon: const Icon(Icons.event_available_outlined),
+                  label: const Text('휴가 직접 등록'),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _EmployeeLeaveMetric(
+                    label: state.leaveEntitlementLabelFor(account),
+                    value: '$total일',
+                  ),
+                  _EmployeeLeaveMetric(
+                    label: state.leaveUsedLabelFor(account),
+                    value: _leaveDays(used),
+                  ),
+                  _EmployeeLeaveMetric(
+                    label: state.leaveRemainingLabelFor(account),
+                    value: _leaveDays(remaining),
+                  ),
+                  _EmployeeLeaveMetric(
+                    label: '승인 대기',
+                    value: _leaveDays(pending),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Text('휴가 신청 내역', style: TheWeTextStyle.subtitle),
+              const SizedBox(height: 10),
+              Expanded(
+                child: requests.isEmpty
+                    ? const Center(child: Text('휴가 신청 내역이 없습니다.'))
+                    : ListView.separated(
+                        itemCount: requests.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 8),
+                        itemBuilder: (context, index) {
+                          final request = requests[index];
+                          return Container(
+                            padding: const EdgeInsets.all(13),
+                            decoration: _adminSurface(),
+                            child: Row(
+                              children: [
+                                Chip(
+                                  label: Text(
+                                    request.directEntry
+                                        ? '관리자 등록'
+                                        : request.status,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    '${request.type} · ${request.startDate} ~ ${request.endDate}\n${request.reason}${request.directEntry ? ' · 등록자 ${request.registeredBy}' : ''}',
+                                  ),
+                                ),
+                                Text(_leaveDays(request.days)),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AdminDirectLeaveDraft {
+  const _AdminDirectLeaveDraft({
+    required this.type,
+    required this.startDate,
+    required this.endDate,
+    required this.days,
+    required this.reason,
+  });
+
+  final String type;
+  final String startDate;
+  final String endDate;
+  final double days;
+  final String reason;
+}
+
+Future<void> _showAdminDirectLeaveDialog(
+  BuildContext context,
+  WidgetRef ref,
+  EmployeeAccount account,
+) async {
+  final current = ref.read(approvalDashboardControllerProvider).requireValue;
+  final isMonthly = current.isUnderOneYear(account);
+  final types = isMonthly
+      ? const ['월차', '반차', '경조 휴가', '휴가']
+      : const ['연차', '반차', '경조 휴가', '휴가'];
+  var type = types.first;
+  var start = DateTime.now();
+  var end = start;
+  var reason = '';
+  var error = '';
+
+  final draft = await showDialog<_AdminDirectLeaveDraft>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setDialogState) {
+        final halfDay = type == '반차';
+
+        Future<void> pickDate(bool startDate) async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: startDate ? start : end,
+            firstDate: DateTime(2000),
+            lastDate: DateTime(DateTime.now().year + 2, 12, 31),
+          );
+          if (picked == null) return;
+          setDialogState(() {
+            error = '';
+            if (startDate) {
+              start = picked;
+              if (end.isBefore(start) || halfDay) end = start;
+            } else {
+              end = picked;
+            }
+          });
+        }
+
+        return AlertDialog(
+          backgroundColor: TheWeColor.surfaceAlt,
+          title: Text('${account.name} 휴가 직접 등록'),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '별도 결재 없이 즉시 승인 완료 처리되며 잔여 휴가에서 차감됩니다.',
+                    style: TheWeTextStyle.caption.copyWith(
+                      color: TheWeColor.black500,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TheWeDropdown<String>(
+                    value: type,
+                    width: double.infinity,
+                    items: types,
+                    labelBuilder: (value) => value,
+                    onChanged: (value) => setDialogState(() {
+                      type = value ?? types.first;
+                      if (type == '반차') end = start;
+                      error = '';
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => pickDate(true),
+                          icon: const Icon(Icons.event_outlined),
+                          label: Text(DateFormat('yyyy-MM-dd').format(start)),
+                        ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('~'),
+                      ),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: halfDay ? null : () => pickDate(false),
+                          icon: const Icon(Icons.event_outlined),
+                          label: Text(DateFormat('yyyy-MM-dd').format(end)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    key: const ValueKey('admin-direct-leave-reason'),
+                    maxLines: 3,
+                    onChanged: (value) {
+                      reason = value;
+                      if (error.isNotEmpty) {
+                        setDialogState(() => error = '');
+                      }
+                    },
+                    decoration: const InputDecoration(
+                      labelText: '관리자 등록 사유 (필수)',
+                      hintText: '결재 없이 반영하는 사유를 입력하세요.',
+                    ),
+                  ),
+                  if (error.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      error,
+                      style: TheWeTextStyle.caption.copyWith(
+                        color: TheWeColor.danger,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('취소'),
+            ),
+            FilledButton(
+              key: const ValueKey('admin-direct-leave-submit'),
+              onPressed: () {
+                final days = halfDay ? .5 : end.difference(start).inDays + 1.0;
+                if (reason.trim().isEmpty) {
+                  setDialogState(() => error = '관리자 등록 사유를 입력해 주세요.');
+                  return;
+                }
+                if (days > current.remainingAnnualLeaveFor(account)) {
+                  setDialogState(
+                    () => error =
+                        '잔여 휴가 ${_leaveDays(current.remainingAnnualLeaveFor(account))}를 초과했습니다.',
+                  );
+                  return;
+                }
+                Navigator.pop(
+                  context,
+                  _AdminDirectLeaveDraft(
+                    type: type,
+                    startDate: DateFormat('yyyy-MM-dd').format(start),
+                    endDate: DateFormat(
+                      'yyyy-MM-dd',
+                    ).format(halfDay ? start : end),
+                    days: days,
+                    reason: reason.trim(),
+                  ),
+                );
+              },
+              child: const Text('즉시 반영'),
+            ),
+          ],
+        );
+      },
+    ),
+  );
+  if (draft == null || !context.mounted) return;
+  final message = ref
+      .read(approvalDashboardControllerProvider.notifier)
+      .addLeaveForEmployee(
+        userId: account.id,
+        type: draft.type,
+        startDate: draft.startDate,
+        endDate: draft.endDate,
+        days: draft.days,
+        reason: draft.reason,
+      );
+  if (!context.mounted) return;
+  if (message != null) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('${account.name}님의 휴가가 즉시 반영되었습니다.')),
+    );
+  }
+}
+
+class _EmployeeLeaveMetric extends StatelessWidget {
+  const _EmployeeLeaveMetric({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 150,
+    padding: const EdgeInsets.all(14),
+    decoration: _adminSurface(),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 5),
+        Text(value, style: TheWeTextStyle.subtitle),
+      ],
+    ),
+  );
+}
+
+String _leaveDays(double value) => value == value.roundToDouble()
+    ? '${value.toInt()}일'
+    : '${value.toStringAsFixed(1)}일';
+
 class _AdminMetric extends StatelessWidget {
   const _AdminMetric({
     required this.width,
     required this.icon,
     required this.label,
     required this.value,
+    this.onTap,
   });
   final double width;
   final IconData icon;
   final String label;
   final String value;
+  final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) {
     final compact = width < 220;
-    return Container(
-      width: width,
-      padding: EdgeInsets.all(compact ? 13 : 20),
-      decoration: _adminSurface(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: TheWeColor.blue300, size: compact ? 22 : 24),
-          SizedBox(height: compact ? 9 : 16),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TheWeTextStyle.caption.copyWith(
-              color: TheWeColor.black500,
-              fontSize: compact ? 12 : null,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Ink(
+          width: width,
+          padding: EdgeInsets.all(compact ? 13 : 20),
+          decoration: _adminSurface(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    icon,
+                    color: TheWeColor.blue300,
+                    size: compact ? 22 : 24,
+                  ),
+                  if (onTap != null) ...[
+                    const Spacer(),
+                    const Icon(Icons.chevron_right, size: 20),
+                  ],
+                ],
+              ),
+              SizedBox(height: compact ? 9 : 16),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.black500,
+                  fontSize: compact ? 12 : null,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                value,
+                style: compact
+                    ? TheWeTextStyle.metric.copyWith(fontSize: 24)
+                    : TheWeTextStyle.metric,
+              ),
+            ],
           ),
-          const SizedBox(height: 3),
-          Text(
-            value,
-            style: compact
-                ? TheWeTextStyle.metric.copyWith(fontSize: 24)
-                : TheWeTextStyle.metric,
-          ),
-        ],
+        ),
       ),
     );
   }

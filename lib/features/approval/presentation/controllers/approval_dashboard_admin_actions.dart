@@ -5,7 +5,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
 
   bool enterAdminMode(String otp) {
     final current = _currentState;
-    if (current?.currentUser?.isAdmin != true || !verifyAdminOtp(otp)) {
+    if (current?.currentUser?.isAdmin != true ||
+        (current!.adminOtpEnabled && !verifyAdminOtp(otp))) {
       return false;
     }
     _setDashboardState(this, (value) => value.copyWith(adminMode: true));
@@ -128,6 +129,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String description,
     required String defaultTitle,
     required String defaultContent,
+    String documentLayout = ApprovalDocumentLayout.basic,
+    int lineItemRows = 8,
   }) {
     final current = _currentState;
     if (current == null) return '양식 정보를 불러오지 못했습니다.';
@@ -158,6 +161,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           publicReceivers: const [],
           cooperationDepartment: '',
           agreement: '',
+          documentLayout: documentLayout,
+          lineItemRows: lineItemRows,
         ),
       );
     } else {
@@ -169,6 +174,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         description: description.trim(),
         defaultTitle: defaultTitle.trim(),
         defaultContent: defaultContent.trim(),
+        documentLayout: documentLayout,
+        lineItemRows: lineItemRows,
       );
     }
     _setDashboardState(
@@ -200,6 +207,95 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     _setDashboardState(this, (value) => value.copyWith(portalName: normalized));
   }
 
+  String? updatePortalLogo(Uint8List bytes, String fileName) {
+    if (bytes.isEmpty) return '선택한 로고 파일을 읽을 수 없습니다.';
+    if (bytes.lengthInBytes > 5 * 1024 * 1024) {
+      return '로고 파일은 5MB 이하만 사용할 수 있습니다.';
+    }
+    _setDashboardState(
+      this,
+      (value) =>
+          value.copyWith(customLogoBytes: bytes, customLogoFileName: fileName),
+    );
+    return null;
+  }
+
+  void resetPortalLogo() {
+    _setDashboardState(this, (value) => value.copyWith(clearCustomLogo: true));
+  }
+
+  void updateSecurityPolicy({
+    bool? adminOtpEnabled,
+    bool? settingsPasswordEnabled,
+    bool? adminDocumentAccessEnabled,
+  }) {
+    _setDashboardState(
+      this,
+      (value) => value.copyWith(
+        adminOtpEnabled: adminOtpEnabled,
+        settingsPasswordEnabled: settingsPasswordEnabled,
+        adminDocumentAccessEnabled: adminDocumentAccessEnabled,
+      ),
+    );
+  }
+
+  String? setAdminPermission(String userId, bool enabled) {
+    final current = _currentState;
+    if (current == null) return '계정 정보를 불러오지 못했습니다.';
+    if (current.currentUser?.id == userId && !enabled) {
+      return '현재 로그인한 관리자의 권한은 해제할 수 없습니다.';
+    }
+    final accounts = current.accounts
+        .map(
+          (account) => account.id == userId
+              ? account.copyWith(isAdmin: enabled)
+              : account,
+        )
+        .toList();
+    final currentUser = current.currentUser?.id == userId
+        ? accounts.where((account) => account.id == userId).first
+        : current.currentUser;
+    _setDashboardState(
+      this,
+      (value) => value.copyWith(accounts: accounts, currentUser: currentUser),
+    );
+    return null;
+  }
+
+  String? renameDepartment(String currentName, String nextName) {
+    final normalized = nextName.trim();
+    if (normalized.isEmpty) return '변경할 부서명을 입력해 주세요.';
+    final current = _currentState;
+    if (current == null) return '조직 정보를 불러오지 못했습니다.';
+    if (normalized != currentName &&
+        current.accounts.any((account) => account.department == normalized)) {
+      return '이미 사용 중인 부서명입니다.';
+    }
+    final accounts = current.accounts
+        .map(
+          (account) => account.department == currentName
+              ? account.copyWith(department: normalized)
+              : account,
+        )
+        .toList();
+    final currentUser = current.currentUser == null
+        ? null
+        : accounts
+              .where((account) => account.id == current.currentUser!.id)
+              .first;
+    _setDashboardState(
+      this,
+      (value) => value.copyWith(
+        accounts: accounts,
+        currentUser: currentUser,
+        selectedOrgDepartment: value.selectedOrgDepartment == currentName
+            ? normalized
+            : value.selectedOrgDepartment,
+      ),
+    );
+    return null;
+  }
+
   void updateAnnualLeavePolicy(int year, int days) {
     _setDashboardState(
       this,
@@ -209,14 +305,75 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     );
   }
 
-  String? updateAnnualLeavePolicies(Map<int, int> policies) {
+  String? updateAnnualLeavePolicies(
+    Map<int, int> policies, {
+    int? monthlyLeavePerMonth,
+  }) {
     if (policies.isEmpty) return '저장할 연차 설정이 없습니다.';
     if (policies.values.any((days) => days < 1 || days > 365)) {
       return '연차 일수는 1일 이상 365일 이하로 입력해 주세요.';
     }
+    if (monthlyLeavePerMonth != null &&
+        (monthlyLeavePerMonth < 1 || monthlyLeavePerMonth > 31)) {
+      return '월차 지급 일수는 1일 이상 31일 이하로 입력해 주세요.';
+    }
     _setDashboardState(
       this,
-      (value) => value.copyWith(annualLeaveByYear: {...policies}),
+      (value) => value.copyWith(
+        annualLeaveByYear: {...policies},
+        monthlyLeavePerMonth: monthlyLeavePerMonth,
+      ),
+    );
+    return null;
+  }
+
+  String? addLeaveForEmployee({
+    required String userId,
+    required String type,
+    required String startDate,
+    required String endDate,
+    required double days,
+    required String reason,
+  }) {
+    final current = _currentState;
+    if (current == null || !current.isAdminMode) {
+      return '관리자 모드에서만 휴가를 직접 등록할 수 있습니다.';
+    }
+    final account = current.accounts
+        .where((item) => item.id == userId)
+        .firstOrNull;
+    if (account == null) return '직원 정보를 찾을 수 없습니다.';
+    if (reason.trim().isEmpty) return '관리자 등록 사유를 입력해 주세요.';
+    final parsedStart = DateTime.tryParse(startDate);
+    final parsedEnd = DateTime.tryParse(endDate);
+    if (parsedStart == null ||
+        parsedEnd == null ||
+        parsedEnd.isBefore(parsedStart)) {
+      return '휴가 날짜를 확인해 주세요.';
+    }
+    if (days <= 0) return '사용 일수를 확인해 주세요.';
+    final remaining = current.remainingAnnualLeaveFor(account);
+    if (days > remaining) {
+      return '잔여 휴가 ${remaining.toStringAsFixed(remaining == remaining.roundToDouble() ? 0 : 1)}일을 초과했습니다.';
+    }
+    final request = LeaveRequest(
+      id: 'LEAVE-${DateTime.now().microsecondsSinceEpoch}',
+      userId: userId,
+      type: type,
+      startDate: startDate,
+      endDate: endDate,
+      days: days,
+      reason: reason.trim(),
+      status: '승인완료',
+      directorStatus: '완료',
+      ceoStatus: '완료',
+      directEntry: true,
+      registeredBy: current.currentUser!.name,
+    );
+    _setDashboardState(
+      this,
+      (value) =>
+          value.copyWith(leaveRequests: [request, ...value.leaveRequests]),
     );
     return null;
   }
@@ -254,11 +411,53 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         leaveRequests: value.leaveRequests
             .map(
               (request) => request.id == requestId
-                  ? request.copyWith(status: status)
+                  ? request.copyWith(
+                      status: status,
+                      directorStatus: status == '승인완료'
+                          ? '완료'
+                          : request.directorStatus,
+                      ceoStatus: status == '승인완료' ? '완료' : request.ceoStatus,
+                    )
                   : request,
             )
             .toList(),
       ),
     );
+  }
+
+  bool actOnLeave(String requestId, {required bool approve}) {
+    final current = _currentState;
+    final user = current?.currentUser;
+    if (current == null || user == null) return false;
+    final request = current.leaveRequests
+        .where((item) => item.id == requestId)
+        .firstOrNull;
+    if (request == null || !current.canActOnLeave(request)) return false;
+
+    late LeaveRequest updated;
+    if (!approve) {
+      updated = request.copyWith(
+        status: '반려',
+        directorStatus: request.directorStatus == '진행중'
+            ? '반려'
+            : request.directorStatus,
+        ceoStatus: request.ceoStatus == '진행중' ? '반려' : request.ceoStatus,
+        rejectedBy: user.name,
+      );
+    } else if (request.directorStatus == '진행중') {
+      updated = request.copyWith(directorStatus: '완료', ceoStatus: '진행중');
+    } else {
+      updated = request.copyWith(status: '승인완료', ceoStatus: '완료');
+    }
+
+    _setDashboardState(
+      this,
+      (value) => value.copyWith(
+        leaveRequests: value.leaveRequests
+            .map((item) => item.id == requestId ? updated : item)
+            .toList(),
+      ),
+    );
+    return true;
   }
 }

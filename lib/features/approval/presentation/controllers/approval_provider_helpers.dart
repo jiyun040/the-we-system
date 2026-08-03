@@ -50,6 +50,14 @@ List<ApprovalStep> _buildStepsFor(
   ];
 }
 
+List<Map<String, String>> _emptyLineItems(ApprovalFormTemplate template) {
+  if (template.documentLayout == ApprovalDocumentLayout.basic ||
+      template.documentLayout == ApprovalDocumentLayout.payroll) {
+    return const [];
+  }
+  return List.generate(template.lineItemRows, (_) => <String, String>{});
+}
+
 List<ApprovalStep> _submitSteps(
   EmployeeAccount drafter,
   List<EmployeeAccount> accounts,

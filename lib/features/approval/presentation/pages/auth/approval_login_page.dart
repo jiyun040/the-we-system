@@ -64,7 +64,9 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '관리자 계정은 아이디·비밀번호 확인 후 OTP 인증을 진행합니다.',
+                      state?.adminOtpEnabled == false
+                          ? '관리자 계정은 아이디·비밀번호 확인 후 관리자 화면으로 이동합니다.'
+                          : '관리자 계정은 아이디·비밀번호 확인 후 OTP 인증을 진행합니다.',
                       style: TheWeTextStyle.caption.copyWith(
                         color: TheWeColor.black500,
                       ),
@@ -111,8 +113,12 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         );
                         final id = idController.text.trim();
                         final password = passwordController.text.trim();
+                        final isAdminLogin = notifier.hasValidAdminCredentials(
+                          id,
+                          password,
+                        );
                         String? verifiedOtp;
-                        if (notifier.hasValidAdminCredentials(id, password)) {
+                        if (isAdminLogin && (state?.adminOtpEnabled ?? true)) {
                           verifiedOtp = await _requestAdminLoginOtp(
                             context,
                             notifier,
@@ -121,13 +127,11 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         }
                         final success = await notifier.login(id, password);
                         if (!success || !context.mounted) return;
-                        if (verifiedOtp != null) {
-                          notifier.enterAdminMode(verifiedOtp);
+                        if (isAdminLogin) {
+                          notifier.enterAdminMode(verifiedOtp ?? '');
                         }
                         context.goNamed(
-                          verifiedOtp != null
-                              ? AppRouteName.admin
-                              : AppRouteName.home,
+                          isAdminLogin ? AppRouteName.admin : AppRouteName.home,
                         );
                       },
                       style: FilledButton.styleFrom(

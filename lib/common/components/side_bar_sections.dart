@@ -61,7 +61,7 @@ class _Brand extends ConsumerWidget {
       children: [
         Row(
           children: [
-            TheWeLogo(height: isPhone ? 30 : 34),
+            TheWeLogo(height: isPhone ? 30 : 34, bytes: state?.customLogoBytes),
             if (!isCompact) ...[
               TheWeGaps.horizontalLg,
               Expanded(
@@ -157,8 +157,12 @@ class _Brand extends ConsumerWidget {
                           context.goNamed(AppRouteName.home);
                           return;
                         }
-                        final otp = await _showAdminOtpDialog(context);
-                        if (otp == null || !context.mounted) return;
+                        var otp = '';
+                        if (state?.adminOtpEnabled ?? true) {
+                          final verified = await _showAdminOtpDialog(context);
+                          if (verified == null || !context.mounted) return;
+                          otp = verified;
+                        }
                         if (notifier.enterAdminMode(otp)) {
                           context.goNamed(AppRouteName.admin);
                           return;
@@ -201,7 +205,7 @@ Future<String?> _showAdminOtpDialog(BuildContext context) {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('관리자 OTP 앱의 6자리 번호를 입력하세요.'),
+            const Text('관리자 OTP 번호 6자리를 입력하세요.'),
             const SizedBox(height: 6),
             Text(
               '프로토타입 인증번호: 123456',

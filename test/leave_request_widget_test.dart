@@ -37,4 +37,34 @@ void main() {
     expect(find.text('오후 반차'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('승인대기 휴가를 누르면 이사·대표이사 결재 진행 팝업이 표시된다', (tester) async {
+    tester.view.physicalSize = const Size(1440, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    appRouter.go('/');
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'edu_teacher');
+    await tester.enterText(find.byType(TextFormField).at(1), '1234');
+    await tester.tap(find.text('로그인').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('휴가 현황/신청'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('휴가 신청'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '개인 일정');
+    await tester.tap(find.text('신청').last);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('승인대기'));
+    await tester.pumpAndSettle();
+    expect(find.text('결재 진행중'), findsOneWidget);
+    expect(find.text('이사 정효정'), findsOneWidget);
+    expect(find.text('대표이사 조상훈'), findsOneWidget);
+    expect(find.text('이사 결재 후 대표이사 결재 창으로 자동 전달됩니다.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

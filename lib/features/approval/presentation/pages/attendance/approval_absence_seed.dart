@@ -5,7 +5,10 @@ List<_CompanyAttendanceRowData> _buildCompanyRows(
   Map<String, AttendanceSnapshot> attendanceMap,
 ) {
   return accounts.map((account) {
-    final snapshot = attendanceMap[account.id] ?? _seedState[account.id]!;
+    final snapshot =
+        attendanceMap[account.id] ??
+        _seedState[account.id] ??
+        _emptyAttendanceSnapshot;
     final hasPendingOvertime = snapshot.requests.any(
       (item) => item.type.contains('초과근로') && item.status.contains('결재대기'),
     );
@@ -46,6 +49,21 @@ String _formatKoreanDateTime(DateTime time) {
   final second = time.second.toString().padLeft(2, '0');
   return '${time.year}년 $month월 $day일 (${weekdays[time.weekday - 1]}) $hour:$minute:$second';
 }
+
+const _emptyAttendanceSnapshot = AttendanceSnapshot(
+  workPolicy: '기본그룹 (09:00 ~ 18:00)',
+  clockInTime: null,
+  clockOutTime: null,
+  annualLeaveRemaining: 15,
+  annualLeaveUsed: 0,
+  lateCount: 0,
+  overtimeHours: 0,
+  weeklyWorkedHours: 0,
+  weeklyRequiredHours: 40,
+  remainingWorkDays: 5,
+  requests: [],
+  delegations: [],
+);
 
 final _seedState = <String, AttendanceSnapshot>{
   'edu_teacher': const AttendanceSnapshot(

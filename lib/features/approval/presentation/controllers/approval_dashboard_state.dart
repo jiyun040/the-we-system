@@ -7,6 +7,7 @@ class ApprovalDashboardState {
     required this.formTemplates,
     required this.documents,
     required this.annualLeaveByYear,
+    this.monthlyLeavePerMonth = 1,
     this.currentUser,
     this.keyword = '',
     this.zoom = 1.0,
@@ -17,6 +18,11 @@ class ApprovalDashboardState {
     this.restrictedDocumentIds = const <String>{},
     this.leaveRequests = const <LeaveRequest>[],
     this.portalName = '더우리기술 전자결재',
+    this.customLogoBytes,
+    this.customLogoFileName,
+    this.adminOtpEnabled = true,
+    this.settingsPasswordEnabled = true,
+    this.adminDocumentAccessEnabled = true,
     this.enabledAppIds = const <String>{
       PortalAppId.approval,
       PortalAppId.attendance,
@@ -30,6 +36,7 @@ class ApprovalDashboardState {
   final List<ApprovalFormTemplate> formTemplates;
   final List<ApprovalDocument> documents;
   final Map<int, int> annualLeaveByYear;
+  final int monthlyLeavePerMonth;
   final EmployeeAccount? currentUser;
   final String keyword;
   final double zoom;
@@ -40,6 +47,11 @@ class ApprovalDashboardState {
   final Set<String> restrictedDocumentIds;
   final List<LeaveRequest> leaveRequests;
   final String portalName;
+  final Uint8List? customLogoBytes;
+  final String? customLogoFileName;
+  final bool adminOtpEnabled;
+  final bool settingsPasswordEnabled;
+  final bool adminDocumentAccessEnabled;
   final Set<String> enabledAppIds;
   final Set<String> disabledFormTemplateIds;
 
@@ -49,6 +61,7 @@ class ApprovalDashboardState {
     List<ApprovalFormTemplate>? formTemplates,
     List<ApprovalDocument>? documents,
     Map<int, int>? annualLeaveByYear,
+    int? monthlyLeavePerMonth,
     EmployeeAccount? currentUser,
     bool clearCurrentUser = false,
     String? keyword,
@@ -61,6 +74,12 @@ class ApprovalDashboardState {
     Set<String>? restrictedDocumentIds,
     List<LeaveRequest>? leaveRequests,
     String? portalName,
+    Uint8List? customLogoBytes,
+    String? customLogoFileName,
+    bool clearCustomLogo = false,
+    bool? adminOtpEnabled,
+    bool? settingsPasswordEnabled,
+    bool? adminDocumentAccessEnabled,
     Set<String>? enabledAppIds,
     Set<String>? disabledFormTemplateIds,
   }) {
@@ -70,6 +89,7 @@ class ApprovalDashboardState {
       formTemplates: formTemplates ?? this.formTemplates,
       documents: documents ?? this.documents,
       annualLeaveByYear: annualLeaveByYear ?? this.annualLeaveByYear,
+      monthlyLeavePerMonth: monthlyLeavePerMonth ?? this.monthlyLeavePerMonth,
       currentUser: clearCurrentUser ? null : (currentUser ?? this.currentUser),
       keyword: keyword ?? this.keyword,
       zoom: zoom ?? this.zoom,
@@ -84,6 +104,17 @@ class ApprovalDashboardState {
           restrictedDocumentIds ?? this.restrictedDocumentIds,
       leaveRequests: leaveRequests ?? this.leaveRequests,
       portalName: portalName ?? this.portalName,
+      customLogoBytes: clearCustomLogo
+          ? null
+          : (customLogoBytes ?? this.customLogoBytes),
+      customLogoFileName: clearCustomLogo
+          ? null
+          : (customLogoFileName ?? this.customLogoFileName),
+      adminOtpEnabled: adminOtpEnabled ?? this.adminOtpEnabled,
+      settingsPasswordEnabled:
+          settingsPasswordEnabled ?? this.settingsPasswordEnabled,
+      adminDocumentAccessEnabled:
+          adminDocumentAccessEnabled ?? this.adminDocumentAccessEnabled,
       enabledAppIds: enabledAppIds ?? this.enabledAppIds,
       disabledFormTemplateIds:
           disabledFormTemplateIds ?? this.disabledFormTemplateIds,
@@ -95,6 +126,8 @@ class ApprovalDashboardState {
   bool get isAdmin => currentUser?.isAdmin ?? false;
 
   bool get isAdminMode => isAdmin && adminMode;
+
+  bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
 
   bool isAppEnabled(String appId) => enabledAppIds.contains(appId);
 
@@ -116,22 +149,25 @@ class ApprovalDashboardState {
       return const [];
     }
 
-    if (isAdminMode) {
+    if (hasAdminDocumentAccess) {
       return documents;
     }
 
     return documents.where((document) {
       final isDrafter = document.drafter == user.name;
       final isApprover = document.steps.any((step) => step.name == user.name);
+      if (document.status == '작성중') {
+        return isDrafter;
+      }
       final isReader =
           document.references.contains(user.name) ||
           document.viewers.contains(user.name);
       final isDepartmentDocument = document.department == user.department;
       final isRestricted = restrictedDocumentIds.contains(document.id);
-      return isDrafter ||
-          isApprover ||
-          isReader ||
-          (isDepartmentDocument && !isRestricted);
+      if (isRestricted) {
+        return isDrafter || isApprover;
+      }
+      return isDrafter || isApprover || isReader || isDepartmentDocument;
     }).toList();
   }
 
@@ -141,7 +177,7 @@ class ApprovalDashboardState {
       return const [];
     }
 
-    if (isAdminMode) {
+    if (hasAdminDocumentAccess) {
       return documents;
     }
 
@@ -158,8 +194,11 @@ class ApprovalDashboardState {
     final user = currentUser;
     if (user == null) return const [];
     final result = documents.where((document) {
-      if (isAdminMode) return true;
+      if (hasAdminDocumentAccess) return true;
       if (document.department != user.department) return false;
+      if (document.status == '작성중') {
+        return document.drafter == user.name;
+      }
       if (!restrictedDocumentIds.contains(document.id)) return true;
       return document.drafter == user.name ||
           document.steps.any((step) => step.name == user.name);
@@ -181,7 +220,7 @@ class ApprovalDashboardState {
         return false;
       }
 
-      return isAdminMode ? true : activeStep.name == user.name;
+      return hasAdminDocumentAccess ? true : activeStep.name == user.name;
     }).toList()..sort((a, b) {
       if (a.urgent != b.urgent) {
         return a.urgent ? -1 : 1;
@@ -200,7 +239,7 @@ class ApprovalDashboardState {
       final scheduled = document.steps.any(
         (step) => step.name == user.name && step.status == '결재 예정',
       );
-      return isAdminMode ? document.status == '결재대기' : scheduled;
+      return hasAdminDocumentAccess ? document.status == '결재대기' : scheduled;
     }).toList();
   }
 
@@ -210,7 +249,7 @@ class ApprovalDashboardState {
       return const [];
     }
 
-    if (isAdminMode) {
+    if (hasAdminDocumentAccess) {
       return documents;
     }
 
@@ -277,8 +316,11 @@ class ApprovalDashboardState {
     return leaveRequests.where((request) => request.userId == id).toList();
   }
 
-  int get currentServiceYear {
-    final hireDate = DateTime.tryParse(currentUser?.hireDate ?? '');
+  List<LeaveRequest> leaveRequestsFor(String userId) =>
+      leaveRequests.where((request) => request.userId == userId).toList();
+
+  int serviceYearFor(EmployeeAccount? account) {
+    final hireDate = DateTime.tryParse(account?.hireDate ?? '');
     if (hireDate == null) return 1;
     final now = DateTime.now();
     var years = now.year - hireDate.year;
@@ -289,10 +331,69 @@ class ApprovalDashboardState {
     return (years + 1).clamp(1, 99);
   }
 
-  int get totalAnnualLeave =>
-      annualLeaveByYear[currentServiceYear.clamp(1, 10)] ??
-      annualLeaveByYear[10] ??
-      19;
+  int get currentServiceYear => serviceYearFor(currentUser);
+
+  bool isUnderOneYear(EmployeeAccount? account) {
+    final hireDate = DateTime.tryParse(account?.hireDate ?? '');
+    if (hireDate == null) return false;
+    final now = DateTime.now();
+    final firstAnniversary = DateTime(
+      hireDate.year + 1,
+      hireDate.month,
+      hireDate.day,
+    );
+    return now.isBefore(firstAnniversary);
+  }
+
+  int completedServiceMonthsFor(EmployeeAccount? account) {
+    final hireDate = DateTime.tryParse(account?.hireDate ?? '');
+    if (hireDate == null) return 0;
+    final now = DateTime.now();
+    var months = (now.year - hireDate.year) * 12 + now.month - hireDate.month;
+    if (now.day < hireDate.day) months--;
+    return months.clamp(0, 11);
+  }
+
+  int accruedMonthlyLeaveFor(EmployeeAccount? account) =>
+      completedServiceMonthsFor(account) * monthlyLeavePerMonth;
+
+  int totalAnnualLeaveFor(EmployeeAccount? account) {
+    if (isUnderOneYear(account)) return accruedMonthlyLeaveFor(account);
+    return annualLeaveByYear[serviceYearFor(account).clamp(1, 10)] ??
+        annualLeaveByYear[10] ??
+        19;
+  }
+
+  String leaveEntitlementLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account) ? '발생 월차' : '총 연차';
+
+  String leaveUsedLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account) ? '사용 월차' : '사용 연차';
+
+  String leaveRemainingLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account) ? '잔여 월차' : '잔여 연차';
+
+  String servicePeriodLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account)
+      ? '${completedServiceMonthsFor(account)}개월차'
+      : '${serviceYearFor(account)}년차';
+
+  int get totalAnnualLeave => totalAnnualLeaveFor(currentUser);
+
+  double usedAnnualLeaveFor(String userId) => leaveRequestsFor(userId)
+      .where((request) => request.status == '승인완료')
+      .fold(0, (sum, request) => sum + request.days);
+
+  double pendingAnnualLeaveFor(String userId) => leaveRequestsFor(userId)
+      .where((request) => request.status == '승인대기')
+      .fold(0, (sum, request) => sum + request.days);
+
+  double remainingAnnualLeaveFor(EmployeeAccount account) =>
+      (totalAnnualLeaveFor(account) -
+              usedAnnualLeaveFor(account.id) -
+              pendingAnnualLeaveFor(account.id))
+          .clamp(0, totalAnnualLeaveFor(account))
+          .toDouble();
 
   double get usedAnnualLeave => currentUserLeaveRequests
       .where((request) => request.status == '승인완료')
@@ -306,4 +407,18 @@ class ApprovalDashboardState {
       (totalAnnualLeave - usedAnnualLeave - pendingAnnualLeave)
           .clamp(0, totalAnnualLeave)
           .toDouble();
+
+  bool canActOnLeave(LeaveRequest request) {
+    final user = currentUser;
+    if (user == null || request.status != '승인대기') return false;
+    if (request.directorStatus == '진행중') {
+      return user.id == 'director' ||
+          user.position.contains('이사') ||
+          user.position.contains('상무');
+    }
+    if (request.ceoStatus == '진행중') {
+      return user.id == 'ceo' || user.position.contains('대표');
+    }
+    return false;
+  }
 }
