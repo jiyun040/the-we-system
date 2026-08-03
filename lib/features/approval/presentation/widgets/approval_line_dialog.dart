@@ -156,7 +156,7 @@ class _PublicReceiverSetup extends StatelessWidget {
                   TheWeDropdown<String>(
                     value: '선택',
                     width: 130,
-                    items: const ['선택', '대표이사', '부문장'],
+                    items: const ['선택', '대표', '부문장'],
                     labelBuilder: (value) => value,
                     onChanged: (_) {},
                   ),

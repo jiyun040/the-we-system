@@ -208,7 +208,7 @@ const _accounts = [
     password: '1234',
     name: '조상훈',
     department: '경영관리팀',
-    position: '대표이사',
+    position: '대표',
     email: 'ceo@thewe.co.kr',
     isAdmin: true,
   ),

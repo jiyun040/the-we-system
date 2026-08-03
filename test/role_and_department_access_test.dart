@@ -332,7 +332,7 @@ void main() {
     expect(state.remainingAnnualLeave, remainingBefore);
   });
 
-  test('휴가는 이사 승인 후 대표이사 결재로 순차 전달된다', () async {
+  test('휴가는 이사 승인 후 대표 결재로 순차 전달된다', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     await container.read(approvalDashboardControllerProvider.future);

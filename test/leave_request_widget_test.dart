@@ -45,7 +45,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('승인대기 휴가를 누르면 이사·대표이사 결재 진행 팝업이 표시된다', (tester) async {
+  testWidgets('승인대기 휴가를 누르면 이사·대표 결재 진행 팝업이 표시된다', (tester) async {
     tester.view.physicalSize = const Size(1440, 1000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -70,8 +70,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('결재 진행중'), findsOneWidget);
     expect(find.text('이사 정효정'), findsOneWidget);
-    expect(find.text('대표이사 조상훈'), findsOneWidget);
-    expect(find.text('이사 결재 후 대표이사 결재 창으로 자동 전달됩니다.'), findsOneWidget);
+    expect(find.text('대표 조상훈'), findsOneWidget);
+    expect(find.text('이사 결재 후 대표 결재 창으로 자동 전달됩니다.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
