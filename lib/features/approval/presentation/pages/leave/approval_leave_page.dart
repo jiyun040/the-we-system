@@ -5,6 +5,7 @@ import 'package:the_we_system/common/components/mobile_navigation.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
+import 'package:the_we_system/common/components/the_we_date_picker.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -225,11 +226,13 @@ class _LeaveContent extends ConsumerWidget {
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
           Future<void> pickDate(bool isStart) async {
-            final picked = await showDatePicker(
-              context: context,
+            final picked = await showTheWeDatePicker(
+              context,
               initialDate: isStart ? start : end,
               firstDate: DateTime.now(),
               lastDate: DateTime(DateTime.now().year + 2),
+              title: isStart ? '휴가 시작일 선택' : '휴가 종료일 선택',
+              dialogKey: const ValueKey('leave-date-picker'),
             );
             if (picked == null) return;
             setDialogState(() {
@@ -291,6 +294,7 @@ class _LeaveContent extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
+                            key: const ValueKey('leave-start-date-button'),
                             onPressed: () => pickDate(true),
                             icon: const Icon(Icons.event),
                             label: Text(DateFormat('yyyy-MM-dd').format(start)),
@@ -302,6 +306,7 @@ class _LeaveContent extends ConsumerWidget {
                         ),
                         Expanded(
                           child: OutlinedButton.icon(
+                            key: const ValueKey('leave-end-date-button'),
                             onPressed: halfDay ? null : () => pickDate(false),
                             icon: const Icon(Icons.event),
                             label: Text(DateFormat('yyyy-MM-dd').format(end)),

@@ -6,6 +6,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
+import 'package:the_we_system/common/components/the_we_date_picker.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_logo.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
@@ -1288,136 +1289,14 @@ Future<void> _selectHireDate(
 Future<DateTime?> _showHireDatePicker(
   BuildContext context,
   DateTime initialDate,
-) {
-  var selectedDate = initialDate;
-  return showDialog<DateTime>(
-    context: context,
-    builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setDialogState) {
-        final compact = MediaQuery.sizeOf(context).width < 600;
-        return Dialog(
-          key: const ValueKey('hire-date-picker'),
-          backgroundColor: TheWeColor.surfaceAlt,
-          insetPadding: EdgeInsets.all(compact ? 16 : 24),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
-          ),
-          child: SizedBox(
-            width: 420,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                compact ? 14 : 22,
-                compact ? 16 : 20,
-                compact ? 14 : 22,
-                compact ? 14 : 18,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: TheWeColor.blueSurface,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.calendar_month_outlined,
-                          color: TheWeColor.blue300,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text('입사일 선택', style: TheWeTextStyle.subtitle),
-                      ),
-                      IconButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        icon: const Icon(Icons.close),
-                        tooltip: '닫기',
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: compact ? 12 : 16),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: TheWeColor.blueSurface,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      _formatKoreanDate(selectedDate),
-                      textAlign: TextAlign.center,
-                      style: TheWeTextStyle.body.copyWith(
-                        color: TheWeColor.blue300,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: compact ? 4 : 8),
-                  Theme(
-                    data: Theme.of(context).copyWith(
-                      colorScheme: const ColorScheme.light(
-                        primary: TheWeColor.blue300,
-                        onPrimary: Colors.white,
-                        surface: TheWeColor.surfaceAlt,
-                        onSurface: TheWeColor.black900,
-                      ),
-                    ),
-                    child: CalendarDatePicker(
-                      initialDate: initialDate,
-                      firstDate: DateTime(1950),
-                      lastDate: DateTime.now(),
-                      onDateChanged: (date) =>
-                          setDialogState(() => selectedDate = date),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
-                        child: const Text('취소'),
-                      ),
-                      SizedBox(width: compact ? 4 : 8),
-                      FilledButton(
-                        onPressed: () =>
-                            Navigator.pop(dialogContext, selectedDate),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: TheWeColor.black900,
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(
-                            horizontal: compact ? 20 : 24,
-                            vertical: 13,
-                          ),
-                        ),
-                        child: const Text('선택'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
-
-String _formatKoreanDate(DateTime date) {
-  const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
-  return '${date.year}년 ${date.month}월 ${date.day}일 '
-      '(${weekdays[date.weekday - 1]})';
-}
+) => showTheWeDatePicker(
+  context,
+  initialDate: initialDate,
+  firstDate: DateTime(1950),
+  lastDate: DateTime.now(),
+  title: '입사일 선택',
+  dialogKey: const ValueKey('hire-date-picker'),
+);
 
 class _OrganizationManagement extends ConsumerWidget {
   const _OrganizationManagement({required this.state});
@@ -3284,11 +3163,13 @@ Future<void> _showAdminDirectLeaveDialog(
         final stackDates = MediaQuery.sizeOf(context).width < 600;
 
         Future<void> pickDate(bool startDate) async {
-          final picked = await showDatePicker(
-            context: context,
+          final picked = await showTheWeDatePicker(
+            context,
             initialDate: startDate ? start : end,
             firstDate: DateTime(2000),
             lastDate: DateTime(DateTime.now().year + 2, 12, 31),
+            title: startDate ? '휴가 시작일 선택' : '휴가 종료일 선택',
+            dialogKey: const ValueKey('admin-leave-date-picker'),
           );
           if (picked == null) return;
           setDialogState(() {
@@ -3338,6 +3219,9 @@ Future<void> _showAdminDirectLeaveDialog(
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
+                            key: const ValueKey(
+                              'admin-direct-start-date-button',
+                            ),
                             onPressed: () => pickDate(true),
                             icon: const Icon(Icons.event_outlined),
                             label: Text(
@@ -3361,6 +3245,7 @@ Future<void> _showAdminDirectLeaveDialog(
                         SizedBox(
                           width: double.infinity,
                           child: OutlinedButton.icon(
+                            key: const ValueKey('admin-direct-end-date-button'),
                             onPressed: halfDay ? null : () => pickDate(false),
                             icon: const Icon(Icons.event_outlined),
                             label: Text(
@@ -3381,6 +3266,9 @@ Future<void> _showAdminDirectLeaveDialog(
                       children: [
                         Expanded(
                           child: OutlinedButton.icon(
+                            key: const ValueKey(
+                              'admin-direct-start-date-button',
+                            ),
                             onPressed: () => pickDate(true),
                             icon: const Icon(Icons.event_outlined),
                             label: Text(DateFormat('yyyy-MM-dd').format(start)),
@@ -3392,6 +3280,7 @@ Future<void> _showAdminDirectLeaveDialog(
                         ),
                         Expanded(
                           child: OutlinedButton.icon(
+                            key: const ValueKey('admin-direct-end-date-button'),
                             onPressed: halfDay ? null : () => pickDate(false),
                             icon: const Icon(Icons.event_outlined),
                             label: Text(DateFormat('yyyy-MM-dd').format(end)),

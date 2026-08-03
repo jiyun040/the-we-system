@@ -28,6 +28,13 @@ void main() {
 
     expect(find.text('휴가 종류'), findsWidgets);
     expect(find.text('신청 사유 (필수)'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('leave-start-date-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('leave-date-picker')), findsOneWidget);
+    expect(find.text('휴가 시작일 선택'), findsOneWidget);
+    expect(find.byType(CalendarDatePicker), findsOneWidget);
+    await tester.tap(find.text('취소').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('연차').last);
     await tester.pumpAndSettle();
     expect(find.text('반차'), findsOneWidget);

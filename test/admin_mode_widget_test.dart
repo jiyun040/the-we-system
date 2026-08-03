@@ -259,6 +259,18 @@ void main() {
       ),
       isA<Column>(),
     );
+    await tester.tap(
+      find.byKey(const ValueKey('admin-direct-start-date-button')),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('admin-leave-date-picker')),
+      findsOneWidget,
+    );
+    expect(find.text('휴가 시작일 선택'), findsOneWidget);
+    expect(find.byType(CalendarDatePicker), findsOneWidget);
+    await tester.tap(find.text('취소').last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('취소').last);
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('employee-leave-back')));
