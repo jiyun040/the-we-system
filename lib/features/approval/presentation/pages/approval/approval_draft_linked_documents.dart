@@ -129,15 +129,16 @@ class _DraftInfoRow extends StatelessWidget {
             color: TheWeColor.black300.withValues(alpha: 0.18),
             child: Text(
               label,
-              style: TheWeTextStyle.caption.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-              child: Text(value, style: TheWeTextStyle.body),
+              child: Text(
+                value,
+                style: TheWeTextStyle.body.copyWith(fontSize: 16),
+              ),
             ),
           ),
         ],
@@ -173,8 +174,17 @@ class _DraftInputRow extends StatelessWidget {
           ),
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: CustomTextFormField(controller: controller),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              child: CustomTextFormField(
+                controller: controller,
+                style: TheWeTextStyle.body.copyWith(fontSize: 16),
+                decoration: const InputDecoration(
+                  fillColor: TheWeColor.white,
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                ),
+              ),
             ),
           ),
         ],

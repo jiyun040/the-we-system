@@ -55,32 +55,51 @@ class ApprovalDocumentSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           _DocumentMetaTable(document: document),
-          _SectionHeader(title: '상 세 내 용'),
-          Container(
-            constraints: const BoxConstraints(minHeight: 340),
-            padding: EdgeInsets.fromLTRB(
-              compact ? 14 : 28,
-              compact ? 16 : 24,
-              compact ? 14 : 28,
-              compact ? 24 : 36,
-            ),
-            decoration: BoxDecoration(
-              border: Border.all(color: TheWeColor.black900),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(1),
+          if (document.documentLayout == 'basic') ...[
+            _SectionHeader(title: '상 세 내 용'),
+            Container(
+              constraints: const BoxConstraints(minHeight: 340),
+              padding: EdgeInsets.fromLTRB(
+                compact ? 14 : 28,
+                compact ? 16 : 24,
+                compact ? 14 : 28,
+                compact ? 24 : 36,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(color: TheWeColor.black900),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(1),
+                ),
+              ),
+              child: Text(
+                document.content,
+                style: TheWeTextStyle.body.copyWith(fontSize: 16, height: 1.8),
               ),
             ),
-            child: Text(
-              document.content,
-              style: TheWeTextStyle.body.copyWith(height: 1.8),
-            ),
-          ),
+          ] else
+            _PdfDocumentBody(document: document),
+          if (document.linkedDocuments.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            _DocumentAttachmentArea(files: document.linkedDocuments),
+          ],
         ],
       ),
     );
   }
 
   String _sheetTitle(String form) {
+    if (document.documentLayout == 'expense') {
+      return '지출결의서(지급품의)';
+    }
+    if (document.documentLayout == 'hospitality') {
+      return '지출결의서(기업업무추진비)';
+    }
+    if (document.documentLayout == 'purchase') {
+      return '비품/소모품 구입신청서';
+    }
+    if (document.documentLayout == 'payroll') {
+      return '급여대장 기안서';
+    }
     if (form.contains('협조')) {
       return '업 무 협 조';
     }
@@ -89,6 +108,300 @@ class ApprovalDocumentSheet extends StatelessWidget {
     }
     return '업 무 기 안';
   }
+}
+
+class _PdfDocumentBody extends StatelessWidget {
+  const _PdfDocumentBody({required this.document});
+
+  final ApprovalDocument document;
+
+  @override
+  Widget build(BuildContext context) {
+    if (document.documentLayout == 'payroll') {
+      return Column(
+        children: [
+          _ReadOnlyWideRow(
+            label: '참    조',
+            value: document.formFields['reference'] ?? '-',
+          ),
+          _SectionHeader(title: '상 세 내 용'),
+          _ReadOnlyContent(content: document.content, minHeight: 260),
+        ],
+      );
+    }
+
+    final columns = _columnsFor(document.documentLayout);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ReadOnlyWideRow(
+          label: '비    고',
+          value: document.formFields['note'] ?? '-',
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: 820,
+            child: Column(
+              children: [
+                Row(
+                  children: columns
+                      .map(
+                        (column) => Expanded(
+                          flex: column.$3,
+                          child: _ReadOnlyTableCell(
+                            text: column.$2,
+                            header: true,
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+                ...document.lineItems
+                    .where(
+                      (item) => item.values.any((value) => value.isNotEmpty),
+                    )
+                    .map(
+                      (item) => Row(
+                        children: columns
+                            .map(
+                              (column) => Expanded(
+                                flex: column.$3,
+                                child: _ReadOnlyTableCell(
+                                  text: item[column.$1] ?? '',
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                Row(
+                  children: [
+                    const Expanded(
+                      flex: 8,
+                      child: _ReadOnlyTableCell(
+                        text: '합    계 (V.A.T 포함)',
+                        header: true,
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _ReadOnlyTableCell(
+                        text: _totalAmount(document.lineItems),
+                        header: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        _ReadOnlyContent(content: document.content, minHeight: 110),
+        const SizedBox(height: 20),
+        Text(
+          '위 금액을 청구하오니 결재하여 주시기 바랍니다.',
+          textAlign: TextAlign.center,
+          style: TheWeTextStyle.body,
+        ),
+        const SizedBox(height: 24),
+        Text(
+          '우리기술 주식회사',
+          textAlign: TextAlign.center,
+          style: TheWeTextStyle.subtitle,
+        ),
+      ],
+    );
+  }
+
+  List<(String, String, int)> _columnsFor(String layout) => switch (layout) {
+    'hospitality' => const [
+      ('date', '결 제 일', 2),
+      ('customer', '이용 가맹점명', 3),
+      ('place', '접 대 처', 3),
+      ('attendees', '참 석 인 원', 4),
+      ('amount', '금 액', 2),
+    ],
+    'purchase' => const [
+      ('date', '날 짜', 2),
+      ('item', '내 용', 3),
+      ('quantity', '수 량', 2),
+      ('amount', '금 액', 2),
+      ('total', '합계금액', 2),
+      ('remark', '비 고', 3),
+    ],
+    _ => const [
+      ('date', '입 금 일', 2),
+      ('item', '항 목', 3),
+      ('purpose', '적 요', 6),
+      ('amount', '금 액', 2),
+    ],
+  };
+
+  String _totalAmount(List<Map<String, String>> items) {
+    final sum = items.fold<int>(0, (total, item) {
+      final raw = (item['total'] ?? item['amount'] ?? '').replaceAll(',', '');
+      return total + (int.tryParse(raw) ?? 0);
+    });
+    return sum == 0 ? '-' : '${sum.toString()}원';
+  }
+}
+
+class _ReadOnlyContent extends StatelessWidget {
+  const _ReadOnlyContent({required this.content, required this.minHeight});
+
+  final String content;
+  final double minHeight;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: BoxConstraints(minHeight: minHeight),
+    width: double.infinity,
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(border: Border.all(color: TheWeColor.black900)),
+    child: Text(
+      content.isEmpty ? '-' : content,
+      style: TheWeTextStyle.body.copyWith(fontSize: 16, height: 1.7),
+    ),
+  );
+}
+
+class _ReadOnlyWideRow extends StatelessWidget {
+  const _ReadOnlyWideRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      SizedBox(
+        width: 110,
+        child: _ReadOnlyTableCell(text: label, header: true),
+      ),
+      Expanded(child: _ReadOnlyTableCell(text: value)),
+    ],
+  );
+}
+
+class _ReadOnlyTableCell extends StatelessWidget {
+  const _ReadOnlyTableCell({required this.text, this.header = false});
+
+  final String text;
+  final bool header;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    constraints: const BoxConstraints(minHeight: 42),
+    alignment: Alignment.center,
+    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 9),
+    decoration: BoxDecoration(
+      color: header
+          ? TheWeColor.black300.withValues(alpha: .14)
+          : TheWeColor.white,
+      border: Border.all(color: TheWeColor.black900, width: .6),
+    ),
+    child: Text(
+      text,
+      textAlign: TextAlign.center,
+      style: TheWeTextStyle.body.copyWith(
+        fontSize: 14,
+        fontWeight: header ? FontWeight.w700 : FontWeight.w400,
+      ),
+    ),
+  );
+}
+
+class _DocumentAttachmentArea extends StatelessWidget {
+  const _DocumentAttachmentArea({required this.files});
+
+  final List<String> files;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: TheWeColor.surfaceAlt,
+          border: Border.all(color: TheWeColor.black300.withValues(alpha: .4)),
+        ),
+        child: Text('첨부파일 ${files.length}개', style: TheWeTextStyle.subtitle),
+      ),
+      ...files.map((rawName) {
+        final name = rawName.replaceFirst('[첨부] ', '');
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: TheWeColor.black300.withValues(alpha: .4),
+              ),
+              right: BorderSide(
+                color: TheWeColor.black300.withValues(alpha: .4),
+              ),
+              bottom: BorderSide(
+                color: TheWeColor.black300.withValues(alpha: .4),
+              ),
+            ),
+          ),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              const Icon(
+                Icons.picture_as_pdf_outlined,
+                color: TheWeColor.danger,
+                size: 20,
+              ),
+              Text(name, style: TheWeTextStyle.body),
+              Text(
+                '(2.5MB)',
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.black500,
+                ),
+              ),
+              OutlinedButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('첨부파일 미리보기'),
+                    content: Text(name),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('닫기'),
+                      ),
+                    ],
+                  ),
+                ),
+                child: const Text('미리보기'),
+              ),
+              OutlinedButton(
+                onPressed: () => ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('$name 다운로드를 준비했습니다.'))),
+                child: const Text('다운로드'),
+              ),
+            ],
+          ),
+        );
+      }),
+      const SizedBox(height: 12),
+      TextField(
+        minLines: 2,
+        maxLines: 4,
+        decoration: InputDecoration(
+          hintText: '댓글을 남겨보세요.',
+          prefixIcon: const Icon(Icons.account_circle_outlined),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      ),
+    ],
+  );
 }
 
 class _BasicInfoTable extends StatelessWidget {
@@ -145,38 +458,46 @@ class ApprovalStampTable extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 520) {
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 9,
+        final narrow = constraints.maxWidth < 520;
+        final table = narrow
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: visibleSteps
+                    .map((step) => _MobileStampRow(step: step))
+                    .toList(),
+              )
+            : IntrinsicHeight(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _VerticalCell(label: '결\n재'),
+                    ...visibleSteps.map(
+                      (step) => Expanded(child: _StampCell(step: step)),
+                    ),
+                  ],
                 ),
-                color: TheWeColor.black300.withValues(alpha: 0.18),
-                child: Text(
-                  '결재 라인',
-                  style: TheWeTextStyle.caption.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              ...visibleSteps.map((step) => _MobileStampRow(step: step)),
-            ],
-          );
-        }
+              );
 
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _VerticalCell(label: '결\n재'),
-              ...visibleSteps.map(
-                (step) => Expanded(child: _StampCell(step: step)),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: 42,
+              alignment: Alignment.centerLeft,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: TheWeColor.black300.withValues(alpha: 0.18),
+                border: Border.all(color: TheWeColor.black900, width: .6),
               ),
-            ],
-          ),
+              child: Text(
+                '결재 라인',
+                style: TheWeTextStyle.body.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            table,
+          ],
         );
       },
     );
@@ -190,7 +511,9 @@ class _MobileStampRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final approved = step.status == '완료' || step.status == '진행중';
+    final approved = step.status == '완료';
+    final rejected = step.status == '반려';
+    final color = rejected ? TheWeColor.danger : TheWeColor.green;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -207,22 +530,28 @@ class _MobileStampRow extends StatelessWidget {
             width: 58,
             child: Text(
               step.role.isEmpty ? step.type : step.role,
-              style: TheWeTextStyle.caption.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
-          Expanded(child: Text(step.name, style: TheWeTextStyle.body)),
+          Expanded(
+            child: Text(
+              step.name,
+              style: TheWeTextStyle.body.copyWith(fontSize: 16),
+            ),
+          ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: (approved ? TheWeColor.green : TheWeColor.surface),
+              color: (approved || rejected ? color : TheWeColor.surface),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
-              step.approvedAt ?? step.status,
-              style: TheWeTextStyle.caption.copyWith(
-                color: approved ? Colors.white : TheWeColor.black500,
+              rejected ? '반려' : (step.approvedAt ?? step.status),
+              style: TheWeTextStyle.body.copyWith(
+                fontSize: 14,
+                color: approved || rejected
+                    ? Colors.white
+                    : TheWeColor.black500,
               ),
             ),
           ),
@@ -239,7 +568,8 @@ class _StampCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final approved = step.status == '완료' || step.status == '진행중';
+    final approved = step.status == '완료';
+    final rejected = step.status == '반려';
 
     return Container(
       height: 126,
@@ -258,26 +588,36 @@ class _StampCell extends StatelessWidget {
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  if (approved)
+                  if (approved || rejected)
                     Container(
                       width: 38,
                       height: 38,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.redAccent, width: 2),
+                        border: Border.all(
+                          color: rejected
+                              ? TheWeColor.danger
+                              : Colors.redAccent,
+                          width: 2,
+                        ),
                       ),
                       child: Text(
-                        '승인',
+                        rejected ? '반려' : '승인',
                         style: TheWeTextStyle.caption.copyWith(
-                          color: Colors.redAccent,
+                          color: rejected
+                              ? TheWeColor.danger
+                              : Colors.redAccent,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                   Padding(
                     padding: const EdgeInsets.only(top: 48),
-                    child: Text(step.name, style: TheWeTextStyle.caption),
+                    child: Text(
+                      step.name,
+                      style: TheWeTextStyle.body.copyWith(fontSize: 14),
+                    ),
                   ),
                 ],
               ),
@@ -307,7 +647,7 @@ class _StampText extends StatelessWidget {
         text,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: TheWeTextStyle.caption,
+        style: TheWeTextStyle.body.copyWith(fontSize: 14),
       ),
     );
   }
@@ -330,7 +670,10 @@ class _VerticalCell extends StatelessWidget {
       child: Text(
         label,
         textAlign: TextAlign.center,
-        style: TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
+        style: TheWeTextStyle.body.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }
@@ -383,7 +726,8 @@ class _WideRow extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: TheWeTextStyle.caption.copyWith(
+              style: TheWeTextStyle.body.copyWith(
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -393,7 +737,7 @@ class _WideRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Text(
                 value.isEmpty ? '-' : value,
-                style: compact ? TheWeTextStyle.caption : TheWeTextStyle.body,
+                style: TheWeTextStyle.body.copyWith(fontSize: 15),
               ),
             ),
           ),
@@ -411,19 +755,18 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 34,
+      height: 42,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: TheWeColor.black300.withValues(alpha: 0.18),
-        border: Border(
-          left: BorderSide(color: TheWeColor.black900),
-          right: BorderSide(color: TheWeColor.black900),
-          bottom: BorderSide(color: TheWeColor.black900),
-        ),
+        border: Border.all(color: TheWeColor.black900, width: .6),
       ),
       child: Text(
         title,
-        style: TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
+        style: TheWeTextStyle.body.copyWith(
+          fontSize: 15,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

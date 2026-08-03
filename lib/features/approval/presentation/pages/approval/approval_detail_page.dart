@@ -44,15 +44,20 @@ class ApprovalDetailPage extends ConsumerWidget {
         .firstOrNull;
     final canApprove =
         currentUser != null &&
-        (appState.isAdminMode || activeStep?.name == currentUser.name);
+        (appState.hasAdminDocumentAccess ||
+            activeStep?.name == currentUser.name);
     final canCancel =
         currentUser != null &&
-        (appState.isAdminMode || document.drafter == currentUser.name) &&
+        (appState.hasAdminDocumentAccess ||
+            document.drafter == currentUser.name) &&
         document.canCancel &&
         !document.steps.skip(1).any((step) => step.status == '완료');
     final canEdit =
         currentUser != null &&
-        (appState.isAdminMode || document.drafter == currentUser.name);
+        (appState.hasAdminDocumentAccess ||
+            document.drafter == currentUser.name) &&
+        document.canEdit &&
+        (document.status == '작성중' || document.status == '반려');
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
@@ -268,18 +273,14 @@ class _DocumentToolbar extends ConsumerWidget {
                       await ref
                           .read(approvalDashboardControllerProvider.notifier)
                           .cancelSubmission(document.id);
-                      if (context.mounted) {
-                        context.goNamed(
-                          AppRouteName.box,
-                          pathParameters: {'kind': 'drafts'},
-                        );
-                      }
                     },
                   ),
                 if (canEdit)
                   _ToolbarButton(
-                    icon: Icons.edit_square,
-                    label: '문서 수정',
+                    icon: document.status == '반려'
+                        ? Icons.restart_alt
+                        : Icons.edit_square,
+                    label: document.status == '반려' ? '재기안' : '작성 계속',
                     onPressed: () => context.pushNamed(
                       AppRouteName.draft,
                       queryParameters: {'reuse': document.id},

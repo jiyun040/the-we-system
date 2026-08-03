@@ -10,6 +10,8 @@ class _EditableDraftSheet extends StatelessWidget {
     required this.onRemoveLinkedDocument,
     required this.departmentVisible,
     required this.onDepartmentVisibilityChanged,
+    required this.onFormFieldChanged,
+    required this.onLineItemChanged,
   });
 
   final ApprovalDocument document;
@@ -20,6 +22,8 @@ class _EditableDraftSheet extends StatelessWidget {
   final ValueChanged<String> onRemoveLinkedDocument;
   final bool departmentVisible;
   final ValueChanged<bool> onDepartmentVisibilityChanged;
+  final void Function(String key, String value) onFormFieldChanged;
+  final void Function(int index, String key, String value) onLineItemChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -64,11 +68,7 @@ class _EditableDraftSheet extends StatelessWidget {
               );
               final line = Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('결재 라인', style: TheWeTextStyle.subtitle),
-                  const SizedBox(height: 8),
-                  ApprovalStampTable(steps: document.steps),
-                ],
+                children: [ApprovalStampTable(steps: document.steps)],
               );
 
               if (narrow) {
@@ -90,31 +90,15 @@ class _EditableDraftSheet extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           _DraftInputRow(label: '제    목', controller: titleController),
-          Container(
-            height: 36,
-            alignment: Alignment.center,
-            color: TheWeColor.black300.withValues(alpha: 0.18),
-            child: Text(
-              '상 세 내 용',
-              style: TheWeTextStyle.caption.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          if (document.documentLayout == ApprovalDocumentLayout.basic)
+            _BasicContentEditor(controller: contentController)
+          else
+            _PdfLayoutEditor(
+              document: document,
+              contentController: contentController,
+              onFormFieldChanged: onFormFieldChanged,
+              onLineItemChanged: onLineItemChanged,
             ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(color: TheWeColor.black900),
-            ),
-            child: CustomTextFormField(
-              controller: contentController,
-              minLines: 14,
-              maxLines: 18,
-              decoration: const InputDecoration(
-                hintText: '결재 내용을 양식 안에 직접 입력하세요.',
-              ),
-            ),
-          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -201,4 +185,310 @@ class _EditableDraftSheet extends StatelessWidget {
       ),
     );
   }
+}
+
+class _BasicContentEditor extends StatelessWidget {
+  const _BasicContentEditor({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    children: [
+      const _PdfSectionHeader('상 세 내 용'),
+      Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: TheWeColor.black900),
+        ),
+        child: CustomTextFormField(
+          controller: controller,
+          minLines: 14,
+          maxLines: 18,
+          style: TheWeTextStyle.body.copyWith(fontSize: 16, height: 1.65),
+          decoration: const InputDecoration(
+            hintText: '결재 내용을 양식 안에 직접 입력하세요.',
+            fillColor: TheWeColor.white,
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _PdfLayoutEditor extends StatelessWidget {
+  const _PdfLayoutEditor({
+    required this.document,
+    required this.contentController,
+    required this.onFormFieldChanged,
+    required this.onLineItemChanged,
+  });
+
+  final ApprovalDocument document;
+  final TextEditingController contentController;
+  final void Function(String key, String value) onFormFieldChanged;
+  final void Function(int index, String key, String value) onLineItemChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    if (document.documentLayout == ApprovalDocumentLayout.payroll) {
+      return Column(
+        children: [
+          _PdfWideInput(
+            label: '참    조',
+            value: document.formFields['reference'] ?? '',
+            onChanged: (value) => onFormFieldChanged('reference', value),
+          ),
+          const _PdfSectionHeader('상 세 내 용'),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: TheWeColor.black900),
+            ),
+            child: CustomTextFormField(
+              controller: contentController,
+              minLines: 10,
+              maxLines: 16,
+              style: TheWeTextStyle.body.copyWith(fontSize: 16, height: 1.65),
+              decoration: const InputDecoration(
+                hintText: '급여대장 인가 내용과 지급 기준을 입력하세요.',
+                fillColor: TheWeColor.white,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final columns = _columnsFor(document.documentLayout);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _PdfWideInput(
+          label: '비    고',
+          value: document.formFields['note'] ?? '',
+          onChanged: (value) => onFormFieldChanged('note', value),
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: 820,
+            child: Column(
+              children: [
+                Row(
+                  children: columns
+                      .map(
+                        (column) => Expanded(
+                          flex: column.$3,
+                          child: _PdfTableCell(text: column.$2, header: true),
+                        ),
+                      )
+                      .toList(),
+                ),
+                ...List.generate(document.lineItems.length, (index) {
+                  final item = document.lineItems[index];
+                  return Row(
+                    children: columns
+                        .map(
+                          (column) => Expanded(
+                            flex: column.$3,
+                            child: _PdfInputCell(
+                              key: ValueKey(
+                                'document-line-$index-${column.$1}',
+                              ),
+                              value: item[column.$1] ?? '',
+                              hintText: column.$1 == 'date' ? 'YYYY-MM-DD' : '',
+                              onChanged: (value) =>
+                                  onLineItemChanged(index, column.$1, value),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  );
+                }),
+                Row(
+                  children: [
+                    const Expanded(
+                      flex: 8,
+                      child: _PdfTableCell(text: '합    계', header: true),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: _PdfTableCell(
+                        text: _totalAmount(document.lineItems),
+                        header: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        const _PdfSectionHeader('지 시 사 항 / 상세 설명'),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: TheWeColor.black900),
+          ),
+          child: CustomTextFormField(
+            controller: contentController,
+            minLines: 4,
+            maxLines: 8,
+            style: TheWeTextStyle.body.copyWith(fontSize: 16, height: 1.65),
+            decoration: const InputDecoration(
+              hintText: '문서 하단에 표시할 설명을 입력하세요.',
+              fillColor: TheWeColor.white,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<(String, String, int)> _columnsFor(String layout) => switch (layout) {
+    ApprovalDocumentLayout.hospitality => const [
+      ('date', '결 제 일', 2),
+      ('customer', '이용 가맹점명', 3),
+      ('place', '접 대 처', 3),
+      ('attendees', '참 석 인 원', 4),
+      ('amount', '금 액', 2),
+    ],
+    ApprovalDocumentLayout.purchase => const [
+      ('date', '날 짜', 2),
+      ('item', '내 용', 3),
+      ('quantity', '수 량', 2),
+      ('amount', '금 액', 2),
+      ('total', '합계금액', 2),
+      ('remark', '비 고', 3),
+    ],
+    _ => const [
+      ('date', '입 금 일', 2),
+      ('item', '항 목', 3),
+      ('purpose', '적 요', 6),
+      ('amount', '금 액', 2),
+    ],
+  };
+
+  String _totalAmount(List<Map<String, String>> items) {
+    final sum = items.fold<int>(0, (total, item) {
+      final raw = (item['total'] ?? item['amount'] ?? '').replaceAll(',', '');
+      return total + (int.tryParse(raw) ?? 0);
+    });
+    return sum == 0 ? '' : '${sum.toString()}원';
+  }
+}
+
+class _PdfWideInput extends StatelessWidget {
+  const _PdfWideInput({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String label;
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      SizedBox(width: 110, child: _PdfTableCell(text: label, header: true)),
+      Expanded(
+        child: _PdfInputCell(value: value, onChanged: onChanged),
+      ),
+    ],
+  );
+}
+
+class _PdfSectionHeader extends StatelessWidget {
+  const _PdfSectionHeader(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 42,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: TheWeColor.black300.withValues(alpha: 0.18),
+      border: Border.all(color: TheWeColor.black900, width: .6),
+    ),
+    child: Text(
+      title,
+      style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
+    ),
+  );
+}
+
+class _PdfTableCell extends StatelessWidget {
+  const _PdfTableCell({required this.text, this.header = false});
+
+  final String text;
+  final bool header;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 48,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: header
+          ? TheWeColor.black300.withValues(alpha: .14)
+          : TheWeColor.white,
+      border: Border.all(color: TheWeColor.black900, width: .6),
+    ),
+    padding: const EdgeInsets.symmetric(horizontal: 6),
+    child: Text(
+      text,
+      textAlign: TextAlign.center,
+      style: TheWeTextStyle.body.copyWith(
+        fontSize: 14,
+        fontWeight: header ? FontWeight.w700 : FontWeight.w400,
+      ),
+    ),
+  );
+}
+
+class _PdfInputCell extends StatelessWidget {
+  const _PdfInputCell({
+    super.key,
+    required this.value,
+    required this.onChanged,
+    this.hintText = '',
+  });
+
+  final String value;
+  final ValueChanged<String> onChanged;
+  final String hintText;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    height: 48,
+    decoration: BoxDecoration(
+      color: TheWeColor.white,
+      border: Border.all(color: TheWeColor.black900, width: .6),
+    ),
+    child: TextFormField(
+      initialValue: value,
+      onChanged: onChanged,
+      textAlign: TextAlign.center,
+      style: TheWeTextStyle.body.copyWith(fontSize: 15),
+      decoration: InputDecoration(
+        hintText: hintText,
+        isDense: true,
+        border: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
+      ),
+    ),
+  );
 }

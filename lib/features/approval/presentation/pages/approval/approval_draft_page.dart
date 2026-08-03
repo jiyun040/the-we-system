@@ -39,6 +39,8 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   String? selectedFormId;
   String? editingDocumentId;
   List<String> linkedDocuments = [];
+  Map<String, String> formFields = {};
+  List<Map<String, String>> lineItems = [];
   bool departmentVisible = true;
   bool initialized = false;
 
@@ -78,6 +80,13 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
               titleController.text = seedDocument.title;
               contentController.text = seedDocument.content;
               linkedDocuments = [...seedDocument.linkedDocuments];
+              formFields = {...seedDocument.formFields};
+              lineItems = seedDocument.lineItems
+                  .map((item) => {...item})
+                  .toList();
+              departmentVisible = !appState.restrictedDocumentIds.contains(
+                seedDocument.id,
+              );
               editingDocumentId = sourceDocument?.status == '작성중'
                   ? sourceDocument?.id
                   : null;
@@ -89,6 +98,11 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
               content: contentController.text,
               form: currentTemplate?.name ?? seedDocument.form,
               linkedDocuments: linkedDocuments,
+              documentLayout:
+                  currentTemplate?.documentLayout ??
+                  seedDocument.documentLayout,
+              formFields: formFields,
+              lineItems: lineItems,
             );
 
             return Column(
@@ -117,6 +131,18 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                           titleController.text = template.defaultTitle;
                           contentController.text = template.defaultContent;
                           linkedDocuments = [];
+                          formFields = {};
+                          lineItems =
+                              template.documentLayout ==
+                                      ApprovalDocumentLayout.basic ||
+                                  template.documentLayout ==
+                                      ApprovalDocumentLayout.payroll
+                              ? []
+                              : List.generate(
+                                  template.lineItemRows,
+                                  (_) => <String, String>{},
+                                );
+                          departmentVisible = true;
                           editingDocumentId = null;
                         });
                       }
@@ -156,6 +182,17 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                             departmentVisible: departmentVisible,
                             onDepartmentVisibilityChanged: (value) {
                               setState(() => departmentVisible = value);
+                            },
+                            onFormFieldChanged: (key, value) {
+                              setState(() => formFields[key] = value);
+                            },
+                            onLineItemChanged: (index, key, value) {
+                              setState(() {
+                                lineItems[index] = {
+                                  ...lineItems[index],
+                                  key: value,
+                                };
+                              });
                             },
                           ),
                         ),
@@ -225,6 +262,10 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
         title: '${sourceDocument.title} 재기안',
         content: sourceDocument.content,
         form: template?.name ?? sourceDocument.form,
+        documentLayout: sourceDocument.documentLayout,
+        formFields: sourceDocument.formFields,
+        lineItems: sourceDocument.lineItems,
+        linkedDocuments: sourceDocument.linkedDocuments,
       );
     }
 
@@ -266,6 +307,9 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
             urgent: urgent,
             linkedDocuments: linkedDocuments,
             departmentVisible: departmentVisible,
+            documentLayout: document.documentLayout,
+            formFields: formFields,
+            lineItems: lineItems,
           ),
         );
     if (id != null && mounted) {
@@ -287,6 +331,9 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
           title: titleController.text.trim(),
           content: contentController.text.trim(),
           linkedDocuments: linkedDocuments,
+          departmentVisible: departmentVisible,
+          formFields: formFields,
+          lineItems: lineItems,
         );
     if (id == null || !mounted) {
       return;

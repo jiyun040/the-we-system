@@ -32,6 +32,9 @@ abstract class ApprovalDocument with _$ApprovalDocument {
     @Default(<String>[]) List<String> viewers,
     @Default(<String>[]) List<String> publicReceivers,
     @Default(<String>[]) List<String> linkedDocuments,
+    @Default('basic') String documentLayout,
+    @Default(<String, String>{}) Map<String, String> formFields,
+    @Default(<Map<String, String>>[]) List<Map<String, String>> lineItems,
     @Default(<ApprovalStep>[]) List<ApprovalStep> steps,
     @Default(<ApprovalHistory>[]) List<ApprovalHistory> histories,
   }) = _ApprovalDocument;

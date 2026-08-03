@@ -33,6 +33,8 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       viewers: template.viewers,
       publicReceivers: template.publicReceivers,
       linkedDocuments: const [],
+      documentLayout: template.documentLayout,
+      lineItems: _emptyLineItems(template),
       steps: _buildStepsFor(user, current.accounts),
       histories: [
         ApprovalHistory(
@@ -53,6 +55,9 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     required String title,
     required String content,
     required List<String> linkedDocuments,
+    required bool departmentVisible,
+    required Map<String, String> formFields,
+    required List<Map<String, String>> lineItems,
   }) async {
     final current = _currentState;
     final user = current?.currentUser;
@@ -94,6 +99,9 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       viewers: template.viewers,
       publicReceivers: template.publicReceivers,
       linkedDocuments: linkedDocuments,
+      documentLayout: template.documentLayout,
+      formFields: formFields,
+      lineItems: lineItems,
       steps: _buildStepsFor(user, current.accounts),
       histories: [
         ApprovalHistory(
@@ -112,7 +120,16 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
         ...value.documents.where((item) => item.id != id),
         draft,
       ]..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
-      return value.copyWith(documents: documents);
+      final restrictedIds = {...value.restrictedDocumentIds};
+      if (departmentVisible) {
+        restrictedIds.remove(id);
+      } else {
+        restrictedIds.add(id);
+      }
+      return value.copyWith(
+        documents: documents,
+        restrictedDocumentIds: restrictedIds,
+      );
     });
     return id;
   }
@@ -164,6 +181,9 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       viewers: template.viewers,
       publicReceivers: template.publicReceivers,
       linkedDocuments: draft.linkedDocuments,
+      documentLayout: draft.documentLayout,
+      formFields: draft.formFields,
+      lineItems: draft.lineItems,
       steps: steps,
       histories: [
         ApprovalHistory(
