@@ -628,6 +628,13 @@ class _AdminDocumentManagementState extends State<_AdminDocumentManagement> {
               return ChoiceChip(
                 key: ValueKey('admin-document-filter-$status'),
                 selected: selectedStatus == status,
+                selectedColor: TheWeColor.blueSurface,
+                checkmarkColor: TheWeColor.blue300,
+                side: BorderSide(
+                  color: selectedStatus == status
+                      ? TheWeColor.blue200
+                      : TheWeColor.black300.withValues(alpha: .35),
+                ),
                 label: Text('${_adminDocumentStatusLabel(status)} $count'),
                 onSelected: (_) => setState(() => selectedStatus = status),
               );
@@ -1224,7 +1231,7 @@ class _EmployeeCard extends StatelessWidget {
             ),
           ],
         ),
-        const Divider(height: 15),
+        _adminDivider(height: 15),
         Row(
           children: [
             Expanded(
@@ -1467,7 +1474,7 @@ class _OrganizationManagement extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    const Divider(height: 26),
+                    _adminDivider(height: 26),
                     ...members.map(
                       (member) => ListTile(
                         contentPadding: EdgeInsets.zero,
@@ -2264,7 +2271,7 @@ class _IntegratedSettings extends ConsumerWidget {
                     .read(approvalDashboardControllerProvider.notifier)
                     .updateSecurityPolicy(adminOtpEnabled: value),
               ),
-              const Divider(height: 1),
+              _adminDivider(),
               _SecurityPolicyTile(
                 key: const ValueKey('security-settings-password'),
                 icon: Icons.password_outlined,
@@ -2275,7 +2282,7 @@ class _IntegratedSettings extends ConsumerWidget {
                     .read(approvalDashboardControllerProvider.notifier)
                     .updateSecurityPolicy(settingsPasswordEnabled: value),
               ),
-              const Divider(height: 1),
+              _adminDivider(),
               _SecurityPolicyTile(
                 key: const ValueKey('security-admin-documents'),
                 icon: Icons.folder_shared_outlined,
@@ -2310,30 +2317,69 @@ class _IntegratedSettings extends ConsumerWidget {
   }
 }
 
-class _IntegratedOrganizationSettings extends ConsumerWidget {
+class _IntegratedOrganizationSettings extends ConsumerStatefulWidget {
   const _IntegratedOrganizationSettings({required this.state});
 
   final ApprovalDashboardState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Container(
+  ConsumerState<_IntegratedOrganizationSettings> createState() =>
+      _IntegratedOrganizationSettingsState();
+}
+
+class _IntegratedOrganizationSettingsState
+    extends ConsumerState<_IntegratedOrganizationSettings> {
+  final Map<String, ExpansibleController> _controllers = {};
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _handleExpansionChanged(String department, bool expanded) {
+    if (!expanded) return;
+    for (final entry in _controllers.entries) {
+      if (entry.key != department && entry.value.isExpanded) {
+        entry.value.collapse();
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Container(
     decoration: _adminSurface(),
     clipBehavior: Clip.antiAlias,
     child: Material(
       color: Colors.transparent,
       child: Column(
         children: [
-          for (var index = 0; index < state.departments.length; index++) ...[
+          for (
+            var index = 0;
+            index < widget.state.departments.length;
+            index++
+          ) ...[
             Builder(
               builder: (context) {
-                final department = state.departments[index];
+                final department = widget.state.departments[index];
                 final members =
-                    state.accounts
+                    widget.state.accounts
                         .where((account) => account.department == department)
                         .toList()
                       ..sort((a, b) => a.name.compareTo(b.name));
+                final controller = _controllers.putIfAbsent(
+                  department,
+                  ExpansibleController.new,
+                );
                 return ExpansionTile(
                   key: PageStorageKey('organization-$department'),
+                  controller: controller,
+                  onExpansionChanged: (expanded) =>
+                      _handleExpansionChanged(department, expanded),
+                  shape: const Border(),
+                  collapsedShape: const Border(),
                   tilePadding: const EdgeInsets.only(left: 12, right: 10),
                   childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
                   leading: const Icon(
@@ -2394,7 +2440,7 @@ class _IntegratedOrganizationSettings extends ConsumerWidget {
                 );
               },
             ),
-            if (index != state.departments.length - 1) const Divider(height: 1),
+            if (index != widget.state.departments.length - 1) _adminDivider(),
           ],
         ],
       ),
@@ -2594,7 +2640,7 @@ class _IntegratedAppSettings extends ConsumerWidget {
                   ),
                 ),
               ),
-            if (index != apps.length - 1) const Divider(height: 1),
+            if (index != apps.length - 1) _adminDivider(),
           ],
         ],
       ),
@@ -2682,7 +2728,7 @@ class _AdminPermissionSettings extends ConsumerWidget {
                     },
             ),
           ),
-          if (index != state.accounts.length - 1) const Divider(height: 1),
+          if (index != state.accounts.length - 1) _adminDivider(),
         ],
       ],
     ),
@@ -3115,24 +3161,77 @@ class _EmployeeLeaveOverviewDialog extends StatelessWidget {
                           return Container(
                             padding: const EdgeInsets.all(13),
                             decoration: _adminSurface(),
-                            child: Row(
-                              children: [
-                                Chip(
-                                  label: Text(
-                                    request.directEntry
-                                        ? '관리자 등록'
-                                        : request.status,
+                            child: mobile
+                                ? Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Chip(
+                                            label: Text(
+                                              request.directEntry
+                                                  ? '관리자 등록'
+                                                  : request.status,
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          Text(_leaveDays(request.days)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        request.type,
+                                        key: ValueKey(
+                                          'employee-leave-type-${request.id}',
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        '${request.startDate} ~ ${request.endDate}',
+                                        key: ValueKey(
+                                          'employee-leave-date-${request.id}',
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TheWeTextStyle.caption.copyWith(
+                                          color: TheWeColor.black500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 5),
+                                      Text(
+                                        '${request.reason}${request.directEntry ? ' · 등록자 ${request.registeredBy}' : ''}',
+                                        key: ValueKey(
+                                          'employee-leave-reason-${request.id}',
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TheWeTextStyle.caption.copyWith(
+                                          color: TheWeColor.black500,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Row(
+                                    children: [
+                                      Chip(
+                                        label: Text(
+                                          request.directEntry
+                                              ? '관리자 등록'
+                                              : request.status,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Text(
+                                          '${request.type} · ${request.startDate} ~ ${request.endDate}\n${request.reason}${request.directEntry ? ' · 등록자 ${request.registeredBy}' : ''}',
+                                        ),
+                                      ),
+                                      Text(_leaveDays(request.days)),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    '${request.type} · ${request.startDate} ~ ${request.endDate}\n${request.reason}${request.directEntry ? ' · 등록자 ${request.registeredBy}' : ''}',
-                                  ),
-                                ),
-                                Text(_leaveDays(request.days)),
-                              ],
-                            ),
                           );
                         },
                       ),
@@ -3182,6 +3281,7 @@ Future<void> _showAdminDirectLeaveDialog(
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setDialogState) {
         final halfDay = type == '반차';
+        final stackDates = MediaQuery.sizeOf(context).width < 600;
 
         Future<void> pickDate(bool startDate) async {
           final picked = await showDatePicker(
@@ -3231,28 +3331,74 @@ Future<void> _showAdminDirectLeaveDialog(
                     }),
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => pickDate(true),
-                          icon: const Icon(Icons.event_outlined),
-                          label: Text(DateFormat('yyyy-MM-dd').format(start)),
+                  if (stackDates)
+                    Column(
+                      key: const ValueKey('admin-direct-leave-date-layout'),
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () => pickDate(true),
+                            icon: const Icon(Icons.event_outlined),
+                            label: Text(
+                              '시작일  ${DateFormat('yyyy-MM-dd').format(start)}',
+                              maxLines: 1,
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              alignment: Alignment.centerLeft,
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                          ),
                         ),
-                      ),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text('~'),
-                      ),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: halfDay ? null : () => pickDate(false),
-                          icon: const Icon(Icons.event_outlined),
-                          label: Text(DateFormat('yyyy-MM-dd').format(end)),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Icon(
+                            Icons.arrow_downward,
+                            size: 17,
+                            color: TheWeColor.black500,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: halfDay ? null : () => pickDate(false),
+                            icon: const Icon(Icons.event_outlined),
+                            label: Text(
+                              '종료일  ${DateFormat('yyyy-MM-dd').format(end)}',
+                              maxLines: 1,
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              alignment: Alignment.centerLeft,
+                              minimumSize: const Size.fromHeight(48),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      key: const ValueKey('admin-direct-leave-date-layout'),
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => pickDate(true),
+                            icon: const Icon(Icons.event_outlined),
+                            label: Text(DateFormat('yyyy-MM-dd').format(start)),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('~'),
+                        ),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: halfDay ? null : () => pickDate(false),
+                            icon: const Icon(Icons.event_outlined),
+                            label: Text(DateFormat('yyyy-MM-dd').format(end)),
+                          ),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 12),
                   TextField(
                     key: const ValueKey('admin-direct-leave-reason'),
@@ -3446,6 +3592,12 @@ BoxDecoration _adminSurface() => BoxDecoration(
   boxShadow: const [
     BoxShadow(color: Color(0x08000000), blurRadius: 18, offset: Offset(0, 8)),
   ],
+);
+
+Widget _adminDivider({double height = 1}) => Divider(
+  height: height,
+  thickness: 1,
+  color: TheWeColor.black300.withValues(alpha: .2),
 );
 
 Future<String?> _requestOtp(BuildContext context) async {

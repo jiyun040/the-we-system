@@ -66,6 +66,14 @@ void main() {
       find.byKey(const ValueKey('admin-document-filter-결재대기')),
       findsOneWidget,
     );
+    expect(
+      tester
+          .widget<ChoiceChip>(
+            find.byKey(const ValueKey('admin-document-filter-전체')),
+          )
+          .checkmarkColor,
+      TheWeColor.blue300,
+    );
     expect(find.text('상세'), findsNWidgets(6));
     await tester.tap(find.text('상세').first);
     await tester.pumpAndSettle();
@@ -129,6 +137,39 @@ void main() {
     expect(find.text('조직도 설정'), findsOneWidget);
     expect(find.text('APP 설정'), findsOneWidget);
     expect(find.text('관리자 권한 설정'), findsOneWidget);
+    final organizationTile = tester.widget<ExpansionTile>(
+      find.byType(ExpansionTile).first,
+    );
+    expect(organizationTile.shape, const Border());
+    expect(organizationTile.collapsedShape, const Border());
+    final departmentTiles = find.byType(ExpansionTile);
+    expect(departmentTiles, findsNWidgets(4));
+    final firstDepartment = departmentTiles.at(0);
+    final secondDepartment = departmentTiles.at(1);
+    final firstController = tester
+        .widget<ExpansionTile>(firstDepartment)
+        .controller!;
+    final secondController = tester
+        .widget<ExpansionTile>(secondDepartment)
+        .controller!;
+    final firstTitle = tester.widget<ExpansionTile>(firstDepartment).title;
+    final secondTitle = tester.widget<ExpansionTile>(secondDepartment).title;
+    await tester.ensureVisible(firstDepartment);
+    await tester.tap(
+      find.descendant(of: firstDepartment, matching: find.byWidget(firstTitle)),
+    );
+    await tester.pumpAndSettle();
+    expect(firstController.isExpanded, isTrue);
+    await tester.ensureVisible(secondDepartment);
+    await tester.tap(
+      find.descendant(
+        of: secondDepartment,
+        matching: find.byWidget(secondTitle),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(firstController.isExpanded, isFalse);
+    expect(secondController.isExpanded, isTrue);
     expect(
       find.byKey(const ValueKey('integrated-app-switch-approval')),
       findsOneWidget,
@@ -153,6 +194,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('annual-leave-10')), findsOneWidget);
     expect(find.byKey(const ValueKey('annual-leave-11')), findsNothing);
+    expect(
+      tester.widget<Divider>(find.byType(Divider).first).color,
+      TheWeColor.black300.withValues(alpha: .2),
+    );
 
     await tester.ensureVisible(find.byKey(const ValueKey('annual-leave-1')));
     await tester.enterText(find.byKey(const ValueKey('annual-leave-1')), '16');
@@ -190,6 +235,36 @@ void main() {
 
     expect(find.text('근태 관리'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+    await tester.tap(find.text('전체 직원'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ListTile, '교육강사'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('employee-leave-type-LEAVE-SEED-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('employee-leave-date-LEAVE-SEED-1')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('employee-leave-reason-LEAVE-SEED-1')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('admin-direct-leave-button')));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<Widget>(
+        find.byKey(const ValueKey('admin-direct-leave-date-layout')),
+      ),
+      isA<Column>(),
+    );
+    await tester.tap(find.text('취소').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('employee-leave-back')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('사원 관리').last);
     await tester.pumpAndSettle();
     expect(find.text('사원 관리'), findsOneWidget);
