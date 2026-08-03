@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_logo.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -69,6 +70,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                     onSelected: (value) =>
                         setState(() => selectedIndex = value),
                     onLeave: _leaveAdmin,
+                    onLogout: _logout,
                   ),
                 Expanded(
                   child: ColoredBox(
@@ -82,6 +84,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                 ? () => _showCompactMenu(state)
                                 : null,
                             onLeave: _leaveAdmin,
+                            onLogout: _logout,
                           ),
                         Expanded(
                           child: SingleChildScrollView(
@@ -124,6 +127,24 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
 
   void _leaveAdmin() {
     ref.read(approvalDashboardControllerProvider.notifier).leaveAdminMode();
+    context.goNamed(AppRouteName.home);
+  }
+
+  Future<void> _logout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => TheWeConfirmDialog(
+        title: '로그아웃할까요?',
+        message: '관리자 계정에서 로그아웃됩니다.',
+        primaryLabel: '로그아웃',
+        secondaryLabel: '취소',
+        primaryColor: TheWeColor.danger,
+        onPrimaryPressed: () => Navigator.of(context).pop(true),
+        onSecondaryPressed: () => Navigator.of(context).pop(false),
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    ref.read(approvalDashboardControllerProvider.notifier).logout();
     context.goNamed(AppRouteName.home);
   }
 
@@ -229,12 +250,14 @@ class _AdminNavigation extends StatelessWidget {
     required this.logoBytes,
     required this.onSelected,
     required this.onLeave,
+    required this.onLogout,
   });
   final int selectedIndex;
   final String portalName;
   final Uint8List? logoBytes;
   final ValueChanged<int> onSelected;
   final VoidCallback onLeave;
+  final VoidCallback onLogout;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -287,6 +310,17 @@ class _AdminNavigation extends StatelessWidget {
               minimumSize: const Size.fromHeight(46),
             ),
           ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey('admin-logout-button'),
+            onPressed: onLogout,
+            icon: const Icon(Icons.logout_outlined),
+            label: const Text('로그아웃'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: TheWeColor.danger,
+              minimumSize: const Size.fromHeight(46),
+            ),
+          ),
         ],
       ),
     ),
@@ -298,10 +332,12 @@ class _AdminHeader extends StatelessWidget {
     required this.mobile,
     required this.onOpenMenu,
     required this.onLeave,
+    required this.onLogout,
   });
   final bool mobile;
   final VoidCallback? onOpenMenu;
   final VoidCallback onLeave;
+  final VoidCallback onLogout;
   @override
   Widget build(BuildContext context) => Container(
     height: mobile ? 46 : 56,
@@ -316,6 +352,13 @@ class _AdminHeader extends StatelessWidget {
           onPressed: onLeave,
           tooltip: '일반 화면',
           icon: const Icon(Icons.swap_horiz),
+        ),
+        IconButton(
+          key: const ValueKey('admin-logout-button'),
+          onPressed: onLogout,
+          tooltip: '로그아웃',
+          color: TheWeColor.danger,
+          icon: const Icon(Icons.logout_outlined),
         ),
       ],
     ),

@@ -161,6 +161,16 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('연차 설정이 저장되었습니다.'), findsOneWidget);
     expect(tester.takeException(), isNull);
+
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('admin-logout-button')));
+    await tester.pumpAndSettle();
+    expect(find.text('로그아웃할까요?'), findsOneWidget);
+    await tester.tap(find.text('로그아웃').last);
+    await tester.pumpAndSettle();
+    expect(find.text('로그인'), findsWidgets);
+    expect(find.text('회사 운영 현황'), findsNothing);
   });
 
   testWidgets('모바일 일반 화면에서 관리자 전환 버튼이 표시된다', (tester) async {
@@ -207,6 +217,7 @@ void main() {
     );
     await tester.tap(find.byTooltip('닫기'));
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('admin-logout-button')), findsOneWidget);
     await tester.tap(find.byTooltip('일반 화면'));
     await tester.pumpAndSettle();
     expect(find.byTooltip('관리자 계정 전환'), findsOneWidget);
