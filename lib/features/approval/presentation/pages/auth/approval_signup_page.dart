@@ -34,14 +34,11 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
     '부장',
   ];
 
-  static const List<String> _adminPositions = ['관리자', '팀장', '본부장'];
-
   final nameController = TextEditingController();
   final idController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  bool isAdmin = false;
   bool showPassword = false;
   bool showConfirmPassword = false;
   String errorMessage = '';
@@ -106,41 +103,6 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Text('역할', style: TheWeTextStyle.body),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _RoleChip(
-                        label: '기본직원',
-                        selected: !isAdmin,
-                        onTap: () {
-                          setState(() {
-                            isAdmin = false;
-                            if (!_employeePositions.contains(
-                              selectedPosition,
-                            )) {
-                              selectedPosition = _employeePositions.first;
-                            }
-                          });
-                        },
-                      ),
-                      _RoleChip(
-                        label: '관리자',
-                        selected: isAdmin,
-                        onTap: () {
-                          setState(() {
-                            isAdmin = true;
-                            if (!_adminPositions.contains(selectedPosition)) {
-                              selectedPosition = _adminPositions.first;
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
                   _FieldLabel('이름'),
                   CustomTextFormField(controller: nameController),
                   const SizedBox(height: 14),
@@ -165,7 +127,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   _FieldLabel('직책'),
                   _SelectionDropdown(
                     value: selectedPosition,
-                    items: isAdmin ? _adminPositions : _employeePositions,
+                    items: _employeePositions,
                     onChanged: (value) {
                       if (value == null) {
                         return;
@@ -284,7 +246,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
           department: department,
           position: position,
           email: email,
-          isAdmin: isAdmin,
+          isAdmin: false,
         );
 
     if (error != null) {
@@ -355,31 +317,6 @@ class _FieldLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(label, style: TheWeTextStyle.body),
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label, style: TheWeTextStyle.body),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      selectedColor: TheWeColor.blue100.withValues(alpha: 0.5),
-      side: BorderSide(
-        color: selected ? TheWeColor.blue300 : TheWeColor.black300,
-      ),
     );
   }
 }

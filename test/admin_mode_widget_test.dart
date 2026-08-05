@@ -21,7 +21,10 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(1), '1234');
     await tester.tap(find.text('로그인').last);
     await tester.pumpAndSettle();
-    expect(find.text('관리자 OTP 인증'), findsOneWidget);
+    expect(find.text('홈'), findsWidgets);
+    await tester.tap(find.text('관리자 계정 전환'));
+    await tester.pumpAndSettle();
+    expect(find.text('OTP 2차 인증'), findsOneWidget);
     await tester.enterText(find.byType(TextField).last, '123456');
     await tester.tap(find.text('인증'));
     await tester.pumpAndSettle();
@@ -32,6 +35,26 @@ void main() {
       TheWeColor.background,
     );
     expect(find.text('회사 운영 현황'), findsOneWidget);
+    await tester.tap(find.text('부서').first);
+    await tester.pumpAndSettle();
+    expect(find.text('부서 현황'), findsOneWidget);
+    final directoryTiles = find.byType(ExpansionTile);
+    expect(directoryTiles, findsNWidgets(4));
+    final firstDirectoryTile = tester.widget<ExpansionTile>(
+      directoryTiles.at(0),
+    );
+    final secondDirectoryTile = tester.widget<ExpansionTile>(
+      directoryTiles.at(1),
+    );
+    await tester.tap(find.text('개발팀'));
+    await tester.pumpAndSettle();
+    expect(firstDirectoryTile.controller?.isExpanded, isTrue);
+    await tester.tap(find.text('경영관리팀'));
+    await tester.pumpAndSettle();
+    expect(firstDirectoryTile.controller?.isExpanded, isFalse);
+    expect(secondDirectoryTile.controller?.isExpanded, isTrue);
+    await tester.tap(find.byIcon(Icons.close).last);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('전체 직원'));
     await tester.pumpAndSettle();
     expect(find.text('전체 직원 연차 현황'), findsOneWidget);
@@ -174,10 +197,8 @@ void main() {
       find.byKey(const ValueKey('integrated-app-switch-approval')),
       findsOneWidget,
     );
-    expect(
-      find.byKey(const ValueKey('admin-permission-admin_master')),
-      findsOneWidget,
-    );
+    expect(find.text('전용 관리자'), findsOneWidget);
+    expect(find.text('교육관리팀 · 과장 · edu_manager'), findsOneWidget);
     const otpPolicyKey = ValueKey('security-admin-otp');
     expect(find.byKey(otpPolicyKey), findsOneWidget);
     final otpSwitch = find.descendant(
@@ -227,7 +248,13 @@ void main() {
     appRouter.go('/');
     await tester.pumpWidget(const ProviderScope(child: MyApp()));
     await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).at(0), 'edu_manager');
+    await tester.enterText(find.byType(TextFormField).at(1), '1234');
     await tester.tap(find.text('로그인').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('관리자 계정 전환'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OTP 인증'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).last, '123456');
     await tester.tap(find.text('인증'));

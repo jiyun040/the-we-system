@@ -180,18 +180,4 @@ final _seedState = <String, AttendanceSnapshot>{
     requests: [],
     delegations: [],
   ),
-  'admin_master': const AttendanceSnapshot(
-    workPolicy: '관리자 근무제',
-    clockInTime: '08:40',
-    clockOutTime: null,
-    annualLeaveRemaining: 15.0,
-    annualLeaveUsed: 0.0,
-    lateCount: 0,
-    overtimeHours: 2,
-    weeklyWorkedHours: 38,
-    weeklyRequiredHours: 40,
-    remainingWorkDays: 2,
-    requests: [],
-    delegations: [],
-  ),
 };

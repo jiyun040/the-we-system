@@ -405,19 +405,13 @@ class _LeaveContent extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               _LeaveApprovalProgressRow(
-                role: '이사',
-                name: '정효정',
-                status: request.directorStatus,
-              ),
-              const SizedBox(height: 10),
-              _LeaveApprovalProgressRow(
                 role: '대표',
                 name: '조상훈',
                 status: request.ceoStatus,
               ),
               const SizedBox(height: 14),
               Text(
-                '이사 결재 후 대표 결재 창으로 자동 전달됩니다.',
+                '신청 즉시 대표 결재함으로 전달됩니다.',
                 style: TheWeTextStyle.caption.copyWith(
                   color: TheWeColor.black500,
                 ),

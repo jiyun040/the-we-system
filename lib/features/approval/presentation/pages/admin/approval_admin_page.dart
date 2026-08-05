@@ -407,16 +407,12 @@ class _AdminDashboard extends ConsumerWidget {
   final ApprovalDashboardState state;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pendingLeaves = state.leaveRequests
-        .where((item) => item.status == '승인대기')
-        .toList();
+    final pendingLeaves = state.pendingLeaveRequests;
+    final approvedLeaves = state.unacknowledgedApprovedLeaveRequests;
     final mobile = MediaQuery.sizeOf(context).width < 600;
     final currentUser = state.currentUser;
     final isLeaveDecisionAccount =
-        currentUser?.id == 'director' ||
         currentUser?.id == 'ceo' ||
-        currentUser?.position.contains('이사') == true ||
-        currentUser?.position.contains('상무') == true ||
         currentUser?.position.contains('대표') == true;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -448,21 +444,35 @@ class _AdminDashboard extends ConsumerWidget {
                 ),
                 _AdminMetric(
                   width: width,
-                  icon: Icons.account_tree_outlined,
-                  label: '부서',
-                  value: '${state.departments.length}개',
-                ),
-                _AdminMetric(
-                  width: width,
-                  icon: Icons.pending_actions_outlined,
-                  label: '결재 대기',
-                  value: '${state.waitingDocuments.length}건',
-                ),
-                _AdminMetric(
-                  width: width,
                   icon: Icons.beach_access_outlined,
                   label: '휴가 승인 대기',
                   value: '${pendingLeaves.length}건',
+                  onTap: () => _showLeaveRequestDirectory(
+                    context,
+                    state,
+                    requests: pendingLeaves,
+                    title: '휴가 승인 대기',
+                    emptyMessage: '승인 대기 중인 휴가가 없습니다.',
+                  ),
+                ),
+                _AdminMetric(
+                  width: width,
+                  icon: Icons.task_alt_outlined,
+                  label: '휴가 승인',
+                  value: '${approvedLeaves.length}건',
+                  onTap: () => _showApprovedLeaveDirectory(
+                    context,
+                    ref,
+                    state,
+                    approvedLeaves,
+                  ),
+                ),
+                _AdminMetric(
+                  width: width,
+                  icon: Icons.account_tree_outlined,
+                  label: '부서',
+                  value: '${state.departments.length}개',
+                  onTap: () => _showDepartmentDirectory(context, state),
                 ),
               ],
             );
@@ -533,7 +543,7 @@ class _AdminDashboard extends ConsumerWidget {
                   '${employee?.name ?? request.userId} · ${employee?.department ?? ''}',
                   textAlign: TextAlign.center,
                 ),
-                const Text('대표·이사 결재 진행중'),
+                const Text('대표 결재 진행중'),
               ];
             }).toList(),
           )
@@ -851,7 +861,7 @@ class _PendingLeaveCard extends StatelessWidget {
         Text(
           showDetails
               ? '${request.startDate} ~ ${request.endDate} · ${request.days}일'
-              : '대표·이사 결재 진행중',
+              : '대표 결재 진행중',
           style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
         ),
         if (canAct) ...[
@@ -973,7 +983,6 @@ class _EmployeeManagement extends ConsumerWidget {
     final hireDate = TextEditingController(
       text: DateTime.now().toIso8601String().substring(0, 10),
     );
-    var isAdmin = false;
     var error = '';
 
     await showDialog<void>(
@@ -1030,12 +1039,6 @@ class _EmployeeManagement extends ConsumerWidget {
                       suffixIcon: Icon(Icons.calendar_month_outlined),
                     ),
                   ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('관리자 권한'),
-                    value: isAdmin,
-                    onChanged: (value) => setDialogState(() => isAdmin = value),
-                  ),
                   if (error.isNotEmpty)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -1067,7 +1070,7 @@ class _EmployeeManagement extends ConsumerWidget {
                       position: position.text,
                       email: email.text,
                       hireDate: hireDate.text,
-                      isAdmin: isAdmin,
+                      isAdmin: false,
                     );
                 if (message != null) {
                   setDialogState(() => error = message);
@@ -1092,7 +1095,6 @@ class _EmployeeManagement extends ConsumerWidget {
     final position = TextEditingController(text: account.position);
     final hireDate = TextEditingController(text: account.hireDate);
     final password = TextEditingController();
-    var isAdmin = account.isAdmin;
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -1132,12 +1134,6 @@ class _EmployeeManagement extends ConsumerWidget {
                       hintText: '변경하지 않으면 비워두세요.',
                     ),
                   ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('관리자 권한'),
-                    value: isAdmin,
-                    onChanged: (value) => setState(() => isAdmin = value),
-                  ),
                 ],
               ),
             ),
@@ -1164,7 +1160,7 @@ class _EmployeeManagement extends ConsumerWidget {
           position: position.text,
           hireDate: hireDate.text,
           password: password.text,
-          isAdmin: isAdmin,
+          isAdmin: account.id == 'edu_manager',
         );
   }
 }
@@ -2179,7 +2175,7 @@ class _IntegratedSettings extends ConsumerWidget {
         Text('관리자 권한 설정', style: TheWeTextStyle.title),
         const SizedBox(height: 6),
         Text(
-          '관리자 모드와 통합설정에 접근할 계정을 지정합니다.',
+          '관리자 모드와 통합설정은 전용 관리자 계정 한 개만 사용합니다.',
           style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
         ),
         const SizedBox(height: 12),
@@ -2561,57 +2557,34 @@ class _SecurityPolicyTile extends StatelessWidget {
   );
 }
 
-class _AdminPermissionSettings extends ConsumerWidget {
+class _AdminPermissionSettings extends StatelessWidget {
   const _AdminPermissionSettings({required this.state});
 
   final ApprovalDashboardState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Container(
-    decoration: _adminSurface(),
-    child: Column(
-      children: [
-        for (var index = 0; index < state.accounts.length; index++) ...[
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 4,
-            ),
-            leading: CircleAvatar(
-              backgroundColor: TheWeColor.blueSurface,
-              child: Text(state.accounts[index].name.substring(0, 1)),
-            ),
-            title: Text(
-              state.accounts[index].name,
-              style: TheWeTextStyle.subtitle,
-            ),
-            subtitle: Text(
-              '${state.accounts[index].department} · ${state.accounts[index].position} · ${state.accounts[index].id}',
-            ),
-            trailing: Switch(
-              key: ValueKey('admin-permission-${state.accounts[index].id}'),
-              value: state.accounts[index].isAdmin,
-              onChanged:
-                  state.currentUser?.id == state.accounts[index].id &&
-                      state.accounts[index].isAdmin
-                  ? null
-                  : (value) {
-                      final message = ref
-                          .read(approvalDashboardControllerProvider.notifier)
-                          .setAdminPermission(state.accounts[index].id, value);
-                      if (message != null) {
-                        ScaffoldMessenger.of(
-                          context,
-                        ).showSnackBar(SnackBar(content: Text(message)));
-                      }
-                    },
-            ),
-          ),
-          if (index != state.accounts.length - 1) _adminDivider(),
-        ],
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final account = state.accounts
+        .where((item) => item.id == 'edu_manager')
+        .firstOrNull;
+    return Container(
+      decoration: _adminSurface(),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: const CircleAvatar(
+          backgroundColor: TheWeColor.blueSurface,
+          child: Icon(Icons.admin_panel_settings_outlined),
+        ),
+        title: Text(account?.name ?? '교육관리자', style: TheWeTextStyle.subtitle),
+        subtitle: Text(
+          account == null
+              ? '전용 관리자 계정을 찾을 수 없습니다.'
+              : '${account.department} · ${account.position} · ${account.id}',
+        ),
+        trailing: const Chip(label: Text('전용 관리자')),
+      ),
+    );
+  }
 }
 
 class _AnnualLeavePolicyEditor extends ConsumerStatefulWidget {
@@ -2798,6 +2771,300 @@ Future<void> _showEmployeeLeaveDirectory(
     context: context,
     builder: (context) => _EmployeeLeaveBrowserDialog(initialState: state),
   );
+}
+
+Future<void> _showLeaveRequestDirectory(
+  BuildContext context,
+  ApprovalDashboardState state, {
+  required List<LeaveRequest> requests,
+  required String title,
+  required String emptyMessage,
+}) async {
+  final mobile = MediaQuery.sizeOf(context).width < 700;
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      backgroundColor: TheWeColor.background,
+      insetPadding: EdgeInsets.all(mobile ? 12 : 32),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 980, maxHeight: 720),
+        child: Padding(
+          padding: EdgeInsets.all(mobile ? 16 : 24),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text(title, style: TheWeTextStyle.title)),
+                  IconButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: requests.isEmpty
+                    ? Center(child: Text(emptyMessage))
+                    : mobile
+                    ? ListView.separated(
+                        itemCount: requests.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (context, index) {
+                          final request = requests[index];
+                          final employee = state.accounts
+                              .where((account) => account.id == request.userId)
+                              .firstOrNull;
+                          return Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: _adminSurface(),
+                            child: Column(
+                              children: [
+                                _LeaveRequestInfoRow(
+                                  label: '이름',
+                                  value: employee?.name ?? request.userId,
+                                  emphasize: true,
+                                ),
+                                _LeaveRequestInfoRow(
+                                  label: '부서',
+                                  value: employee?.department ?? '-',
+                                ),
+                                _LeaveRequestInfoRow(
+                                  label: '휴가 종류',
+                                  value: request.type,
+                                ),
+                                _LeaveRequestInfoRow(
+                                  label: '기간',
+                                  value:
+                                      '${request.startDate} ~ ${request.endDate}',
+                                ),
+                                _LeaveRequestInfoRow(
+                                  label: '일수',
+                                  value: _leaveDays(request.days),
+                                ),
+                                _LeaveRequestInfoRow(
+                                  label: '신청 사유',
+                                  value: request.reason,
+                                  showDivider: false,
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      )
+                    : SingleChildScrollView(
+                        child: TheWeDataTable(
+                          headers: const [
+                            '이름',
+                            '부서',
+                            '휴가 종류',
+                            '기간',
+                            '일수',
+                            '신청 사유',
+                          ],
+                          columnFlexes: const [1.2, 1.5, 1.1, 2.4, .7, 2.2],
+                          minWidth: 860,
+                          rows: requests.map((request) {
+                            final employee = state.accounts
+                                .where(
+                                  (account) => account.id == request.userId,
+                                )
+                                .firstOrNull;
+                            return <Widget>[
+                              Text(employee?.name ?? request.userId),
+                              Text(employee?.department ?? '-'),
+                              Text(request.type),
+                              Text('${request.startDate} ~ ${request.endDate}'),
+                              Text(_leaveDays(request.days)),
+                              Text(request.reason),
+                            ];
+                          }).toList(),
+                        ),
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _LeaveRequestInfoRow extends StatelessWidget {
+  const _LeaveRequestInfoRow({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+    this.showDivider = true,
+  });
+
+  final String label;
+  final String value;
+  final bool emphasize;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 9),
+    decoration: BoxDecoration(
+      border: showDivider
+          ? Border(
+              bottom: BorderSide(
+                color: TheWeColor.black300.withValues(alpha: .24),
+              ),
+            )
+          : null,
+    ),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 78,
+          child: Text(
+            label,
+            style: TheWeTextStyle.caption.copyWith(
+              color: TheWeColor.black500,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: emphasize ? TheWeTextStyle.subtitle : TheWeTextStyle.body,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _showApprovedLeaveDirectory(
+  BuildContext context,
+  WidgetRef ref,
+  ApprovalDashboardState state,
+  List<LeaveRequest> requests,
+) async {
+  await _showLeaveRequestDirectory(
+    context,
+    state,
+    requests: requests,
+    title: '휴가 승인 내역',
+    emptyMessage: '새로 승인된 휴가가 없습니다.',
+  );
+  if (requests.isEmpty) return;
+  ref
+      .read(approvalDashboardControllerProvider.notifier)
+      .acknowledgeApprovedLeaves(requests.map((request) => request.id));
+}
+
+Future<void> _showDepartmentDirectory(
+  BuildContext context,
+  ApprovalDashboardState state,
+) async {
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => _DepartmentDirectoryDialog(state: state),
+  );
+}
+
+class _DepartmentDirectoryDialog extends StatefulWidget {
+  const _DepartmentDirectoryDialog({required this.state});
+
+  final ApprovalDashboardState state;
+
+  @override
+  State<_DepartmentDirectoryDialog> createState() =>
+      _DepartmentDirectoryDialogState();
+}
+
+class _DepartmentDirectoryDialogState
+    extends State<_DepartmentDirectoryDialog> {
+  final Map<String, ExpansibleController> controllers = {};
+
+  ExpansibleController controllerFor(String department) =>
+      controllers.putIfAbsent(department, ExpansibleController.new);
+
+  void handleExpansion(String department, bool expanded) {
+    if (!expanded) return;
+    for (final entry in controllers.entries) {
+      if (entry.key != department && entry.value.isExpanded) {
+        entry.value.collapse();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final controller in controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final state = widget.state;
+    final mobile = MediaQuery.sizeOf(context).width < 700;
+    return Dialog(
+      backgroundColor: TheWeColor.background,
+      insetPadding: EdgeInsets.all(mobile ? 12 : 32),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 880, maxHeight: 700),
+        child: Padding(
+          padding: EdgeInsets.all(mobile ? 16 : 24),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text('부서 현황', style: TheWeTextStyle.title)),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              Expanded(
+                child: ListView.separated(
+                  itemCount: state.departments.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final department = state.departments[index];
+                    final members = state.accounts
+                        .where((account) => account.department == department)
+                        .toList();
+                    return Container(
+                      decoration: _adminSurface(),
+                      child: ExpansionTile(
+                        key: ValueKey('department-directory-$department'),
+                        controller: controllerFor(department),
+                        onExpansionChanged: (expanded) =>
+                            handleExpansion(department, expanded),
+                        shape: const Border(),
+                        collapsedShape: const Border(),
+                        title: Text(department, style: TheWeTextStyle.subtitle),
+                        subtitle: Text('${members.length}명'),
+                        children: [
+                          for (final member in members)
+                            ListTile(
+                              dense: mobile,
+                              title: Text(member.name),
+                              subtitle: Text(
+                                '${member.position} · ${member.id}',
+                              ),
+                            ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _EmployeeLeaveBrowserDialog extends ConsumerStatefulWidget {

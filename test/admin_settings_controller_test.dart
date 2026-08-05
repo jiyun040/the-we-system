@@ -36,7 +36,7 @@ void main() {
       isNull,
     );
     expect(notifier.renameDepartment('교육관리팀', '교육운영팀'), isNull);
-    expect(notifier.setAdminPermission('jiyun', true), isNull);
+    expect(notifier.setAdminPermission('jiyun', true), isNotNull);
 
     state = container.read(approvalDashboardControllerProvider).requireValue;
     expect(state.portalName, '더우리 임직원 포털');
@@ -50,7 +50,11 @@ void main() {
     );
     expect(
       state.accounts.where((account) => account.id == 'jiyun').single.isAdmin,
-      isTrue,
+      isFalse,
+    );
+    expect(
+      state.accounts.where((account) => account.isAdmin).single.id,
+      'edu_manager',
     );
   });
 }

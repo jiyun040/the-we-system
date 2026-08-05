@@ -17,6 +17,7 @@ class ApprovalDashboardState {
     this.adminMode = false,
     this.restrictedDocumentIds = const <String>{},
     this.leaveRequests = const <LeaveRequest>[],
+    this.acknowledgedLeaveRequestIds = const <String>{},
     this.portalName = '더우리기술 전자결재',
     this.customLogoBytes,
     this.customLogoFileName,
@@ -46,6 +47,7 @@ class ApprovalDashboardState {
   final bool adminMode;
   final Set<String> restrictedDocumentIds;
   final List<LeaveRequest> leaveRequests;
+  final Set<String> acknowledgedLeaveRequestIds;
   final String portalName;
   final Uint8List? customLogoBytes;
   final String? customLogoFileName;
@@ -73,6 +75,7 @@ class ApprovalDashboardState {
     bool? adminMode,
     Set<String>? restrictedDocumentIds,
     List<LeaveRequest>? leaveRequests,
+    Set<String>? acknowledgedLeaveRequestIds,
     String? portalName,
     Uint8List? customLogoBytes,
     String? customLogoFileName,
@@ -103,6 +106,8 @@ class ApprovalDashboardState {
       restrictedDocumentIds:
           restrictedDocumentIds ?? this.restrictedDocumentIds,
       leaveRequests: leaveRequests ?? this.leaveRequests,
+      acknowledgedLeaveRequestIds:
+          acknowledgedLeaveRequestIds ?? this.acknowledgedLeaveRequestIds,
       portalName: portalName ?? this.portalName,
       customLogoBytes: clearCustomLogo
           ? null
@@ -316,6 +321,21 @@ class ApprovalDashboardState {
     return leaveRequests.where((request) => request.userId == id).toList();
   }
 
+  List<LeaveRequest> get pendingLeaveRequests =>
+      leaveRequests.where((request) => request.status == '승인대기').toList();
+
+  List<LeaveRequest> get unacknowledgedApprovedLeaveRequests => leaveRequests
+      .where(
+        (request) =>
+            request.status == '승인완료' &&
+            !request.directEntry &&
+            !acknowledgedLeaveRequestIds.contains(request.id),
+      )
+      .toList();
+
+  List<LeaveRequest> get actionableLeaveRequests =>
+      leaveRequests.where(canActOnLeave).toList();
+
   List<LeaveRequest> leaveRequestsFor(String userId) =>
       leaveRequests.where((request) => request.userId == userId).toList();
 
@@ -411,11 +431,6 @@ class ApprovalDashboardState {
   bool canActOnLeave(LeaveRequest request) {
     final user = currentUser;
     if (user == null || request.status != '승인대기') return false;
-    if (request.directorStatus == '진행중') {
-      return user.id == 'director' ||
-          user.position.contains('이사') ||
-          user.position.contains('상무');
-    }
     if (request.ceoStatus == '진행중') {
       return user.id == 'ceo' || user.position.contains('대표');
     }

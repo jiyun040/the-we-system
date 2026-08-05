@@ -5,8 +5,10 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
 
   bool enterAdminMode(String otp) {
     final current = _currentState;
-    if (current?.currentUser?.isAdmin != true ||
-        (current!.adminOtpEnabled && !verifyAdminOtp(otp))) {
+    if (current == null ||
+        current.currentUser?.id != 'edu_manager' ||
+        current.currentUser?.isAdmin != true ||
+        (current.adminOtpEnabled && !verifyAdminOtp(otp))) {
       return false;
     }
     _setDashboardState(this, (value) => value.copyWith(adminMode: true));
@@ -37,7 +39,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           position: position.trim(),
           hireDate: hireDate.trim(),
           password: password?.trim().isEmpty == true ? null : password?.trim(),
-          isAdmin: isAdmin,
+          isAdmin: account.id == 'edu_manager',
         );
       }).toList();
       final currentUser = value.currentUser?.id == userId
@@ -89,7 +91,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       position: position.trim(),
       email: normalizedEmail,
       hireDate: hireDate.trim(),
-      isAdmin: isAdmin,
+      isAdmin: false,
     );
     _setDashboardState(
       this,
@@ -240,26 +242,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   String? setAdminPermission(String userId, bool enabled) {
-    final current = _currentState;
-    if (current == null) return '계정 정보를 불러오지 못했습니다.';
-    if (current.currentUser?.id == userId && !enabled) {
-      return '현재 로그인한 관리자의 권한은 해제할 수 없습니다.';
-    }
-    final accounts = current.accounts
-        .map(
-          (account) => account.id == userId
-              ? account.copyWith(isAdmin: enabled)
-              : account,
-        )
-        .toList();
-    final currentUser = current.currentUser?.id == userId
-        ? accounts.where((account) => account.id == userId).first
-        : current.currentUser;
-    _setDashboardState(
-      this,
-      (value) => value.copyWith(accounts: accounts, currentUser: currentUser),
-    );
-    return null;
+    return userId == 'edu_manager' && enabled
+        ? null
+        : '관리자 권한은 전용 관리자 계정에서만 사용할 수 있습니다.';
   }
 
   String? renameDepartment(String currentName, String nextName) {
@@ -365,15 +350,19 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       days: days,
       reason: reason.trim(),
       status: '승인완료',
-      directorStatus: '완료',
       ceoStatus: '완료',
       directEntry: true,
       registeredBy: current.currentUser!.name,
     );
     _setDashboardState(
       this,
-      (value) =>
-          value.copyWith(leaveRequests: [request, ...value.leaveRequests]),
+      (value) => value.copyWith(
+        leaveRequests: [request, ...value.leaveRequests],
+        acknowledgedLeaveRequestIds: {
+          ...value.acknowledgedLeaveRequestIds,
+          request.id,
+        },
+      ),
     );
     return null;
   }
@@ -413,9 +402,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
               (request) => request.id == requestId
                   ? request.copyWith(
                       status: status,
-                      directorStatus: status == '승인완료'
-                          ? '완료'
-                          : request.directorStatus,
                       ceoStatus: status == '승인완료' ? '완료' : request.ceoStatus,
                     )
                   : request,
@@ -438,14 +424,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (!approve) {
       updated = request.copyWith(
         status: '반려',
-        directorStatus: request.directorStatus == '진행중'
-            ? '반려'
-            : request.directorStatus,
         ceoStatus: request.ceoStatus == '진행중' ? '반려' : request.ceoStatus,
         rejectedBy: user.name,
       );
-    } else if (request.directorStatus == '진행중') {
-      updated = request.copyWith(directorStatus: '완료', ceoStatus: '진행중');
     } else {
       updated = request.copyWith(status: '승인완료', ceoStatus: '완료');
     }
@@ -459,5 +440,21 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       ),
     );
     return true;
+  }
+
+  void acknowledgeApprovedLeaves([Iterable<String>? requestIds]) {
+    _setDashboardState(this, (value) {
+      final targets =
+          requestIds?.toSet() ??
+          value.unacknowledgedApprovedLeaveRequests
+              .map((request) => request.id)
+              .toSet();
+      return value.copyWith(
+        acknowledgedLeaveRequestIds: {
+          ...value.acknowledgedLeaveRequestIds,
+          ...targets,
+        },
+      );
+    });
   }
 }

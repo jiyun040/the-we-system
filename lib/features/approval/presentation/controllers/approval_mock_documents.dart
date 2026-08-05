@@ -138,7 +138,7 @@ final _seedDocuments = [
     canCancel: false,
     receivers: ['재무팀'],
     references: ['마케팅팀장'],
-    viewers: ['시스템관리자'],
+    viewers: ['교육관리자'],
     publicReceivers: ['다우기술'],
     linkedDocuments: ['캠페인 운영안.pdf'],
     steps: [

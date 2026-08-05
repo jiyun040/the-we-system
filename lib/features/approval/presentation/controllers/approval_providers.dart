@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:the_we_system/features/approval/domain/entities/dashboard/approval_dashboard.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/form/approval_form.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_history.dart';
@@ -75,7 +76,6 @@ class ApprovalDashboardController
           days: 1,
           reason: '개인 일정',
           status: '승인완료',
-          directorStatus: '완료',
           ceoStatus: '완료',
         ),
         LeaveRequest(
@@ -87,10 +87,10 @@ class ApprovalDashboardController
           days: 2,
           reason: '가족 행사',
           status: '승인완료',
-          directorStatus: '완료',
           ceoStatus: '완료',
         ),
       ],
+      acknowledgedLeaveRequestIds: const {'LEAVE-SEED-1', 'LEAVE-SEED-2'},
       annualLeaveByYear: const {
         1: 15,
         2: 15,
