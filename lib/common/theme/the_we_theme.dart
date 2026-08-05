@@ -76,6 +76,16 @@ abstract final class TheWeTheme {
       titleTextStyle: TheWeTextStyle.title,
       contentTextStyle: TheWeTextStyle.body,
     ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: const Color(0xFF4D5357),
+      elevation: 10,
+      contentTextStyle: TheWeTextStyle.body.copyWith(
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       hintStyle: TheWeTextStyle.body.copyWith(color: TheWeColor.black300),
       labelStyle: TheWeTextStyle.body,

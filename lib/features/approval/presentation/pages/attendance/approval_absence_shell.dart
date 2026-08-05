@@ -195,9 +195,7 @@ class ApprovalAbsencePage extends ConsumerWidget {
         .read(attendanceControllerProvider.notifier)
         .addRequest(user.id, request);
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${request.type} 전자결재 상신이 등록되었습니다.')),
-      );
+      showTheWeSnackBar(context, message: '${request.type} 전자결재 상신이 등록되었습니다.');
     }
   }
 }

@@ -167,8 +167,10 @@ class _Brand extends ConsumerWidget {
                           context.goNamed(AppRouteName.admin);
                           return;
                         }
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('OTP 번호가 올바르지 않습니다.')),
+                        showTheWeSnackBar(
+                          context,
+                          message: 'OTP 번호가 올바르지 않습니다.',
+                          type: TheWeSnackBarType.error,
                         );
                       },
                       icon: Icon(

@@ -41,10 +41,10 @@ class _LeaveApprovalSection extends ConsumerWidget {
           .read(approvalDashboardControllerProvider.notifier)
           .actOnLeave(request.id, approve: approve);
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result ? '휴가 결재가 처리되었습니다.' : '휴가 결재를 처리하지 못했습니다.'),
-        ),
+      showTheWeSnackBar(
+        context,
+        message: result ? '휴가 결재가 처리되었습니다.' : '휴가 결재를 처리하지 못했습니다.',
+        type: result ? TheWeSnackBarType.success : TheWeSnackBarType.error,
       );
     }
 

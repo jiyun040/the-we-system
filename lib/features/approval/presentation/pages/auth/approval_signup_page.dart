@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -258,9 +259,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해 주세요.')));
+    showTheWeSnackBar(context, message: '회원가입이 완료되었습니다. 로그인해 주세요.');
     context.goNamed(AppRouteName.home);
   }
 }

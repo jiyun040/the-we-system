@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
@@ -498,15 +499,15 @@ Future<void> _downloadAttachment(
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('${attachment.name} 파일을 저장했습니다.')));
+    showTheWeSnackBar(context, message: '${attachment.name} 파일을 저장했습니다.');
   } catch (_) {
     if (!context.mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('파일을 저장하지 못했습니다. 다시 시도해 주세요.')),
+    showTheWeSnackBar(
+      context,
+      message: '파일을 저장하지 못했습니다. 다시 시도해 주세요.',
+      type: TheWeSnackBarType.error,
     );
   }
 }

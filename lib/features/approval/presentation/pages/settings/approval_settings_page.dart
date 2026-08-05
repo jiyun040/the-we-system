@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -44,12 +45,7 @@ class _ApprovalSettingsPageState extends State<ApprovalSettingsPage> {
       draftMode: _draftMode,
       attachmentImageMode: _attachmentImageMode,
     );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('결재환경설정이 저장되었습니다. ($_draftMode)'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    showTheWeSnackBar(context, message: '결재환경설정이 저장되었습니다. ($_draftMode)');
   }
 
   @override

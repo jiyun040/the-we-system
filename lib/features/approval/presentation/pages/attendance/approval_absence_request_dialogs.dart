@@ -209,9 +209,11 @@ class _WorkTimeCorrectionDialogState extends State<_WorkTimeCorrectionDialog> {
 
   void _addCorrection() {
     if (_selectedDurationMinutes <= 0) {
-      ScaffoldMessenger.of(
+      showTheWeSnackBar(
         context,
-      ).showSnackBar(const SnackBar(content: Text('종료 시간은 시작 시간보다 늦어야 합니다.')));
+        message: '종료 시간은 시작 시간보다 늦어야 합니다.',
+        type: TheWeSnackBarType.error,
+      );
       return;
     }
 

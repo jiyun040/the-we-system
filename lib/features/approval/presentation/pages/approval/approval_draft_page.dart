@@ -7,6 +7,7 @@ import 'package:the_we_system/common/components/text_form_field.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -317,8 +318,10 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   Future<void> _requestApproval(ApprovalDocument document) async {
     if (document.documentLayout == ApprovalDocumentLayout.hospitality &&
         DateTime.tryParse(formFields['draftedAt']?.trim() ?? '') == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('기안일을 YYYY-MM-DD 형식으로 입력해 주세요.')),
+      showTheWeSnackBar(
+        context,
+        message: '기안일을 YYYY-MM-DD 형식으로 입력해 주세요.',
+        type: TheWeSnackBarType.error,
       );
       return;
     }
@@ -382,9 +385,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
     setState(() {
       editingDocumentId = id;
     });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('임시 저장되었습니다.')));
+    showTheWeSnackBar(context, message: '임시 저장되었습니다.');
   }
 
   void _showPreview(BuildContext context, ApprovalDocument document) {
@@ -444,9 +445,11 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
     final bytes = await file.readAsBytes();
     if (bytes.isEmpty || !mounted) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        showTheWeSnackBar(
           context,
-        ).showSnackBar(const SnackBar(content: Text('빈 파일은 첨부할 수 없습니다.')));
+          message: '빈 파일은 첨부할 수 없습니다.',
+          type: TheWeSnackBarType.error,
+        );
       }
       return;
     }

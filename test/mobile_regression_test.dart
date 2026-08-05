@@ -87,7 +87,18 @@ void main() {
       expect(find.text('잔여 연차'), findsOneWidget);
       expect(find.byType(NavigationBar), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back_ios_new), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('mobile-leave-request-list')),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
+      await tester.tap(find.text('휴가 신청'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('시작일'), findsOneWidget);
+      expect(find.textContaining('종료일'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.tap(find.text('취소').last);
+      await tester.pumpAndSettle();
 
       appRouter.go('/approval/settings');
       await tester.pumpAndSettle();

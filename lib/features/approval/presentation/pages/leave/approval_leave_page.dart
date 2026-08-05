@@ -7,6 +7,7 @@ import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
 import 'package:the_we_system/common/components/the_we_date_picker.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
@@ -57,6 +58,7 @@ class _LeaveContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final mobile = MediaQuery.sizeOf(context).width < 520;
     final total = state.totalAnnualLeave.toDouble();
     final used = state.usedAnnualLeave;
     final pending = state.pendingAnnualLeave;
@@ -78,7 +80,7 @@ class _LeaveContent extends ConsumerWidget {
                 ),
                 const SizedBox(height: 28),
                 Container(
-                  padding: const EdgeInsets.all(24),
+                  padding: EdgeInsets.all(mobile ? 16 : 24),
                   decoration: _surfaceDecoration(),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -107,15 +109,17 @@ class _LeaveContent extends ConsumerWidget {
                       const SizedBox(height: 22),
                       LayoutBuilder(
                         builder: (context, constraints) {
-                          final width = constraints.maxWidth < 720
-                              ? constraints.maxWidth
+                          final compactGrid = constraints.maxWidth < 720;
+                          final width = compactGrid
+                              ? (constraints.maxWidth - 10) / 2
                               : (constraints.maxWidth - 36) / 4;
                           return Wrap(
-                            spacing: 12,
-                            runSpacing: 12,
+                            spacing: compactGrid ? 10 : 12,
+                            runSpacing: compactGrid ? 10 : 12,
                             children: [
                               _MetricCard(
                                 width: width,
+                                compact: compactGrid,
                                 label: state.leaveEntitlementLabelFor(
                                   state.currentUser,
                                 ),
@@ -124,6 +128,7 @@ class _LeaveContent extends ConsumerWidget {
                               ),
                               _MetricCard(
                                 width: width,
+                                compact: compactGrid,
                                 label: state.leaveUsedLabelFor(
                                   state.currentUser,
                                 ),
@@ -132,6 +137,7 @@ class _LeaveContent extends ConsumerWidget {
                               ),
                               _MetricCard(
                                 width: width,
+                                compact: compactGrid,
                                 label: state.leaveRemainingLabelFor(
                                   state.currentUser,
                                 ),
@@ -140,6 +146,7 @@ class _LeaveContent extends ConsumerWidget {
                               ),
                               _MetricCard(
                                 width: width,
+                                compact: compactGrid,
                                 label: '승인 대기',
                                 value: _days(pending),
                                 color: Colors.orange,
@@ -173,10 +180,27 @@ class _LeaveContent extends ConsumerWidget {
                     padding: const EdgeInsets.all(48),
                     child: const Center(child: Text('신청 내역이 없습니다.')),
                   )
+                else if (mobile)
+                  Column(
+                    key: const ValueKey('mobile-leave-request-list'),
+                    children: [
+                      for (final request in state.currentUserLeaveRequests)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _MobileLeaveRequestCard(
+                            request: request,
+                            onStatusTap: request.status == '승인대기'
+                                ? () =>
+                                      _showLeaveProgressDialog(context, request)
+                                : null,
+                          ),
+                        ),
+                    ],
+                  )
                 else
                   TheWeDataTable(
                     headers: const ['상태', '휴가 종류', '기간', '사용 일수', '신청 사유'],
-                    columnFlexes: const [1.05, 1.15, 2.3, .9, 2.2],
+                    columnFlexes: const [1.2, 1.15, 2.3, .9, 2.2],
                     minWidth: 940,
                     rows: state.currentUserLeaveRequests
                         .map(
@@ -225,6 +249,7 @@ class _LeaveContent extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => StatefulBuilder(
         builder: (context, setDialogState) {
+          final compact = MediaQuery.sizeOf(context).width < 600;
           Future<void> pickDate(bool isStart) async {
             final picked = await showTheWeDatePicker(
               context,
@@ -248,6 +273,10 @@ class _LeaveContent extends ConsumerWidget {
 
           return AlertDialog(
             backgroundColor: Colors.white,
+            insetPadding: EdgeInsets.symmetric(
+              horizontal: compact ? 20 : 40,
+              vertical: 24,
+            ),
             title: const Text('휴가 신청서'),
             content: SizedBox(
               width: 520,
@@ -290,30 +319,54 @@ class _LeaveContent extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
+                    if (compact)
+                      Column(
+                        children: [
+                          _LeaveDateButton(
                             key: const ValueKey('leave-start-date-button'),
+                            label: '시작일',
+                            date: start,
                             onPressed: () => pickDate(true),
-                            icon: const Icon(Icons.event),
-                            label: Text(DateFormat('yyyy-MM-dd').format(start)),
                           ),
-                        ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('~'),
-                        ),
-                        Expanded(
-                          child: OutlinedButton.icon(
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 4),
+                            child: Icon(
+                              Icons.arrow_downward_rounded,
+                              size: 17,
+                              color: TheWeColor.black500,
+                            ),
+                          ),
+                          _LeaveDateButton(
                             key: const ValueKey('leave-end-date-button'),
+                            label: '종료일',
+                            date: end,
                             onPressed: halfDay ? null : () => pickDate(false),
-                            icon: const Icon(Icons.event),
-                            label: Text(DateFormat('yyyy-MM-dd').format(end)),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      )
+                    else
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _LeaveDateButton(
+                              key: const ValueKey('leave-start-date-button'),
+                              date: start,
+                              onPressed: () => pickDate(true),
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('~'),
+                          ),
+                          Expanded(
+                            child: _LeaveDateButton(
+                              key: const ValueKey('leave-end-date-button'),
+                              date: end,
+                              onPressed: halfDay ? null : () => pickDate(false),
+                            ),
+                          ),
+                        ],
+                      ),
                     const SizedBox(height: 12),
                     TextField(
                       controller: reason,
@@ -374,9 +427,7 @@ class _LeaveContent extends ConsumerWidget {
           days: days,
           reason: reason.text.trim(),
         );
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('휴가 신청이 등록되었습니다.')));
+    showTheWeSnackBar(context, message: '휴가 신청이 등록되었습니다.');
   }
 
   Future<void> _showLeaveProgressDialog(
@@ -457,7 +508,7 @@ class _LeaveHeader extends StatelessWidget {
     );
     if (mobile) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -466,7 +517,7 @@ class _LeaveHeader extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
-          button,
+          Align(alignment: Alignment.centerRight, child: button),
         ],
       );
     }
@@ -485,15 +536,18 @@ class _MetricCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    this.compact = false,
   });
   final double width;
   final String label;
   final String value;
   final Color color;
+  final bool compact;
   @override
   Widget build(BuildContext context) => Container(
     width: width,
-    padding: const EdgeInsets.all(18),
+    constraints: BoxConstraints(minHeight: compact ? 108 : 0),
+    padding: EdgeInsets.all(compact ? 14 : 18),
     decoration: BoxDecoration(
       color: color.withValues(alpha: .08),
       borderRadius: BorderRadius.circular(14),
@@ -505,9 +559,46 @@ class _MetricCard extends StatelessWidget {
           label,
           style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
         ),
-        const SizedBox(height: 8),
-        Text(value, style: TheWeTextStyle.metric.copyWith(color: color)),
+        SizedBox(height: compact ? 5 : 8),
+        Text(
+          value,
+          style: TheWeTextStyle.metric.copyWith(
+            color: color,
+            fontSize: compact ? 28 : null,
+          ),
+        ),
       ],
+    ),
+  );
+}
+
+class _LeaveDateButton extends StatelessWidget {
+  const _LeaveDateButton({
+    super.key,
+    required this.date,
+    required this.onPressed,
+    this.label,
+  });
+
+  final DateTime date;
+  final VoidCallback? onPressed;
+  final String? label;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: double.infinity,
+    child: OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.event_outlined),
+      label: Text(
+        '${label == null ? '' : '$label  '}${DateFormat('yyyy-MM-dd').format(date)}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      style: OutlinedButton.styleFrom(
+        alignment: Alignment.centerLeft,
+        minimumSize: const Size.fromHeight(48),
+      ),
     ),
   );
 }
@@ -525,6 +616,8 @@ class _StatusChip extends StatelessWidget {
         : Colors.orange;
     return ActionChip(
       onPressed: onTap,
+      visualDensity: VisualDensity.compact,
+      labelPadding: const EdgeInsets.symmetric(horizontal: 4),
       backgroundColor: color.withValues(alpha: .1),
       side: BorderSide.none,
       label: Row(
@@ -539,6 +632,81 @@ class _StatusChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MobileLeaveRequestCard extends StatelessWidget {
+  const _MobileLeaveRequestCard({
+    required this.request,
+    required this.onStatusTap,
+  });
+
+  final LeaveRequest request;
+  final VoidCallback? onStatusTap;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(14),
+    decoration: _surfaceDecoration(),
+    child: Column(
+      children: [
+        Row(
+          children: [
+            _StatusChip(status: request.status, onTap: onStatusTap),
+            const Spacer(),
+            Text(
+              _days(request.days),
+              style: TheWeTextStyle.subtitle.copyWith(fontSize: 16),
+            ),
+          ],
+        ),
+        const Divider(height: 18, color: Color(0xFFE1E4E8)),
+        _MobileLeaveInfoRow(label: '휴가 종류', value: request.type),
+        const SizedBox(height: 9),
+        _MobileLeaveInfoRow(
+          label: '기간',
+          value: '${request.startDate} ~ ${request.endDate}',
+        ),
+        const SizedBox(height: 9),
+        _MobileLeaveInfoRow(label: '신청 사유', value: request.reason, maxLines: 2),
+      ],
+    ),
+  );
+}
+
+class _MobileLeaveInfoRow extends StatelessWidget {
+  const _MobileLeaveInfoRow({
+    required this.label,
+    required this.value,
+    this.maxLines = 1,
+  });
+
+  final String label;
+  final String value;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        width: 72,
+        child: Text(
+          label,
+          style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          value,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
+          style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+    ],
+  );
 }
 
 class _LeaveApprovalProgressRow extends StatelessWidget {

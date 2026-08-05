@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_we_system/common/components/the_we_data_table.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/main.dart';
@@ -262,6 +263,22 @@ void main() {
 
     expect(find.text('근태 관리'), findsOneWidget);
     expect(find.byType(NavigationBar), findsOneWidget);
+    await tester.tap(find.text('휴가 승인 대기'));
+    await tester.pumpAndSettle();
+    final leaveDirectoryDialog = find.byKey(
+      const ValueKey('leave-request-directory-dialog'),
+    );
+    expect(leaveDirectoryDialog, findsOneWidget);
+    expect(
+      find.descendant(
+        of: leaveDirectoryDialog,
+        matching: find.byType(TheWeDataTable),
+      ),
+      findsNothing,
+    );
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byIcon(Icons.close));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('전체 직원'));
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, '교육강사'));

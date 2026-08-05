@@ -10,6 +10,7 @@ import 'package:the_we_system/common/components/the_we_date_picker.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_logo.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -225,8 +226,10 @@ class _AdminAccessGate extends ConsumerWidget {
                     onVerified();
                   }
                   if (!success && context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('OTP 번호가 올바르지 않습니다.')),
+                    showTheWeSnackBar(
+                      context,
+                      message: 'OTP 번호가 올바르지 않습니다.',
+                      type: TheWeSnackBarType.error,
                     );
                   }
                 },
@@ -2445,24 +2448,28 @@ class _BrandingSettingsCardState extends ConsumerState<_BrandingSettingsCard> {
         .read(approvalDashboardControllerProvider.notifier)
         .updatePortalLogo(bytes, file.name);
     if (!mounted) return;
-    ScaffoldMessenger.of(
+    showTheWeSnackBar(
       context,
-    ).showSnackBar(SnackBar(content: Text(message ?? '로고가 변경되었습니다.')));
+      message: message ?? '로고가 변경되었습니다.',
+      type: message == null
+          ? TheWeSnackBarType.success
+          : TheWeSnackBarType.error,
+    );
   }
 
   void _savePortalName() {
     if (portalNameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(
+      showTheWeSnackBar(
         context,
-      ).showSnackBar(const SnackBar(content: Text('포털 명을 입력해 주세요.')));
+        message: '포털 명을 입력해 주세요.',
+        type: TheWeSnackBarType.error,
+      );
       return;
     }
     ref
         .read(approvalDashboardControllerProvider.notifier)
         .updatePortalName(portalNameController.text);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('포털 명이 저장되었습니다.')));
+    showTheWeSnackBar(context, message: '포털 명이 저장되었습니다.');
   }
 }
 
@@ -2757,9 +2764,7 @@ class _AnnualLeavePolicyEditorState
       dirty = false;
       error = '';
     });
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('연차 설정이 저장되었습니다.')));
+    showTheWeSnackBar(context, message: '연차 설정이 저장되었습니다.');
   }
 }
 
@@ -2784,6 +2789,7 @@ Future<void> _showLeaveRequestDirectory(
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => Dialog(
+      key: const ValueKey('leave-request-directory-dialog'),
       backgroundColor: TheWeColor.background,
       insetPadding: EdgeInsets.all(mobile ? 12 : 32),
       child: ConstrainedBox(
@@ -2807,6 +2813,7 @@ Future<void> _showLeaveRequestDirectory(
                     ? Center(child: Text(emptyMessage))
                     : mobile
                     ? ListView.separated(
+                        key: const ValueKey('mobile-admin-leave-request-list'),
                         itemCount: requests.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 10),
                         itemBuilder: (context, index) {
@@ -2814,40 +2821,9 @@ Future<void> _showLeaveRequestDirectory(
                           final employee = state.accounts
                               .where((account) => account.id == request.userId)
                               .firstOrNull;
-                          return Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: _adminSurface(),
-                            child: Column(
-                              children: [
-                                _LeaveRequestInfoRow(
-                                  label: '이름',
-                                  value: employee?.name ?? request.userId,
-                                  emphasize: true,
-                                ),
-                                _LeaveRequestInfoRow(
-                                  label: '부서',
-                                  value: employee?.department ?? '-',
-                                ),
-                                _LeaveRequestInfoRow(
-                                  label: '휴가 종류',
-                                  value: request.type,
-                                ),
-                                _LeaveRequestInfoRow(
-                                  label: '기간',
-                                  value:
-                                      '${request.startDate} ~ ${request.endDate}',
-                                ),
-                                _LeaveRequestInfoRow(
-                                  label: '일수',
-                                  value: _leaveDays(request.days),
-                                ),
-                                _LeaveRequestInfoRow(
-                                  label: '신청 사유',
-                                  value: request.reason,
-                                  showDivider: false,
-                                ),
-                              ],
-                            ),
+                          return _LeaveRequestDirectoryCard(
+                            employee: employee,
+                            request: request,
                           );
                         },
                       )
@@ -2862,7 +2838,7 @@ Future<void> _showLeaveRequestDirectory(
                             '신청 사유',
                           ],
                           columnFlexes: const [1.2, 1.5, 1.1, 2.4, .7, 2.2],
-                          minWidth: 860,
+                          minWidth: mobile ? 820 : 860,
                           rows: requests.map((request) {
                             final employee = state.accounts
                                 .where(
@@ -2889,52 +2865,95 @@ Future<void> _showLeaveRequestDirectory(
   );
 }
 
-class _LeaveRequestInfoRow extends StatelessWidget {
-  const _LeaveRequestInfoRow({
+class _LeaveRequestDirectoryCard extends StatelessWidget {
+  const _LeaveRequestDirectoryCard({
+    required this.employee,
+    required this.request,
+  });
+
+  final EmployeeAccount? employee;
+  final LeaveRequest request;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(14),
+    decoration: _adminSurface(),
+    child: Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Text(
+                employee?.name ?? request.userId,
+                style: TheWeTextStyle.subtitle.copyWith(fontSize: 16),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: TheWeColor.blueSurface,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                employee?.department ?? '-',
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.blue300,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const Divider(height: 18, color: Color(0xFFE1E4E8)),
+        _AdminLeaveInfoRow(label: '휴가 종류', value: request.type),
+        const SizedBox(height: 9),
+        _AdminLeaveInfoRow(
+          label: '기간',
+          value: '${request.startDate} ~ ${request.endDate}',
+        ),
+        const SizedBox(height: 9),
+        _AdminLeaveInfoRow(label: '일수', value: _leaveDays(request.days)),
+        const SizedBox(height: 9),
+        _AdminLeaveInfoRow(label: '신청 사유', value: request.reason, maxLines: 2),
+      ],
+    ),
+  );
+}
+
+class _AdminLeaveInfoRow extends StatelessWidget {
+  const _AdminLeaveInfoRow({
     required this.label,
     required this.value,
-    this.emphasize = false,
-    this.showDivider = true,
+    this.maxLines = 1,
   });
 
   final String label;
   final String value;
-  final bool emphasize;
-  final bool showDivider;
+  final int maxLines;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(vertical: 9),
-    decoration: BoxDecoration(
-      border: showDivider
-          ? Border(
-              bottom: BorderSide(
-                color: TheWeColor.black300.withValues(alpha: .24),
-              ),
-            )
-          : null,
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 78,
-          child: Text(
-            label,
-            style: TheWeTextStyle.caption.copyWith(
-              color: TheWeColor.black500,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(
+        width: 72,
+        child: Text(
+          label,
+          style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
         ),
-        Expanded(
-          child: Text(
-            value,
-            style: emphasize ? TheWeTextStyle.subtitle : TheWeTextStyle.body,
-          ),
+      ),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          value,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
+          style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w600),
         ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
@@ -3636,13 +3655,9 @@ Future<void> _showAdminDirectLeaveDialog(
       );
   if (!context.mounted) return;
   if (message != null) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    showTheWeSnackBar(context, message: message, type: TheWeSnackBarType.error);
   } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('${account.name}님의 휴가가 즉시 반영되었습니다.')),
-    );
+    showTheWeSnackBar(context, message: '${account.name}님의 휴가가 즉시 반영되었습니다.');
   }
 }
 
