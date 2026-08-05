@@ -1,6 +1,9 @@
+import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 
@@ -78,9 +81,9 @@ class ApprovalDocumentSheet extends StatelessWidget {
             ),
           ] else
             _PdfDocumentBody(document: document),
-          if (document.linkedDocuments.isNotEmpty) ...[
+          if (document.attachments.isNotEmpty) ...[
             const SizedBox(height: 22),
-            _DocumentAttachmentArea(files: document.linkedDocuments),
+            _DocumentAttachmentArea(files: document.attachments),
           ],
         ],
       ),
@@ -197,8 +200,6 @@ class _PdfDocumentBody extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        _ReadOnlyContent(content: document.content, minHeight: 110),
         const SizedBox(height: 20),
         Text(
           '위 금액을 청구하오니 결재하여 주시기 바랍니다.',
@@ -316,7 +317,7 @@ class _ReadOnlyTableCell extends StatelessWidget {
 class _DocumentAttachmentArea extends StatelessWidget {
   const _DocumentAttachmentArea({required this.files});
 
-  final List<String> files;
+  final List<ApprovalAttachment> files;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -330,8 +331,7 @@ class _DocumentAttachmentArea extends StatelessWidget {
         ),
         child: Text('첨부파일 ${files.length}개', style: TheWeTextStyle.subtitle),
       ),
-      ...files.map((rawName) {
-        final name = rawName.replaceFirst('[첨부] ', '');
+      ...files.map((attachment) {
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           decoration: BoxDecoration(
@@ -357,33 +357,19 @@ class _DocumentAttachmentArea extends StatelessWidget {
                 color: TheWeColor.danger,
                 size: 20,
               ),
-              Text(name, style: TheWeTextStyle.body),
+              Text(attachment.name, style: TheWeTextStyle.body),
               Text(
-                '(2.5MB)',
+                '(${_formatFileSize(attachment.sizeBytes)})',
                 style: TheWeTextStyle.caption.copyWith(
                   color: TheWeColor.black500,
                 ),
               ),
               OutlinedButton(
-                onPressed: () => showDialog<void>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('첨부파일 미리보기'),
-                    content: Text(name),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('닫기'),
-                      ),
-                    ],
-                  ),
-                ),
+                onPressed: () => _showAttachmentPreview(context, attachment),
                 child: const Text('미리보기'),
               ),
               OutlinedButton(
-                onPressed: () => ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('$name 다운로드를 준비했습니다.'))),
+                onPressed: () => _downloadAttachment(context, attachment),
                 child: const Text('다운로드'),
               ),
             ],
@@ -402,6 +388,127 @@ class _DocumentAttachmentArea extends StatelessWidget {
       ),
     ],
   );
+}
+
+String _formatFileSize(int bytes) {
+  if (bytes < 1024) {
+    return '$bytes B';
+  }
+  final kilobytes = bytes / 1024;
+  if (kilobytes < 1024) {
+    return '${kilobytes.toStringAsFixed(1)}KB';
+  }
+  return '${(kilobytes / 1024).toStringAsFixed(1)}MB';
+}
+
+Future<void> _showAttachmentPreview(
+  BuildContext context,
+  ApprovalAttachment attachment,
+) async {
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) {
+      final size = MediaQuery.sizeOf(dialogContext);
+      final compact = size.width < 520;
+      return Dialog(
+        insetPadding: EdgeInsets.all(compact ? 10 : 28),
+        backgroundColor: TheWeColor.white,
+        surfaceTintColor: TheWeColor.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: SizedBox(
+          width: compact ? size.width : 1000,
+          height: compact ? size.height * .88 : size.height * .9,
+          child: Column(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  compact ? 14 : 22,
+                  12,
+                  compact ? 8 : 14,
+                  10,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.picture_as_pdf_outlined,
+                      color: TheWeColor.danger,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        attachment.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TheWeTextStyle.subtitle,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: '닫기',
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(
+                height: 1,
+                color: TheWeColor.black300.withValues(alpha: .5),
+              ),
+              Expanded(
+                child: ColoredBox(
+                  color: TheWeColor.background,
+                  child: PdfViewer.data(
+                    attachment.bytes,
+                    sourceName:
+                        '${attachment.name}-${attachment.base64Data.hashCode}',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Future<void> _downloadAttachment(
+  BuildContext context,
+  ApprovalAttachment attachment,
+) async {
+  final dotIndex = attachment.name.lastIndexOf('.');
+  final hasExtension = dotIndex > 0 && dotIndex < attachment.name.length - 1;
+  final name = hasExtension
+      ? attachment.name.substring(0, dotIndex)
+      : attachment.name;
+  final extension = hasExtension
+      ? attachment.name.substring(dotIndex + 1)
+      : 'pdf';
+
+  try {
+    await FileSaver.instance.saveFile(
+      name: name,
+      bytes: attachment.bytes,
+      fileExtension: extension,
+      mimeType: attachment.mimeType == 'application/pdf'
+          ? MimeType.pdf
+          : MimeType.custom,
+      customMimeType: attachment.mimeType,
+    );
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('${attachment.name} 파일을 저장했습니다.')));
+  } catch (_) {
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('파일을 저장하지 못했습니다. 다시 시도해 주세요.')),
+    );
+  }
 }
 
 class _BasicInfoTable extends StatelessWidget {

@@ -25,10 +25,10 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('비품/소모품 구입신청서'), findsWidgets);
       expect(
-        find.byKey(const ValueKey('document-line-0-date')),
+        find.byKey(const ValueKey('mobile-document-line-0-date')),
         findsOneWidget,
       );
-      expect(find.text('합    계'), findsOneWidget);
+      expect(find.text('합계'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
       appRouter.go('/approval/APR-260629-001');

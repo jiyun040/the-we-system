@@ -33,6 +33,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       viewers: template.viewers,
       publicReceivers: template.publicReceivers,
       linkedDocuments: const [],
+      attachments: const [],
       documentLayout: template.documentLayout,
       lineItems: _emptyLineItems(template),
       steps: _buildStepsFor(user, current.accounts),
@@ -55,6 +56,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     required String title,
     required String content,
     required List<String> linkedDocuments,
+    List<ApprovalAttachment> attachments = const <ApprovalAttachment>[],
     required bool departmentVisible,
     required Map<String, String> formFields,
     required List<Map<String, String>> lineItems,
@@ -83,7 +85,11 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       department: user.department,
       form: template.name,
       status: '작성중',
-      draftedAt: currentDocument?.draftedAt ?? now,
+      draftedAt: template.documentLayout == ApprovalDocumentLayout.hospitality
+          ? (formFields['draftedAt']?.trim().isNotEmpty == true
+                ? formFields['draftedAt']!.trim()
+                : now)
+          : currentDocument?.draftedAt ?? now,
       dueDate: now,
       progress: 0,
       documentNo: '임시저장',
@@ -99,6 +105,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       viewers: template.viewers,
       publicReceivers: template.publicReceivers,
       linkedDocuments: linkedDocuments,
+      attachments: attachments,
       documentLayout: template.documentLayout,
       formFields: formFields,
       lineItems: lineItems,
@@ -163,7 +170,11 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       department: user.department,
       form: template.name,
       status: '결재대기',
-      draftedAt: sourceDocument?.draftedAt ?? today,
+      draftedAt: draft.documentLayout == ApprovalDocumentLayout.hospitality
+          ? (draft.formFields['draftedAt']?.trim().isNotEmpty == true
+                ? draft.formFields['draftedAt']!.trim()
+                : today)
+          : sourceDocument?.draftedAt ?? today,
       dueDate: _dueDate(days: 3),
       progress: _progressFor(steps),
       documentNo: id,
@@ -181,6 +192,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       viewers: template.viewers,
       publicReceivers: template.publicReceivers,
       linkedDocuments: draft.linkedDocuments,
+      attachments: draft.attachments,
       documentLayout: draft.documentLayout,
       formFields: draft.formFields,
       lineItems: draft.lineItems,

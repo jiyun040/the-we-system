@@ -49,6 +49,11 @@ _ApprovalDocument _$ApprovalDocumentFromJson(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  attachments:
+      (json['attachments'] as List<dynamic>?)
+          ?.map((e) => ApprovalAttachment.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ApprovalAttachment>[],
   documentLayout: json['documentLayout'] as String? ?? 'basic',
   formFields:
       (json['formFields'] as Map<String, dynamic>?)?.map(
@@ -98,6 +103,7 @@ Map<String, dynamic> _$ApprovalDocumentToJson(_ApprovalDocument instance) =>
       'viewers': instance.viewers,
       'publicReceivers': instance.publicReceivers,
       'linkedDocuments': instance.linkedDocuments,
+      'attachments': instance.attachments,
       'documentLayout': instance.documentLayout,
       'formFields': instance.formFields,
       'lineItems': instance.lineItems,

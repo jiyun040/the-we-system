@@ -1,3 +1,4 @@
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +10,7 @@ import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
@@ -39,6 +41,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   String? selectedFormId;
   String? editingDocumentId;
   List<String> linkedDocuments = [];
+  List<ApprovalAttachment> attachments = [];
   Map<String, String> formFields = {};
   List<Map<String, String>> lineItems = [];
   bool departmentVisible = true;
@@ -80,7 +83,13 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
               titleController.text = seedDocument.title;
               contentController.text = seedDocument.content;
               linkedDocuments = [...seedDocument.linkedDocuments];
+              attachments = [...seedDocument.attachments];
               formFields = {...seedDocument.formFields};
+              if (currentTemplate?.documentLayout ==
+                      ApprovalDocumentLayout.hospitality &&
+                  (formFields['draftedAt']?.isEmpty ?? true)) {
+                formFields['draftedAt'] = seedDocument.draftedAt;
+              }
               lineItems = seedDocument.lineItems
                   .map((item) => {...item})
                   .toList();
@@ -98,6 +107,12 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
               content: contentController.text,
               form: currentTemplate?.name ?? seedDocument.form,
               linkedDocuments: linkedDocuments,
+              attachments: attachments,
+              draftedAt:
+                  currentTemplate?.documentLayout ==
+                      ApprovalDocumentLayout.hospitality
+                  ? (formFields['draftedAt'] ?? seedDocument.draftedAt)
+                  : seedDocument.draftedAt,
               documentLayout:
                   currentTemplate?.documentLayout ??
                   seedDocument.documentLayout,
@@ -131,7 +146,12 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                           titleController.text = template.defaultTitle;
                           contentController.text = template.defaultContent;
                           linkedDocuments = [];
-                          formFields = {};
+                          attachments = [];
+                          formFields =
+                              template.documentLayout ==
+                                  ApprovalDocumentLayout.hospitality
+                              ? {'draftedAt': _draftToday()}
+                              : {};
                           lineItems =
                               template.documentLayout ==
                                       ApprovalDocumentLayout.basic ||
@@ -176,6 +196,14 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                                 linkedDocuments = [
                                   for (final current in linkedDocuments)
                                     if (current != item) current,
+                                ];
+                              });
+                            },
+                            onRemoveAttachment: (attachment) {
+                              setState(() {
+                                attachments = [
+                                  for (final current in attachments)
+                                    if (current != attachment) current,
                                 ];
                               });
                             },
@@ -266,6 +294,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
         formFields: sourceDocument.formFields,
         lineItems: sourceDocument.lineItems,
         linkedDocuments: sourceDocument.linkedDocuments,
+        attachments: sourceDocument.attachments,
       );
     }
 
@@ -286,6 +315,13 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   }
 
   Future<void> _requestApproval(ApprovalDocument document) async {
+    if (document.documentLayout == ApprovalDocumentLayout.hospitality &&
+        DateTime.tryParse(formFields['draftedAt']?.trim() ?? '') == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('기안일을 YYYY-MM-DD 형식으로 입력해 주세요.')),
+      );
+      return;
+    }
     final urgent = await showRequestApprovalDialog(context, document: document);
     if (urgent == null) {
       return;
@@ -306,6 +342,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
             content: contentController.text.trim(),
             urgent: urgent,
             linkedDocuments: linkedDocuments,
+            attachments: attachments,
             departmentVisible: departmentVisible,
             documentLayout: document.documentLayout,
             formFields: formFields,
@@ -316,6 +353,8 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
       context.goNamed(AppRouteName.detail, pathParameters: {'id': id});
     }
   }
+
+  String _draftToday() => DateTime.now().toIso8601String().substring(0, 10);
 
   Future<void> _saveDraft() async {
     final formId = selectedFormId;
@@ -331,6 +370,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
           title: titleController.text.trim(),
           content: contentController.text.trim(),
           linkedDocuments: linkedDocuments,
+          attachments: attachments,
           departmentVisible: departmentVisible,
           formFields: formFields,
           lineItems: lineItems,
@@ -389,46 +429,40 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   }
 
   Future<void> _addAttachmentFile() async {
-    final controller = TextEditingController();
-    final value = await showDialog<String>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: TheWeColor.white,
-        surfaceTintColor: TheWeColor.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Text('파일 첨부', style: TheWeTextStyle.title),
-        content: SizedBox(
-          width: 420,
-          child: CustomTextFormField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: '첨부할 파일명을 입력하세요. 예: 계약서.pdf',
-            ),
-          ),
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
-            child: const Text('추가'),
-          ),
-          OutlinedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('취소'),
-          ),
-        ],
-      ),
+    const pdfTypes = XTypeGroup(
+      label: 'PDF 문서',
+      extensions: <String>['pdf'],
+      mimeTypes: <String>['application/pdf'],
+      uniformTypeIdentifiers: <String>['com.adobe.pdf'],
+      webWildCards: <String>['application/pdf'],
     );
-
-    final normalized = value?.trim();
-    if (normalized == null || normalized.isEmpty) {
+    final file = await openFile(acceptedTypeGroups: const [pdfTypes]);
+    if (file == null) {
       return;
     }
 
-    setState(() {
-      if (!linkedDocuments.contains('[첨부] $normalized')) {
-        linkedDocuments = [...linkedDocuments, '[첨부] $normalized'];
+    final bytes = await file.readAsBytes();
+    if (bytes.isEmpty || !mounted) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('빈 파일은 첨부할 수 없습니다.')));
       }
+      return;
+    }
+
+    final attachment = ApprovalAttachment.fromBytes(
+      name: file.name,
+      mimeType: file.mimeType ?? 'application/pdf',
+      bytes: bytes,
+    );
+
+    setState(() {
+      attachments = [
+        for (final current in attachments)
+          if (current.name != attachment.name) current,
+        attachment,
+      ];
     });
   }
 

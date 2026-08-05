@@ -8,6 +8,7 @@ class _EditableDraftSheet extends StatelessWidget {
     required this.onAddAttachment,
     required this.onAddLinkedDocument,
     required this.onRemoveLinkedDocument,
+    required this.onRemoveAttachment,
     required this.departmentVisible,
     required this.onDepartmentVisibilityChanged,
     required this.onFormFieldChanged,
@@ -20,6 +21,7 @@ class _EditableDraftSheet extends StatelessWidget {
   final VoidCallback onAddAttachment;
   final VoidCallback onAddLinkedDocument;
   final ValueChanged<String> onRemoveLinkedDocument;
+  final ValueChanged<ApprovalAttachment> onRemoveAttachment;
   final bool departmentVisible;
   final ValueChanged<bool> onDepartmentVisibilityChanged;
   final void Function(String key, String value) onFormFieldChanged;
@@ -55,7 +57,15 @@ class _EditableDraftSheet extends StatelessWidget {
                 children: [
                   _DraftInfoRow(label: '기 안 자', value: document.drafter),
                   _DraftInfoRow(label: '부    서', value: document.department),
-                  _DraftInfoRow(label: '기 안 일', value: document.draftedAt),
+                  if (document.documentLayout ==
+                      ApprovalDocumentLayout.hospitality)
+                    _DraftManualDateRow(
+                      value: document.draftedAt,
+                      onChanged: (value) =>
+                          onFormFieldChanged('draftedAt', value),
+                    )
+                  else
+                    _DraftInfoRow(label: '기 안 일', value: document.draftedAt),
                   _DraftInfoRow(
                     label: '수    신',
                     value: document.receivers.join(', '),
@@ -163,9 +173,33 @@ class _EditableDraftSheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 14),
-                if (document.linkedDocuments.isEmpty)
+                if (document.attachments.isEmpty &&
+                    document.linkedDocuments.isEmpty)
                   Text('첨부된 문서가 없습니다.', style: TheWeTextStyle.body)
-                else
+                else ...[
+                  if (document.attachments.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: document.attachments
+                          .map(
+                            (attachment) => InputChip(
+                              avatar: const Icon(
+                                Icons.picture_as_pdf_outlined,
+                                size: 18,
+                              ),
+                              label: Text(
+                                attachment.name,
+                                style: TheWeTextStyle.caption,
+                              ),
+                              onDeleted: () => onRemoveAttachment(attachment),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  if (document.attachments.isNotEmpty &&
+                      document.linkedDocuments.isNotEmpty)
+                    const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -178,6 +212,7 @@ class _EditableDraftSheet extends StatelessWidget {
                         )
                         .toList(),
                   ),
+                ],
               ],
             ),
           ),
@@ -275,83 +310,77 @@ class _PdfLayoutEditor extends StatelessWidget {
           value: document.formFields['note'] ?? '',
           onChanged: (value) => onFormFieldChanged('note', value),
         ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: 820,
-            child: Column(
-              children: [
-                Row(
-                  children: columns
-                      .map(
-                        (column) => Expanded(
-                          flex: column.$3,
-                          child: _PdfTableCell(text: column.$2, header: true),
-                        ),
-                      )
-                      .toList(),
-                ),
-                ...List.generate(document.lineItems.length, (index) {
-                  final item = document.lineItems[index];
-                  return Row(
+        if (MediaQuery.sizeOf(context).width < 600) ...[
+          const SizedBox(height: 10),
+          ...List.generate(document.lineItems.length, (index) {
+            final item = document.lineItems[index];
+            return _MobileLineItemEditor(
+              index: index,
+              columns: columns,
+              item: item,
+              onChanged: (key, value) => onLineItemChanged(index, key, value),
+            );
+          }),
+          _MobileLineItemTotal(value: _totalAmount(document.lineItems)),
+        ] else
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: 820,
+              child: Column(
+                children: [
+                  Row(
                     children: columns
                         .map(
                           (column) => Expanded(
                             flex: column.$3,
-                            child: _PdfInputCell(
-                              key: ValueKey(
-                                'document-line-$index-${column.$1}',
-                              ),
-                              value: item[column.$1] ?? '',
-                              hintText: column.$1 == 'date' ? 'YYYY-MM-DD' : '',
-                              onChanged: (value) =>
-                                  onLineItemChanged(index, column.$1, value),
-                            ),
+                            child: _PdfTableCell(text: column.$2, header: true),
                           ),
                         )
                         .toList(),
-                  );
-                }),
-                Row(
-                  children: [
-                    const Expanded(
-                      flex: 8,
-                      child: _PdfTableCell(text: '합    계', header: true),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: _PdfTableCell(
-                        text: _totalAmount(document.lineItems),
-                        header: true,
+                  ),
+                  ...List.generate(document.lineItems.length, (index) {
+                    final item = document.lineItems[index];
+                    return Row(
+                      children: columns
+                          .map(
+                            (column) => Expanded(
+                              flex: column.$3,
+                              child: _PdfInputCell(
+                                key: ValueKey(
+                                  'document-line-$index-${column.$1}',
+                                ),
+                                value: item[column.$1] ?? '',
+                                hintText: column.$1 == 'date'
+                                    ? 'YYYY-MM-DD'
+                                    : '',
+                                onChanged: (value) =>
+                                    onLineItemChanged(index, column.$1, value),
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    );
+                  }),
+                  Row(
+                    children: [
+                      const Expanded(
+                        flex: 8,
+                        child: _PdfTableCell(text: '합    계', header: true),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Expanded(
+                        flex: 2,
+                        child: _PdfTableCell(
+                          text: _totalAmount(document.lineItems),
+                          header: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        const _PdfSectionHeader('지 시 사 항 / 상세 설명'),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: TheWeColor.black900),
-          ),
-          child: CustomTextFormField(
-            controller: contentController,
-            minLines: 4,
-            maxLines: 8,
-            style: TheWeTextStyle.body.copyWith(fontSize: 16, height: 1.65),
-            decoration: const InputDecoration(
-              hintText: '문서 하단에 표시할 설명을 입력하세요.',
-              fillColor: TheWeColor.white,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-            ),
-          ),
-        ),
       ],
     );
   }
@@ -387,6 +416,111 @@ class _PdfLayoutEditor extends StatelessWidget {
     });
     return sum == 0 ? '' : '${sum.toString()}원';
   }
+}
+
+class _DraftManualDateRow extends StatelessWidget {
+  const _DraftManualDateRow({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      const SizedBox(
+        width: 104,
+        child: _PdfTableCell(text: '기 안 일', header: true),
+      ),
+      Expanded(
+        child: SizedBox(
+          height: 48,
+          child: TextFormField(
+            key: const ValueKey('hospitality-drafted-at'),
+            initialValue: value,
+            onChanged: onChanged,
+            keyboardType: TextInputType.datetime,
+            style: TheWeTextStyle.body.copyWith(fontSize: 15),
+            decoration: const InputDecoration(
+              hintText: 'YYYY-MM-DD',
+              contentPadding: EdgeInsets.symmetric(horizontal: 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+            ),
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _MobileLineItemEditor extends StatelessWidget {
+  const _MobileLineItemEditor({
+    required this.index,
+    required this.columns,
+    required this.item,
+    required this.onChanged,
+  });
+
+  final int index;
+  final List<(String, String, int)> columns;
+  final Map<String, String> item;
+  final void Function(String key, String value) onChanged;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: TheWeColor.background,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: TheWeColor.black300.withValues(alpha: .45)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('${index + 1}번 항목', style: TheWeTextStyle.subtitle),
+        const SizedBox(height: 10),
+        for (final column in columns) ...[
+          Text(column.$2, style: TheWeTextStyle.caption),
+          const SizedBox(height: 5),
+          TextFormField(
+            key: ValueKey('mobile-document-line-$index-${column.$1}'),
+            initialValue: item[column.$1] ?? '',
+            onChanged: (value) => onChanged(column.$1, value),
+            keyboardType: column.$1 == 'amount' || column.$1 == 'total'
+                ? TextInputType.number
+                : TextInputType.text,
+            decoration: InputDecoration(
+              hintText: column.$1 == 'date' ? 'YYYY-MM-DD' : '',
+              isDense: true,
+            ),
+          ),
+          const SizedBox(height: 9),
+        ],
+      ],
+    ),
+  );
+}
+
+class _MobileLineItemTotal extends StatelessWidget {
+  const _MobileLineItemTotal({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    decoration: BoxDecoration(
+      color: TheWeColor.blueSurface,
+      borderRadius: BorderRadius.circular(10),
+    ),
+    child: Row(
+      children: [
+        Text('합계', style: TheWeTextStyle.subtitle),
+        const Spacer(),
+        Text(value.isEmpty ? '-' : value, style: TheWeTextStyle.subtitle),
+      ],
+    ),
+  );
 }
 
 class _PdfWideInput extends StatelessWidget {
