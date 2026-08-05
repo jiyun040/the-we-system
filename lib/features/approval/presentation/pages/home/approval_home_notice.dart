@@ -1,7 +1,15 @@
 part of 'approval_home_page.dart';
 
-class _PortalNoticePanel extends StatelessWidget {
+class _PortalNoticePanel extends StatefulWidget {
   const _PortalNoticePanel();
+
+  @override
+  State<_PortalNoticePanel> createState() => _PortalNoticePanelState();
+}
+
+class _PortalNoticePanelState extends State<_PortalNoticePanel> {
+  static const _pageSize = 5;
+  int page = 0;
 
   static const _items = [
     _PortalNotice(
@@ -27,6 +35,30 @@ class _PortalNoticePanel extends StatelessWidget {
       title: '[외부기관 연동센터] 작업 완료',
       date: '2026-06-23',
       body: '연동센터 작업이 완료되어 모든 전자결재 및 근태 메뉴를 정상 이용할 수 있습니다.',
+    ),
+    _PortalNotice(
+      category: '인사 안내',
+      title: '8월 휴가 신청 및 업무 인수인계 안내',
+      date: '2026-06-20',
+      body: '하계 휴가 신청 전 업무 인수인계 내용을 확인해 주세요.',
+    ),
+    _PortalNotice(
+      category: '전자결재',
+      title: '기업업무추진비 기안일 입력 방법 안내',
+      date: '2026-06-18',
+      body: '기업업무추진비 양식은 기안일을 직접 입력할 수 있습니다.',
+    ),
+    _PortalNotice(
+      category: '보안 안내',
+      title: 'OTP 인증번호 관리 주의',
+      date: '2026-06-15',
+      body: '관리자 전환에 사용하는 OTP 번호를 타인에게 공유하지 마세요.',
+    ),
+    _PortalNotice(
+      category: '시스템 안내',
+      title: '모바일 전자결재 화면 개선 안내',
+      date: '2026-06-12',
+      body: '모바일에서 결재 문서와 휴가 내역을 더 편리하게 확인할 수 있도록 개선했습니다.',
     ),
   ];
 
@@ -77,6 +109,9 @@ class _PortalNoticePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pageCount = (_items.length / _pageSize).ceil();
+    final start = page * _pageSize;
+    final visibleItems = _items.skip(start).take(_pageSize);
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 340;
@@ -86,7 +121,7 @@ class _PortalNoticePanel extends StatelessWidget {
           children: [
             Text('공지사항', style: TheWeTextStyle.title),
             const SizedBox(height: 18),
-            ..._items.map(
+            ...visibleItems.map(
               (item) => Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: InkWell(
@@ -139,6 +174,32 @@ class _PortalNoticePanel extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+            const SizedBox(height: 2),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  key: const ValueKey('notice-page-previous'),
+                  tooltip: '이전 공지',
+                  onPressed: page > 0 ? () => setState(() => page--) : null,
+                  icon: const Icon(Icons.chevron_left),
+                ),
+                Text(
+                  '${page + 1} / $pageCount',
+                  style: TheWeTextStyle.caption.copyWith(
+                    color: TheWeColor.black500,
+                  ),
+                ),
+                IconButton(
+                  key: const ValueKey('notice-page-next'),
+                  tooltip: '다음 공지',
+                  onPressed: page < pageCount - 1
+                      ? () => setState(() => page++)
+                      : null,
+                  icon: const Icon(Icons.chevron_right),
+                ),
+              ],
             ),
           ],
         );

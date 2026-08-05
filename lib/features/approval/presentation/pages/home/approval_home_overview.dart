@@ -70,85 +70,24 @@ class _PortalOverview extends StatelessWidget {
                 );
               },
             ),
-            if (state.isAppEnabled(PortalAppId.approval)) ...[
+          ],
+        );
+        final processingDocuments = state.dashboard.processingDocuments;
+        final rightChild = Column(
+          children: [
+            const _PortalSurface(child: _PortalNoticePanel()),
+            if (state.isAppEnabled(PortalAppId.approval) &&
+                processingDocuments.isNotEmpty) ...[
               const SizedBox(height: 18),
               _PortalSurface(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('전자결재 진행현황', style: TheWeTextStyle.title),
-                    const SizedBox(height: 18),
-                    if (state.dashboard.processingDocuments.isEmpty)
-                      SizedBox(
-                        height: 120,
-                        child: Center(
-                          child: Text(
-                            '목록이 없습니다.',
-                            style: TheWeTextStyle.body.copyWith(
-                              color: TheWeColor.black500,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final documents = state.dashboard.processingDocuments;
-                          if (constraints.maxWidth < 520) {
-                            return Column(
-                              children: documents
-                                  .take(3)
-                                  .map(
-                                    (document) => Padding(
-                                      padding: const EdgeInsets.only(
-                                        bottom: 10,
-                                      ),
-                                      child: ApprovalMobileDocumentCard(
-                                        document: document,
-                                        onTap: () => context.pushNamed(
-                                          AppRouteName.detail,
-                                          pathParameters: {'id': document.id},
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                                  .toList(),
-                            );
-                          }
-
-                          return SizedBox(
-                            height: 292,
-                            child: ListView.separated(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: documents.length.clamp(0, 4),
-                              separatorBuilder: (context, index) =>
-                                  const SizedBox(width: 12),
-                              itemBuilder: (context, index) {
-                                final document = documents[index];
-                                return ProcessingCard(
-                                  title: document.title,
-                                  drafter: document.drafter,
-                                  date: document.draftedAt,
-                                  form: document.form,
-                                  status: document.status,
-                                  progress: document.progress,
-                                  onTap: () => context.pushNamed(
-                                    AppRouteName.detail,
-                                    pathParameters: {'id': document.id},
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                        },
-                      ),
-                  ],
+                child: _DraftProgressSection(
+                  documents: processingDocuments.take(5).toList(),
+                  totalCount: processingDocuments.length,
                 ),
               ),
             ],
           ],
         );
-        const rightChild = _PortalSurface(child: _PortalNoticePanel());
 
         if (stacked) {
           return Column(

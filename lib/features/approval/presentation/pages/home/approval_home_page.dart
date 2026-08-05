@@ -27,6 +27,7 @@ part 'approval_home_calendar_day.dart';
 part 'approval_home_calendar_dialog.dart';
 part 'approval_home_trend.dart';
 part 'approval_home_processing.dart';
+part 'approval_home_leave_approvals.dart';
 
 class ApprovalHomePage extends ConsumerStatefulWidget {
   const ApprovalHomePage({super.key});
@@ -128,6 +129,19 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                         child: _PortalOverview(state: approvalState),
                       ),
                     ),
+                    if (approvalState.isAppEnabled(PortalAppId.leave) &&
+                        approvalState.actionableLeaveRequests.isNotEmpty)
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          0,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: _LeaveApprovalSection(state: approvalState),
+                        ),
+                      ),
                     if (approvalState.isAppEnabled(PortalAppId.approval))
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(
@@ -146,23 +160,9 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                           ),
                         ),
                       ),
-                    if (approvalState.isAppEnabled(PortalAppId.approval))
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          isPhone ? 18 : 28,
-                          isPhone ? 18 : 28,
-                          isPhone ? 18 : 28,
-                          isPhone ? 18 : 28,
-                        ),
-                        sliver: SliverToBoxAdapter(
-                          child: _DraftProgressSection(
-                            documents: dashboard.processingDocuments
-                                .take(10)
-                                .toList(),
-                            totalCount: dashboard.processingDocuments.length,
-                          ),
-                        ),
-                      ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: isPhone ? 18 : 28),
+                    ),
                   ],
                 ),
               ),

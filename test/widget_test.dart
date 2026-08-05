@@ -32,6 +32,13 @@ void main() {
       expect(find.text('홈'), findsWidgets);
       expect(find.text('캘린더'), findsOneWidget);
       expect(find.text('공지사항'), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('notice-page-previous')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('notice-page-next')), findsOneWidget);
+      expect(find.text('1 / 2'), findsOneWidget);
+      expect(find.textContaining('기업업무추진비 기안일'), findsNothing);
       expect(find.text('인력 현황'), findsNothing);
       expect(find.text('업무 포털'), findsNothing);
     });
