@@ -14,6 +14,7 @@ void main() {
 
     expect(await notifier.login('edu_manager', '1234'), isTrue);
     expect(notifier.hasValidAdminCredentials('edu_manager', '1234'), isTrue);
+    expect(notifier.hasValidAdminCredentials('edu_teacher', '1234'), isFalse);
     expect(
       container
           .read(approvalDashboardControllerProvider)
@@ -253,7 +254,7 @@ void main() {
     final notifier = container.read(
       approvalDashboardControllerProvider.notifier,
     );
-    expect(await notifier.login('admin_master', 'admin1234'), isTrue);
+    expect(await notifier.login('edu_manager', '1234'), isTrue);
     expect(notifier.enterAdminMode('123456'), isTrue);
 
     final before = container
@@ -281,7 +282,7 @@ void main() {
     final registered = updated.leaveRequests.first;
     expect(registered.status, '승인완료');
     expect(registered.directEntry, isTrue);
-    expect(registered.registeredBy, '시스템관리자');
+    expect(registered.registeredBy, '교육관리자');
     expect(registered.reason, '결재 시스템 미사용분 관리자 반영');
     expect(updated.remainingAnnualLeaveFor(employee), remainingBefore - 1);
     expect(
@@ -332,7 +333,7 @@ void main() {
     expect(state.remainingAnnualLeave, remainingBefore);
   });
 
-  test('휴가는 이사 승인 후 대표 결재로 순차 전달된다', () async {
+  test('휴가는 이사 단계를 거치지 않고 대표에게 바로 전달된다', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     await container.read(approvalDashboardControllerProvider.future);
@@ -352,27 +353,116 @@ void main() {
         .read(approvalDashboardControllerProvider)
         .requireValue;
     final requestId = state.currentUserLeaveRequests.first.id;
-    expect(state.currentUserLeaveRequests.first.directorStatus, '진행중');
-    expect(state.currentUserLeaveRequests.first.ceoStatus, '결재 예정');
+    expect(state.currentUserLeaveRequests.first.ceoStatus, '진행중');
 
     notifier.logout();
     await notifier.login('director', '1234');
-    expect(notifier.actOnLeave(requestId, approve: true), isTrue);
-    state = container.read(approvalDashboardControllerProvider).requireValue;
-    var request = state.leaveRequests
-        .where((item) => item.id == requestId)
-        .first;
-    expect(request.status, '승인대기');
-    expect(request.directorStatus, '완료');
-    expect(request.ceoStatus, '진행중');
+    expect(notifier.actOnLeave(requestId, approve: true), isFalse);
 
     notifier.logout();
     await notifier.login('ceo', '1234');
     expect(notifier.actOnLeave(requestId, approve: true), isTrue);
     state = container.read(approvalDashboardControllerProvider).requireValue;
-    request = state.leaveRequests.where((item) => item.id == requestId).first;
+    final request = state.leaveRequests
+        .where((item) => item.id == requestId)
+        .first;
     expect(request.status, '승인완료');
     expect(request.ceoStatus, '완료');
+    expect(state.unacknowledgedApprovedLeaveRequests, contains(request));
+
+    notifier.logout();
+    await notifier.login('edu_manager', '1234');
+    expect(notifier.enterAdminMode('123456'), isTrue);
+    notifier.acknowledgeApprovedLeaves([requestId]);
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    expect(state.unacknowledgedApprovedLeaveRequests, isEmpty);
+  });
+
+  test('관리자 계정은 edu_manager 하나만 유지된다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+
+    final state = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    expect(
+      state.accounts.where((account) => account.isAdmin).single.id,
+      'edu_manager',
+    );
+    expect(notifier.setAdminPermission('edu_manager', true), isNull);
+    expect(notifier.setAdminPermission('edu_teacher', true), isNotNull);
+    expect(await notifier.login('edu_manager', '1234'), isTrue);
+    expect(
+      container
+          .read(approvalDashboardControllerProvider)
+          .requireValue
+          .adminMode,
+      isFalse,
+    );
+  });
+
+  test('edu_manager만 OTP로 관리자 모드를 사용한다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+
+    expect(await notifier.login('edu_teacher', '1234'), isTrue);
+    expect(notifier.enterAdminMode('123456'), isFalse);
+    notifier.logout();
+    expect(await notifier.login('edu_manager', '1234'), isTrue);
+    expect(notifier.enterAdminMode('123456'), isTrue);
+    var state = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    expect(state.isAdminMode, isTrue);
+    expect(state.currentUser?.id, 'edu_manager');
+
+    notifier.leaveAdminMode();
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    expect(state.isAdminMode, isFalse);
+    expect(state.currentUser?.id, 'edu_manager');
+  });
+
+  test('기업업무추진비만 수기 기안일을 저장하고 PDF 양식은 확장된 행을 사용한다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+    await notifier.login('edu_teacher', '1234');
+
+    final hospitality = notifier.buildDraftDocument('hospitality-expense');
+    final expense = notifier.buildDraftDocument('expense-slip');
+    final purchase = notifier.buildDraftDocument('purchase-request');
+    expect(hospitality.lineItems, hasLength(24));
+    expect(expense.lineItems, hasLength(32));
+    expect(purchase.lineItems, hasLength(16));
+
+    final id = await notifier.requestApproval(
+      draft: const ApprovalRequestDraft(
+        formId: 'hospitality-expense',
+        title: '기업업무추진비',
+        content: '',
+        urgent: false,
+        linkedDocuments: [],
+        documentLayout: ApprovalDocumentLayout.hospitality,
+        formFields: {'draftedAt': '2026-07-15'},
+      ),
+    );
+    final document = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue
+        .documents
+        .firstWhere((document) => document.id == id);
+    expect(document.draftedAt, '2026-07-15');
   });
 
   test('PDF형 결재 문서는 상신취소와 반려 후에도 입력 내용을 유지한다', () async {
@@ -416,8 +506,7 @@ void main() {
 
     await notifier.requestApproval(documentId: documentId, draft: draft);
     notifier.logout();
-    await notifier.login('edu_manager', '1234');
-    expect(notifier.enterAdminMode('123456'), isTrue);
+    await notifier.login('lee_jaeo', '1234');
     await notifier.approveDocument(documentId, action: '반려', opinion: '증빙 보완');
     state = container.read(approvalDashboardControllerProvider).requireValue;
     document = state.documents.where((item) => item.id == documentId).first;

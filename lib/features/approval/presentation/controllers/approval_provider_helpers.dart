@@ -86,7 +86,7 @@ List<EmployeeAccount> _approvalChain(
     '인사팀': ['kim_kyunyoung'],
     '기획팀': ['kim_kyunyoung'],
     '운영팀': ['kim_kyunyoung'],
-    '경영관리팀': ['admin_master'],
+    '경영관리팀': ['kim_kyunyoung', 'ceo'],
   };
   final ids =
       managerMap[drafter.department] ??

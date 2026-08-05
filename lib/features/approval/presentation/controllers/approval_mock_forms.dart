@@ -52,7 +52,7 @@ const _templates = [
     cooperationDepartment: '재경팀',
     agreement: '예산 확인 후 지급',
     documentLayout: ApprovalDocumentLayout.expense,
-    lineItemRows: 20,
+    lineItemRows: 32,
   ),
   ApprovalFormTemplate(
     id: 'purchase-request',
@@ -69,7 +69,7 @@ const _templates = [
     cooperationDepartment: '재경팀',
     agreement: '합의 후 구매 진행',
     documentLayout: ApprovalDocumentLayout.purchase,
-    lineItemRows: 10,
+    lineItemRows: 16,
   ),
   ApprovalFormTemplate(
     id: 'hospitality-expense',
@@ -85,7 +85,7 @@ const _templates = [
     cooperationDepartment: '재경팀',
     agreement: '증빙 확인 후 지급',
     documentLayout: ApprovalDocumentLayout.hospitality,
-    lineItemRows: 18,
+    lineItemRows: 24,
   ),
   ApprovalFormTemplate(
     id: 'payroll-draft',
@@ -186,22 +186,12 @@ const _accounts = [
     email: 'han_dev@thewe.co.kr',
   ),
   EmployeeAccount(
-    id: 'admin_master',
-    password: 'admin1234',
-    name: '시스템관리자',
-    department: '경영관리팀',
-    position: '관리자',
-    email: 'admin@thewe.co.kr',
-    isAdmin: true,
-  ),
-  EmployeeAccount(
     id: 'director',
     password: '1234',
     name: '정효정',
     department: '경영관리팀',
     position: '이사',
     email: 'director@thewe.co.kr',
-    isAdmin: true,
   ),
   EmployeeAccount(
     id: 'ceo',
@@ -210,6 +200,5 @@ const _accounts = [
     department: '경영관리팀',
     position: '대표',
     email: 'ceo@thewe.co.kr',
-    isAdmin: true,
   ),
 ];

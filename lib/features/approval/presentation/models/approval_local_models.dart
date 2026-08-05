@@ -1,3 +1,5 @@
+import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
+
 class EmployeeAccount {
   const EmployeeAccount({
     required this.id,
@@ -140,6 +142,7 @@ class ApprovalRequestDraft {
     required this.content,
     required this.urgent,
     required this.linkedDocuments,
+    this.attachments = const <ApprovalAttachment>[],
     this.departmentVisible = true,
     this.documentLayout = ApprovalDocumentLayout.basic,
     this.formFields = const <String, String>{},
@@ -151,6 +154,7 @@ class ApprovalRequestDraft {
   final String content;
   final bool urgent;
   final List<String> linkedDocuments;
+  final List<ApprovalAttachment> attachments;
   final bool departmentVisible;
   final String documentLayout;
   final Map<String, String> formFields;
@@ -167,8 +171,7 @@ class LeaveRequest {
     required this.days,
     required this.reason,
     this.status = '승인대기',
-    this.directorStatus = '진행중',
-    this.ceoStatus = '결재 예정',
+    this.ceoStatus = '진행중',
     this.rejectedBy = '',
     this.directEntry = false,
     this.registeredBy = '',
@@ -182,7 +185,6 @@ class LeaveRequest {
   final double days;
   final String reason;
   final String status;
-  final String directorStatus;
   final String ceoStatus;
   final String rejectedBy;
   final bool directEntry;
@@ -190,7 +192,6 @@ class LeaveRequest {
 
   LeaveRequest copyWith({
     String? status,
-    String? directorStatus,
     String? ceoStatus,
     String? rejectedBy,
     bool? directEntry,
@@ -204,7 +205,6 @@ class LeaveRequest {
     days: days,
     reason: reason,
     status: status ?? this.status,
-    directorStatus: directorStatus ?? this.directorStatus,
     ceoStatus: ceoStatus ?? this.ceoStatus,
     rejectedBy: rejectedBy ?? this.rejectedBy,
     directEntry: directEntry ?? this.directEntry,
