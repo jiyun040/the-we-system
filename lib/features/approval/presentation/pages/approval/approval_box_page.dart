@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
+import 'package:the_we_system/common/components/the_we_data_table.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
@@ -339,144 +340,88 @@ class _DocumentTable extends ConsumerWidget {
           );
         }
 
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: constraints.maxWidth < 1380 ? 1380 : constraints.maxWidth,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: TheWeColor.black300.withValues(alpha: 0.35),
-                ),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                children: [
-                  Container(
-                    height: 46,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    color: TheWeColor.black300.withValues(alpha: 0.08),
-                    child: Row(
-                      children: const [
-                        _HeaderCell('기안일', flex: 2),
-                        _HeaderCell('완료일', flex: 2),
-                        _HeaderCell('결재양식', flex: 3),
-                        _HeaderCell('긴급', flex: 1),
-                        _HeaderCell('제목', flex: 5),
-                        _HeaderCell('첨부', flex: 1),
-                        _HeaderCell('기안부서', flex: 2),
-                        _HeaderCell('문서번호', flex: 2),
-                        _HeaderCell('결재상태', flex: 2),
-                        _HeaderCell('관리', flex: 3),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.separated(
-                      itemCount: documents.length,
-                      separatorBuilder: (context, index) => Divider(
-                        height: 1,
-                        color: TheWeColor.black300.withValues(alpha: 0.22),
+        return Align(
+          alignment: Alignment.topLeft,
+          child: TheWeDataTable(
+            headers: const [
+              '기안일',
+              '완료일',
+              '결재양식',
+              '긴급',
+              '제목',
+              '첨부',
+              '기안부서',
+              '문서번호',
+              '결재상태',
+              '관리',
+            ],
+            columnFlexes: const [2, 2, 3, 1, 5, 1, 2, 2, 2, 3],
+            minWidth: 1380,
+            onRowTaps: documents
+                .map<VoidCallback?>(
+                  (document) =>
+                      () => context.pushNamed(
+                        AppRouteName.detail,
+                        pathParameters: {'id': document.id},
                       ),
-                      itemBuilder: (context, index) {
-                        final document = documents[index];
-                        final canCancel =
-                            currentUser != null &&
-                            _canCancelDocument(document) &&
-                            (appState?.isAdminMode == true ||
-                                document.drafter == currentUser.name);
-
-                        return InkWell(
-                          onTap: () => context.pushNamed(
-                            AppRouteName.detail,
-                            pathParameters: {'id': document.id},
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 12,
-                            ),
-                            child: Row(
-                              children: [
-                                _BodyCell(document.draftedAt, flex: 2),
-                                _BodyCell(_completedAt(document), flex: 2),
-                                _BodyCell(document.form, flex: 3),
-                                _BodyCell(
-                                  document.urgent ? '긴급' : '-',
-                                  flex: 1,
-                                ),
-                                _BodyCell(document.title, flex: 5),
-                                _BodyCell(
-                                  document.linkedDocuments.isEmpty
-                                      ? '-'
-                                      : '${document.linkedDocuments.length}',
-                                  flex: 1,
-                                ),
-                                _BodyCell(document.department, flex: 2),
-                                _BodyCell(document.documentNo, flex: 2),
-                                _StatusCell(document.status, flex: 2),
-                                Expanded(
-                                  flex: 3,
-                                  child: Wrap(
-                                    spacing: 6,
-                                    runSpacing: 6,
-                                    children: [
-                                      if (kind == 'drafts' && canCancel)
-                                        OutlinedButton(
-                                          onPressed: () => ref
-                                              .read(
-                                                approvalDashboardControllerProvider
-                                                    .notifier,
-                                              )
-                                              .cancelSubmission(document.id),
-                                          style: OutlinedButton.styleFrom(
-                                            side: BorderSide(
-                                              color: TheWeColor.pink,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            '상신취소',
-                                            style: TheWeTextStyle.section
-                                                .copyWith(
-                                                  color: TheWeColor.pink,
-                                                ),
-                                          ),
-                                        ),
-                                      OutlinedButton(
-                                        onPressed: () => context.pushNamed(
-                                          AppRouteName.draft,
-                                          queryParameters: {
-                                            'reuse': document.id,
-                                          },
-                                        ),
-                                        style: OutlinedButton.styleFrom(
-                                          side: BorderSide(
-                                            color: TheWeColor.blue300,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          document.status == '작성중'
-                                              ? '이어쓰기'
-                                              : '재사용',
-                                          style: TheWeTextStyle.section
-                                              .copyWith(
-                                                color: TheWeColor.blue300,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+                )
+                .toList(),
+            rows: documents.map((document) {
+              final canCancel =
+                  currentUser != null &&
+                  _canCancelDocument(document) &&
+                  (appState?.isAdminMode == true ||
+                      document.drafter == currentUser.name);
+              return <Widget>[
+                _DocumentTableText(document.draftedAt),
+                _DocumentTableText(_completedAt(document)),
+                _DocumentTableText(document.form),
+                document.urgent
+                    ? const _UrgentChip()
+                    : const _DocumentTableText('-'),
+                _DocumentTableText(
+                  document.title.trim().isEmpty ? '-' : document.title,
+                ),
+                _DocumentTableText(
+                  document.linkedDocuments.isEmpty
+                      ? '-'
+                      : '${document.linkedDocuments.length}',
+                ),
+                _DocumentTableText(document.department),
+                _DocumentTableText(document.documentNo),
+                _DocumentStatusChip(document.status),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    if (kind == 'drafts' && canCancel)
+                      OutlinedButton(
+                        onPressed: () => ref
+                            .read(approvalDashboardControllerProvider.notifier)
+                            .cancelSubmission(document.id),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: TheWeColor.pink,
+                          side: BorderSide(color: TheWeColor.pink),
+                        ),
+                        child: const Text('상신취소'),
+                      ),
+                    OutlinedButton(
+                      onPressed: () => context.pushNamed(
+                        AppRouteName.draft,
+                        queryParameters: {'reuse': document.id},
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: TheWeColor.blue300,
+                        side: BorderSide(color: TheWeColor.blue300),
+                      ),
+                      child: Text(document.status == '작성중' ? '이어쓰기' : '재사용'),
                     ),
-                  ),
-                ],
-              ),
-            ),
+                  ],
+                ),
+              ];
+            }).toList(),
           ),
         );
       },

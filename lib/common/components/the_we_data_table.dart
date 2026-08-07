@@ -11,12 +11,14 @@ class TheWeDataTable extends StatelessWidget {
     required this.rows,
     this.columnFlexes,
     this.minWidth = 920,
+    this.onRowTaps,
   });
 
   final List<String> headers;
   final List<List<Widget>> rows;
   final List<double>? columnFlexes;
   final double minWidth;
+  final List<VoidCallback?>? onRowTaps;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +29,10 @@ class TheWeDataTable extends StatelessWidget {
     assert(
       columnFlexes == null || columnFlexes!.length == headers.length,
       'columnFlexes must match the number of headers.',
+    );
+    assert(
+      onRowTaps == null || onRowTaps!.length == rows.length,
+      'onRowTaps must match the number of rows.',
     );
 
     return LayoutBuilder(
@@ -90,6 +96,7 @@ class TheWeDataTable extends StatelessWidget {
                               rightBorder:
                                   columnIndex != rows[rowIndex].length - 1,
                               bottomBorder: rowIndex != rows.length - 1,
+                              onTap: onRowTaps?[rowIndex],
                               child: rows[rowIndex][columnIndex],
                             ),
                         ],
@@ -111,32 +118,46 @@ class _TableCell extends StatelessWidget {
     this.rightBorder = false,
     this.bottomBorder = false,
     this.alignment = Alignment.center,
+    this.onTap,
   });
 
   final Widget child;
   final bool rightBorder;
   final bool bottomBorder;
   final AlignmentGeometry alignment;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(minHeight: 64),
-      alignment: alignment,
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
-      decoration: BoxDecoration(
-        border: Border(
-          right: rightBorder
-              ? BorderSide(color: TheWeColor.black300.withValues(alpha: .26))
-              : BorderSide.none,
-          bottom: bottomBorder
-              ? BorderSide(color: TheWeColor.black300.withValues(alpha: .26))
-              : BorderSide.none,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        hoverColor: TheWeColor.blueSurface.withValues(alpha: .7),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 64),
+          alignment: alignment,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          decoration: BoxDecoration(
+            border: Border(
+              right: rightBorder
+                  ? BorderSide(
+                      color: TheWeColor.black300.withValues(alpha: .26),
+                    )
+                  : BorderSide.none,
+              bottom: bottomBorder
+                  ? BorderSide(
+                      color: TheWeColor.black300.withValues(alpha: .26),
+                    )
+                  : BorderSide.none,
+            ),
+          ),
+          child: DefaultTextStyle(
+            style: TheWeTextStyle.body.copyWith(color: TheWeColor.black900),
+            textAlign: TextAlign.center,
+            child: child,
+          ),
         ),
-      ),
-      child: DefaultTextStyle(
-        style: TheWeTextStyle.body.copyWith(color: TheWeColor.black900),
-        child: child,
       ),
     );
   }
