@@ -45,11 +45,9 @@ class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
             Expanded(
               child: switch (selectedIndex) {
                 0 => _ApprovalLineSetup(),
-                1 => const _PeopleSetup(caption: '참조자는 결재 중에도 문서를 열람할 수 있습니다.'),
+                1 => const _PeopleSetup(caption: '결재 진행 내용을 함께 확인할 사람을 선택하세요.'),
                 2 => const _PeopleSetup(caption: '수신자는 접수 대기 문서함에서 확인합니다.'),
-                3 => const _PeopleSetup(
-                  caption: '열람자는 결재 완료 후 문서를 열람할 수 있습니다.',
-                ),
+                3 => const _PeopleSetup(caption: '결재가 완료된 문서를 공유할 사람을 선택하세요.'),
                 _ => _PublicReceiverSetup(),
               },
             ),

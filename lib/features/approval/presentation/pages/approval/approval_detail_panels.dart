@@ -250,16 +250,83 @@ class _ViewerTab extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text('참조자는 결재 중에도 열람 가능', style: TheWeTextStyle.subtitle),
-        const SizedBox(height: 8),
-        ...document.references.map((name) => _SimplePerson(name: name)),
-        const SizedBox(height: 18),
-        Text('열람자는 결재 완료 후 열람 가능', style: TheWeTextStyle.subtitle),
-        const SizedBox(height: 8),
-        ...document.viewers.map((name) => _SimplePerson(name: name)),
+        _ViewerGroup(
+          icon: Icons.people_outline,
+          title: '참조',
+          description: '결재 진행 내용을 함께 확인할 사람',
+          names: document.references,
+        ),
+        const SizedBox(height: 24),
+        _ViewerGroup(
+          icon: Icons.task_alt_outlined,
+          title: '열람',
+          description: '결재가 완료된 문서를 공유할 사람',
+          names: document.viewers,
+        ),
       ],
     );
   }
+}
+
+class _ViewerGroup extends StatelessWidget {
+  const _ViewerGroup({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.names,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final List<String> names;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: TheWeColor.blueSurface,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 19, color: TheWeColor.blue300),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TheWeTextStyle.subtitle),
+                const SizedBox(height: 2),
+                Text(
+                  description,
+                  style: TheWeTextStyle.caption.copyWith(
+                    color: TheWeColor.black500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      if (names.isEmpty)
+        Padding(
+          padding: const EdgeInsets.only(left: 44, top: 4),
+          child: Text(
+            '지정된 사람이 없습니다.',
+            style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+          ),
+        )
+      else
+        ...names.map((name) => _SimplePerson(name: name)),
+    ],
+  );
 }
 
 class _InfoLine extends StatelessWidget {
