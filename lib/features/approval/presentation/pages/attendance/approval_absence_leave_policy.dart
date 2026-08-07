@@ -292,44 +292,18 @@ class _LeavePolicyMemberDialogState extends State<_LeavePolicyMemberDialog> {
                     icon: const Icon(Icons.clear_all, size: 18),
                     label: const Text('전체 삭제'),
                   ),
-                  Container(
-                    width: 150,
-                    height: 42,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: TheWeColor.white,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: TheWeColor.black300.withValues(alpha: 0.35),
-                      ),
-                    ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedDepartment.isEmpty
-                            ? null
-                            : _selectedDepartment,
-                        isExpanded: true,
-                        borderRadius: BorderRadius.circular(16),
-                        dropdownColor: TheWeColor.white,
-                        icon: const Icon(Icons.keyboard_arrow_down_rounded),
-                        style: TheWeTextStyle.body,
-                        items: _departments
-                            .map(
-                              (department) => DropdownMenuItem(
-                                value: department,
-                                child: Text(department),
-                              ),
-                            )
-                            .toList(),
-                        onChanged: (value) {
-                          if (value == null) {
-                            return;
-                          }
+                  if (_departments.isNotEmpty)
+                    TheWeDropdown<String>(
+                      value: _selectedDepartment,
+                      width: 150,
+                      items: _departments,
+                      labelBuilder: (department) => department,
+                      onChanged: (value) {
+                        if (value != null) {
                           setState(() => _selectedDepartment = value);
-                        },
-                      ),
+                        }
+                      },
                     ),
-                  ),
                   FilledButton.icon(
                     onPressed: _departments.isEmpty ? null : _selectDepartment,
                     icon: const Icon(Icons.business_outlined, size: 18),

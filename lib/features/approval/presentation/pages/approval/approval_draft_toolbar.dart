@@ -185,6 +185,8 @@ class _FormCatalog extends StatelessWidget {
           ...grouped.entries.map(
             (entry) => ExpansionTile(
               initiallyExpanded: true,
+              shape: const Border(),
+              collapsedShape: const Border(),
               leading: Icon(Icons.folder_outlined, color: TheWeColor.black500),
               title: Text(entry.key, style: TheWeTextStyle.body),
               children: entry.value

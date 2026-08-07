@@ -67,7 +67,7 @@ Future<void> showApprovalDecisionDialog(
           TheWeModalActions(
             primaryLabel: action,
             secondaryLabel: '취소',
-            primaryColor: action == '승인' ? TheWeColor.green : TheWeColor.pink,
+            primaryColor: action == '승인' ? TheWeColor.blue300 : TheWeColor.pink,
             onPrimaryPressed: () async {
               await onConfirm(opinionController.text.trim());
               if (context.mounted) {
@@ -305,7 +305,7 @@ Future<bool?> showRequestApprovalDialog(
             TheWeModalActions(
               primaryLabel: '결재요청',
               secondaryLabel: '취소',
-              primaryColor: TheWeColor.green,
+              primaryColor: TheWeColor.blue300,
               onPrimaryPressed: () => Navigator.of(context).pop(urgent),
               onSecondaryPressed: () => Navigator.of(context).pop(),
             ),

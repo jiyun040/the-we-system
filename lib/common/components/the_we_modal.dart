@@ -189,7 +189,7 @@ class TheWeModalActions extends StatelessWidget {
         label: primaryLabel,
         filled: true,
         expanded: expand,
-        color: primaryColor ?? TheWeColor.green,
+        color: primaryColor ?? TheWeColor.blue300,
         onPressed: onPrimaryPressed,
       ),
     ];
@@ -296,11 +296,10 @@ class _TheWeModalButton extends StatelessWidget {
           ? FilledButton(
               onPressed: onPressed,
               style: FilledButton.styleFrom(
-                backgroundColor: color ?? TheWeColor.green,
+                backgroundColor: color ?? TheWeColor.blue300,
                 foregroundColor: Colors.white,
-                disabledBackgroundColor: (color ?? TheWeColor.green).withValues(
-                  alpha: 0.45,
-                ),
+                disabledBackgroundColor: (color ?? TheWeColor.blue300)
+                    .withValues(alpha: 0.45),
                 textStyle: style,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 18),

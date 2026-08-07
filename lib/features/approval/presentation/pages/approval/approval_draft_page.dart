@@ -17,6 +17,7 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_input_formatters.dart';
 
 part 'approval_draft_toolbar.dart';
 part 'approval_draft_sheet.dart';

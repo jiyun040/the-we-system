@@ -57,7 +57,7 @@ class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
             TheWeModalActions(
               primaryLabel: '확인',
               secondaryLabel: '취소',
-              primaryColor: TheWeColor.green,
+              primaryColor: TheWeColor.blue300,
               onPrimaryPressed: () => Navigator.of(context).pop(),
               onSecondaryPressed: () => Navigator.of(context).pop(),
             ),
@@ -135,7 +135,7 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
             TheWeModalActions(
               primaryLabel: '확인',
               secondaryLabel: '취소',
-              primaryColor: TheWeColor.green,
+              primaryColor: TheWeColor.blue300,
               onPrimaryPressed: () =>
                   Navigator.of(context).pop(selectedTemplate),
               onSecondaryPressed: () => Navigator.of(context).pop(),
@@ -157,6 +157,8 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
         children: grouped.entries.map((entry) {
           return ExpansionTile(
             initiallyExpanded: true,
+            shape: const Border(),
+            collapsedShape: const Border(),
             tilePadding: EdgeInsets.zero,
             leading: const Icon(Icons.folder_outlined),
             title: Text(

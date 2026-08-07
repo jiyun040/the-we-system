@@ -19,43 +19,83 @@ class TheWeDropdown<T> extends StatelessWidget {
   final double? width;
 
   @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: DropdownButtonHideUnderline(
-        child: Container(
-          height: 38,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: TheWeColor.white,
-            border: Border.all(
-              color: TheWeColor.black300.withValues(alpha: 0.55),
-            ),
-            borderRadius: BorderRadius.circular(8),
+  Widget build(BuildContext context) => SizedBox(
+    width: width,
+    child: DropdownMenu<T>(
+      key: ValueKey(value),
+      initialSelection: value,
+      expandedInsets: EdgeInsets.zero,
+      requestFocusOnTap: false,
+      enableFilter: false,
+      enableSearch: false,
+      menuHeight: 340,
+      textStyle: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w600),
+      trailingIcon: const Icon(
+        Icons.keyboard_arrow_down_rounded,
+        color: TheWeColor.black900,
+      ),
+      selectedTrailingIcon: const Icon(
+        Icons.keyboard_arrow_up_rounded,
+        color: TheWeColor.black900,
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: TheWeColor.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14),
+        constraints: const BoxConstraints(minHeight: 48, maxHeight: 48),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: TheWeColor.blue200.withValues(alpha: .8),
           ),
-          child: DropdownButton<T>(
-            value: value,
-            isExpanded: true,
-            borderRadius: BorderRadius.circular(8),
-            dropdownColor: TheWeColor.white,
-            icon: Icon(Icons.keyboard_arrow_down, color: TheWeColor.black500),
-            style: TheWeTextStyle.body,
-            items: items
-                .map(
-                  (item) => DropdownMenuItem<T>(
-                    value: item,
-                    child: Text(
-                      labelBuilder(item),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                )
-                .toList(),
-            onChanged: onChanged,
-          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: TheWeColor.blue300, width: 1.4),
+          borderRadius: BorderRadius.circular(14),
         ),
       ),
-    );
-  }
+      menuStyle: MenuStyle(
+        backgroundColor: const WidgetStatePropertyAll(TheWeColor.white),
+        surfaceTintColor: const WidgetStatePropertyAll(TheWeColor.white),
+        elevation: const WidgetStatePropertyAll(12),
+        shadowColor: WidgetStatePropertyAll(
+          TheWeColor.black900.withValues(alpha: .18),
+        ),
+        side: WidgetStatePropertyAll(
+          BorderSide(color: TheWeColor.blue200.withValues(alpha: .7)),
+        ),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(vertical: 6),
+        ),
+      ),
+      dropdownMenuEntries: items
+          .map(
+            (item) => DropdownMenuEntry<T>(
+              value: item,
+              label: labelBuilder(item),
+              style: ButtonStyle(
+                backgroundColor: WidgetStatePropertyAll(
+                  item == value ? TheWeColor.blueSurface : Colors.transparent,
+                ),
+                foregroundColor: const WidgetStatePropertyAll(
+                  TheWeColor.black900,
+                ),
+                padding: const WidgetStatePropertyAll(
+                  EdgeInsets.symmetric(horizontal: 14),
+                ),
+                shape: WidgetStatePropertyAll(
+                  RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(9),
+                  ),
+                ),
+              ),
+            ),
+          )
+          .toList(),
+      onSelected: onChanged,
+    ),
+  );
 }

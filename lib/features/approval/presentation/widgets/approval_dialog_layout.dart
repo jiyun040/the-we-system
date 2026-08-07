@@ -34,7 +34,7 @@ class _LargeDialog extends StatelessWidget {
                 orElse: () => actions.first,
               ),
               secondaryLabel: actions.contains('취소') ? '취소' : null,
-              primaryColor: TheWeColor.green,
+              primaryColor: TheWeColor.blue300,
               onPrimaryPressed: () => Navigator.of(context).pop(),
               onSecondaryPressed: () => Navigator.of(context).pop(),
             ),

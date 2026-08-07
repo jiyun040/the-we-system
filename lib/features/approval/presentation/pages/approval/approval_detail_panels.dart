@@ -81,51 +81,89 @@ class _ApprovalLineTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.all(16),
-      itemCount: steps.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final step = steps[index];
-        final active = step.status == '진행중';
-
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: active
-                ? TheWeColor.blue100.withValues(alpha: 0.4)
-                : Colors.transparent,
-            border: Border(
-              left: BorderSide(
-                color: active ? TheWeColor.blue300 : Colors.transparent,
-                width: 4,
-              ),
-            ),
-          ),
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: TheWeColor.black300.withValues(alpha: 0.18),
-                child: Icon(Icons.person, color: TheWeColor.black500),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${step.name} ${step.role}',
-                      style: TheWeTextStyle.body,
-                    ),
-                    Text(step.department, style: TheWeTextStyle.caption),
-                  ],
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var index = 0; index < steps.length; index++) ...[
+            _HorizontalApprovalStep(step: steps[index]),
+            if (index != steps.length - 1)
+              SizedBox(
+                width: 32,
+                height: 138,
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 18,
+                  color: TheWeColor.black300,
                 ),
               ),
-              Text(step.status, style: TheWeTextStyle.caption),
-            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _HorizontalApprovalStep extends StatelessWidget {
+  const _HorizontalApprovalStep({required this.step});
+
+  final ApprovalStep step;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = step.status == '진행중';
+    final completed = step.status == '완료';
+    final rejected = step.status == '반려';
+    final statusColor = rejected
+        ? TheWeColor.danger
+        : active
+        ? TheWeColor.blue300
+        : completed
+        ? TheWeColor.blue300
+        : TheWeColor.black500;
+    return Container(
+      width: 150,
+      height: 138,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: active ? TheWeColor.blueSurface : TheWeColor.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: active
+              ? TheWeColor.blue300
+              : TheWeColor.black300.withValues(alpha: .35),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: statusColor.withValues(alpha: .12),
+            child: Icon(Icons.person, size: 19, color: statusColor),
           ),
-        );
-      },
+          const SizedBox(height: 8),
+          Text(
+            '${step.name} ${step.role}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
+          ),
+          Text(
+            step.department,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TheWeTextStyle.caption,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            step.status,
+            style: TheWeTextStyle.caption.copyWith(color: statusColor),
+          ),
+        ],
+      ),
     );
   }
 }

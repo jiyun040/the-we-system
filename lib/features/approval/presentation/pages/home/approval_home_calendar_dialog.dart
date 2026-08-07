@@ -111,7 +111,7 @@ class _CalendarEventDialogState extends State<_CalendarEventDialog> {
           TheWeModalActions(
             primaryLabel: widget.initialEvent == null ? '추가' : '수정',
             secondaryLabel: '취소',
-            primaryColor: TheWeColor.green,
+            primaryColor: TheWeColor.blue300,
             onSecondaryPressed: () => Navigator.of(context).pop(),
             onPrimaryPressed: () {
               final title = titleController.text.trim();

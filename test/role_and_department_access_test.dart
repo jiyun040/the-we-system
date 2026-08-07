@@ -177,6 +177,38 @@ void main() {
     );
   });
 
+  test('결재 구분별 일부 사용자 문서함 접근 권한을 저장한다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+    var state = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    expect(
+      state.organizationWideDocumentCategories,
+      containsAll(const ['지원', '회계', '근태', '급여']),
+    );
+
+    notifier.updateDocumentCategoryAccess(
+      category: '회계',
+      organizationWide: false,
+      userIds: const {'jiyun'},
+    );
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    expect(state.documentCategoryViewerIds['회계'], contains('jiyun'));
+
+    notifier.updateDocumentCategoryAccess(
+      category: '근태',
+      organizationWide: true,
+      userIds: const {},
+    );
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    expect(state.organizationWideDocumentCategories, contains('근태'));
+  });
+
   test('근속연수별 연차 설정을 한 번에 저장할 수 있다', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
@@ -354,13 +386,36 @@ void main() {
         .requireValue;
     final requestId = state.currentUserLeaveRequests.first.id;
     expect(state.currentUserLeaveRequests.first.ceoStatus, '진행중');
+    final leaveDocumentId = 'LEAVE-DOC-$requestId';
+    expect(
+      state.dashboard.processingDocuments.any(
+        (document) => document.id == leaveDocumentId,
+      ),
+      isTrue,
+    );
 
     notifier.logout();
     await notifier.login('director', '1234');
+    expect(
+      container
+          .read(approvalDashboardControllerProvider)
+          .requireValue
+          .waitingDocuments
+          .any((document) => document.id == leaveDocumentId),
+      isFalse,
+    );
     expect(notifier.actOnLeave(requestId, approve: true), isFalse);
 
     notifier.logout();
     await notifier.login('ceo', '1234');
+    expect(
+      container
+          .read(approvalDashboardControllerProvider)
+          .requireValue
+          .waitingDocuments
+          .any((document) => document.id == leaveDocumentId),
+      isTrue,
+    );
     expect(notifier.actOnLeave(requestId, approve: true), isTrue);
     state = container.read(approvalDashboardControllerProvider).requireValue;
     final request = state.leaveRequests

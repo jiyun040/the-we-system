@@ -7,6 +7,7 @@ import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_input_formatters.dart';
 
 class ApprovalDocumentSheet extends StatelessWidget {
   const ApprovalDocumentSheet({super.key, required this.document});
@@ -142,62 +143,76 @@ class _PdfDocumentBody extends StatelessWidget {
           label: '비    고',
           value: document.formFields['note'] ?? '-',
         ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: 820,
-            child: Column(
-              children: [
-                Row(
-                  children: columns
+        LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: constraints.maxWidth < 720 ? 720 : constraints.maxWidth,
+              child: Column(
+                children: [
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: columns
+                          .map(
+                            (column) => Expanded(
+                              flex: column.$3,
+                              child: _ReadOnlyTableCell(
+                                text: column.$2,
+                                header: true,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  ),
+                  ...document.lineItems
+                      .where(
+                        (item) => item.values.any((value) => value.isNotEmpty),
+                      )
                       .map(
-                        (column) => Expanded(
-                          flex: column.$3,
+                        (item) => IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: columns
+                                .map(
+                                  (column) => Expanded(
+                                    flex: column.$3,
+                                    child: _ReadOnlyTableCell(
+                                      text: _displayLineItemValue(
+                                        column.$1,
+                                        item[column.$1] ?? '',
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                        ),
+                      ),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Expanded(
+                          flex: 8,
                           child: _ReadOnlyTableCell(
-                            text: column.$2,
+                            text: '합    계 (V.A.T 포함)',
                             header: true,
                           ),
                         ),
-                      )
-                      .toList(),
-                ),
-                ...document.lineItems
-                    .where(
-                      (item) => item.values.any((value) => value.isNotEmpty),
-                    )
-                    .map(
-                      (item) => Row(
-                        children: columns
-                            .map(
-                              (column) => Expanded(
-                                flex: column.$3,
-                                child: _ReadOnlyTableCell(
-                                  text: item[column.$1] ?? '',
-                                ),
-                              ),
-                            )
-                            .toList(),
-                      ),
+                        Expanded(
+                          flex: 2,
+                          child: _ReadOnlyTableCell(
+                            text: _totalAmount(document.lineItems),
+                            header: true,
+                          ),
+                        ),
+                      ],
                     ),
-                Row(
-                  children: [
-                    const Expanded(
-                      flex: 8,
-                      child: _ReadOnlyTableCell(
-                        text: '합    계 (V.A.T 포함)',
-                        header: true,
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: _ReadOnlyTableCell(
-                        text: _totalAmount(document.lineItems),
-                        header: true,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -246,7 +261,14 @@ class _PdfDocumentBody extends StatelessWidget {
       final raw = (item['total'] ?? item['amount'] ?? '').replaceAll(',', '');
       return total + (int.tryParse(raw) ?? 0);
     });
-    return sum == 0 ? '-' : '${sum.toString()}원';
+    return sum == 0 ? '-' : '${formatApprovalAmount(sum.toString())}원';
+  }
+
+  String _displayLineItemValue(String key, String value) {
+    if (key == 'amount' || key == 'total') {
+      return formatApprovalAmount(value);
+    }
+    return value;
   }
 }
 
@@ -522,10 +544,9 @@ class _BasicInfoTable extends StatelessWidget {
     return _BorderTable(
       rows: [
         _TablePair(label: '문서번호', value: document.documentNo),
-        _TablePair(label: '기 안 자', value: document.drafter),
-        _TablePair(label: '소    속', value: document.department),
-        _TablePair(label: '기 안 일', value: document.draftedAt),
-        _TablePair(label: '시행일자', value: document.effectiveDate),
+        _TablePair(label: '작 성 일', value: document.draftedAt),
+        _TablePair(label: '작성부서', value: document.department),
+        _TablePair(label: '작 성 자', value: document.drafter),
       ],
     );
   }
@@ -545,7 +566,8 @@ class _DocumentMetaTable extends StatelessWidget {
         _WideRow(label: '열 람 자', value: _join(document.viewers)),
         _WideRow(label: '협조부서', value: document.cooperationDepartment),
         _WideRow(label: '합    의', value: document.agreement),
-        _WideRow(label: '제    목', value: document.title),
+        if (document.documentLayout == 'payroll')
+          _WideRow(label: '제    목', value: document.title),
         if (document.linkedDocuments.isNotEmpty)
           _WideRow(label: '관련문서', value: _join(document.linkedDocuments)),
       ],
@@ -566,26 +588,9 @@ class ApprovalStampTable extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 520;
-        final table = narrow
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: visibleSteps
-                    .map((step) => _MobileStampRow(step: step))
-                    .toList(),
-              )
-            : IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _VerticalCell(label: '결\n재'),
-                    ...visibleSteps.map(
-                      (step) => Expanded(child: _StampCell(step: step)),
-                    ),
-                  ],
-                ),
-              );
-
+        final tableWidth = constraints.maxWidth < 480
+            ? 480.0
+            : constraints.maxWidth;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -604,67 +609,26 @@ class ApprovalStampTable extends StatelessWidget {
                 ),
               ),
             ),
-            table,
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: tableWidth,
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _VerticalCell(label: '결\n재'),
+                      ...visibleSteps.map(
+                        (step) => Expanded(child: _StampCell(step: step)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
         );
       },
-    );
-  }
-}
-
-class _MobileStampRow extends StatelessWidget {
-  const _MobileStampRow({required this.step});
-
-  final ApprovalStep step;
-
-  @override
-  Widget build(BuildContext context) {
-    final approved = step.status == '완료';
-    final rejected = step.status == '반려';
-    final color = rejected ? TheWeColor.danger : TheWeColor.green;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: TheWeColor.black900),
-          right: BorderSide(color: TheWeColor.black900),
-          bottom: BorderSide(color: TheWeColor.black900),
-        ),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 58,
-            child: Text(
-              step.role.isEmpty ? step.type : step.role,
-              style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              step.name,
-              style: TheWeTextStyle.body.copyWith(fontSize: 16),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: (approved || rejected ? color : TheWeColor.surface),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              rejected ? '반려' : (step.approvedAt ?? step.status),
-              style: TheWeTextStyle.body.copyWith(
-                fontSize: 14,
-                color: approved || rejected
-                    ? Colors.white
-                    : TheWeColor.black500,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

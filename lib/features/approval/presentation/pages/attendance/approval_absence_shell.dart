@@ -272,6 +272,13 @@ class _AttendanceControlPanel extends StatelessWidget {
           const SizedBox(height: 16),
           PopupMenuButton<AttendanceRequestKind>(
             onSelected: onOpenRequest,
+            position: PopupMenuPosition.under,
+            color: TheWeColor.white,
+            surfaceTintColor: TheWeColor.white,
+            elevation: 10,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             itemBuilder: (context) => const [
               PopupMenuItem(
                 value: AttendanceRequestKind.overtime,
@@ -284,12 +291,21 @@ class _AttendanceControlPanel extends StatelessWidget {
             ],
             child: Container(
               width: double.infinity,
-              height: 52,
+              height: 48,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: TheWeColor.white,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: TheWeColor.black300),
+                border: Border.all(
+                  color: TheWeColor.blue200.withValues(alpha: .8),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: TheWeColor.blue300.withValues(alpha: .08),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Row(
                 children: [

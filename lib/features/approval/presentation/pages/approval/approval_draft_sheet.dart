@@ -55,8 +55,7 @@ class _EditableDraftSheet extends StatelessWidget {
               final narrow = constraints.maxWidth < 760;
               final info = Column(
                 children: [
-                  _DraftInfoRow(label: '기 안 자', value: document.drafter),
-                  _DraftInfoRow(label: '부    서', value: document.department),
+                  _DraftInfoRow(label: '문서번호', value: document.documentNo),
                   if (document.documentLayout ==
                       ApprovalDocumentLayout.hospitality)
                     _DraftManualDateRow(
@@ -65,15 +64,9 @@ class _EditableDraftSheet extends StatelessWidget {
                           onFormFieldChanged('draftedAt', value),
                     )
                   else
-                    _DraftInfoRow(label: '기 안 일', value: document.draftedAt),
-                  _DraftInfoRow(
-                    label: '수    신',
-                    value: document.receivers.join(', '),
-                  ),
-                  _DraftInfoRow(
-                    label: '참    조',
-                    value: document.references.join(', '),
-                  ),
+                    _DraftInfoRow(label: '작 성 일', value: document.draftedAt),
+                  _DraftInfoRow(label: '작성부서', value: document.department),
+                  _DraftInfoRow(label: '작 성 자', value: document.drafter),
                 ],
               );
               final line = Column(
@@ -99,7 +92,8 @@ class _EditableDraftSheet extends StatelessWidget {
             },
           ),
           const SizedBox(height: 18),
-          _DraftInputRow(label: '제    목', controller: titleController),
+          if (document.documentLayout == ApprovalDocumentLayout.payroll)
+            _DraftInputRow(label: '제    목', controller: titleController),
           if (document.documentLayout == ApprovalDocumentLayout.basic)
             _BasicContentEditor(controller: contentController)
           else
@@ -323,63 +317,65 @@ class _PdfLayoutEditor extends StatelessWidget {
           }),
           _MobileLineItemTotal(value: _totalAmount(document.lineItems)),
         ] else
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: 820,
-              child: Column(
-                children: [
-                  Row(
+          Column(
+            children: [
+              Row(
+                children: columns
+                    .map(
+                      (column) => Expanded(
+                        flex: column.$3,
+                        child: _PdfTableCell(text: column.$2, header: true),
+                      ),
+                    )
+                    .toList(),
+              ),
+              ...List.generate(document.lineItems.length, (index) {
+                final item = document.lineItems[index];
+                return IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: columns
                         .map(
                           (column) => Expanded(
                             flex: column.$3,
-                            child: _PdfTableCell(text: column.$2, header: true),
+                            child: _PdfInputCell(
+                              key: ValueKey(
+                                'document-line-$index-${column.$1}',
+                              ),
+                              value:
+                                  column.$1 == 'amount' || column.$1 == 'total'
+                                  ? formatApprovalAmount(item[column.$1] ?? '')
+                                  : item[column.$1] ?? '',
+                              hintText: column.$1 == 'date' ? 'YYYY-MM-DD' : '',
+                              isDate: column.$1 == 'date',
+                              isAmount:
+                                  column.$1 == 'amount' || column.$1 == 'total',
+                              isQuantity: column.$1 == 'quantity',
+                              onChanged: (value) =>
+                                  onLineItemChanged(index, column.$1, value),
+                            ),
                           ),
                         )
                         .toList(),
                   ),
-                  ...List.generate(document.lineItems.length, (index) {
-                    final item = document.lineItems[index];
-                    return Row(
-                      children: columns
-                          .map(
-                            (column) => Expanded(
-                              flex: column.$3,
-                              child: _PdfInputCell(
-                                key: ValueKey(
-                                  'document-line-$index-${column.$1}',
-                                ),
-                                value: item[column.$1] ?? '',
-                                hintText: column.$1 == 'date'
-                                    ? 'YYYY-MM-DD'
-                                    : '',
-                                onChanged: (value) =>
-                                    onLineItemChanged(index, column.$1, value),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                    );
-                  }),
-                  Row(
-                    children: [
-                      const Expanded(
-                        flex: 8,
-                        child: _PdfTableCell(text: '합    계', header: true),
-                      ),
-                      Expanded(
-                        flex: 2,
-                        child: _PdfTableCell(
-                          text: _totalAmount(document.lineItems),
-                          header: true,
-                        ),
-                      ),
-                    ],
+                );
+              }),
+              Row(
+                children: [
+                  const Expanded(
+                    flex: 8,
+                    child: _PdfTableCell(text: '합    계', header: true),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: _PdfTableCell(
+                      text: _totalAmount(document.lineItems),
+                      header: true,
+                    ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
       ],
     );
@@ -414,7 +410,7 @@ class _PdfLayoutEditor extends StatelessWidget {
       final raw = (item['total'] ?? item['amount'] ?? '').replaceAll(',', '');
       return total + (int.tryParse(raw) ?? 0);
     });
-    return sum == 0 ? '' : '${sum.toString()}원';
+    return sum == 0 ? '' : '${formatApprovalAmount(sum.toString())}원';
   }
 }
 
@@ -439,11 +435,16 @@ class _DraftManualDateRow extends StatelessWidget {
             initialValue: value,
             onChanged: onChanged,
             keyboardType: TextInputType.datetime,
+            inputFormatters: const [ApprovalDateInputFormatter()],
             style: TheWeTextStyle.body.copyWith(fontSize: 15),
             decoration: const InputDecoration(
               hintText: 'YYYY-MM-DD',
               contentPadding: EdgeInsets.symmetric(horizontal: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.zero),
+              filled: false,
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
             ),
           ),
         ),
@@ -484,11 +485,26 @@ class _MobileLineItemEditor extends StatelessWidget {
           const SizedBox(height: 5),
           TextFormField(
             key: ValueKey('mobile-document-line-$index-${column.$1}'),
-            initialValue: item[column.$1] ?? '',
+            initialValue: column.$1 == 'amount' || column.$1 == 'total'
+                ? formatApprovalAmount(item[column.$1] ?? '')
+                : item[column.$1] ?? '',
             onChanged: (value) => onChanged(column.$1, value),
-            keyboardType: column.$1 == 'amount' || column.$1 == 'total'
+            keyboardType:
+                column.$1 == 'amount' ||
+                    column.$1 == 'total' ||
+                    column.$1 == 'quantity'
                 ? TextInputType.number
-                : TextInputType.text,
+                : column.$1 == 'date'
+                ? TextInputType.datetime
+                : TextInputType.multiline,
+            inputFormatters: [
+              if (column.$1 == 'date') const ApprovalDateInputFormatter(),
+              if (column.$1 == 'amount' || column.$1 == 'total')
+                ApprovalAmountInputFormatter(),
+              if (column.$1 == 'quantity') const ApprovalDigitsInputFormatter(),
+            ],
+            minLines: 1,
+            maxLines: null,
             decoration: InputDecoration(
               hintText: column.$1 == 'date' ? 'YYYY-MM-DD' : '',
               isDense: true,
@@ -599,15 +615,21 @@ class _PdfInputCell extends StatelessWidget {
     required this.value,
     required this.onChanged,
     this.hintText = '',
+    this.isDate = false,
+    this.isAmount = false,
+    this.isQuantity = false,
   });
 
   final String value;
   final ValueChanged<String> onChanged;
   final String hintText;
+  final bool isDate;
+  final bool isAmount;
+  final bool isQuantity;
 
   @override
   Widget build(BuildContext context) => Container(
-    height: 48,
+    constraints: const BoxConstraints(minHeight: 48),
     decoration: BoxDecoration(
       color: TheWeColor.white,
       border: Border.all(color: TheWeColor.black900, width: .6),
@@ -616,12 +638,37 @@ class _PdfInputCell extends StatelessWidget {
       initialValue: value,
       onChanged: onChanged,
       textAlign: TextAlign.center,
+      keyboardType: isAmount || isQuantity
+          ? TextInputType.number
+          : isDate
+          ? TextInputType.datetime
+          : TextInputType.multiline,
+      inputFormatters: [
+        if (isDate) const ApprovalDateInputFormatter(),
+        if (isAmount) ApprovalAmountInputFormatter(),
+        if (isQuantity) const ApprovalDigitsInputFormatter(),
+      ],
+      minLines: 1,
+      maxLines: null,
       style: TheWeTextStyle.body.copyWith(fontSize: 15),
       decoration: InputDecoration(
         hintText: hintText,
+        hintStyle: hintText.isEmpty
+            ? null
+            : TheWeTextStyle.caption.copyWith(
+                fontSize: 13,
+                color: TheWeColor.black300,
+              ),
         isDense: true,
+        filled: false,
+        fillColor: Colors.transparent,
         border: InputBorder.none,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 7, vertical: 13),
+        enabledBorder: InputBorder.none,
+        focusedBorder: InputBorder.none,
+        disabledBorder: InputBorder.none,
+        errorBorder: InputBorder.none,
+        focusedErrorBorder: InputBorder.none,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 13),
       ),
     ),
   );

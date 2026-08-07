@@ -159,7 +159,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: FilledButton.styleFrom(
-                    backgroundColor: TheWeColor.green,
+                    backgroundColor: TheWeColor.blue300,
                   ),
                   child: const Text('닫기'),
                 ),

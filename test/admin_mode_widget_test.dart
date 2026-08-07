@@ -104,6 +104,43 @@ void main() {
     expect(find.text('결재 정보'), findsOneWidget);
     appRouter.pop();
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('admin-document-category-지원')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('document-access-category')),
+      findsNothing,
+    );
+    await tester.tap(find.text('문서함 권한').first);
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('admin-document-access-page')),
+      findsOneWidget,
+    );
+    expect(find.text('문서함 접근 권한 관리'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('document-access-category')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('document-access-category-회계')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('document-access-회계')), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('document-access-category-지원')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('document-access-지원')), findsOneWidget);
+    expect(find.byKey(const ValueKey('document-access-add-지원')), findsNothing);
+    await tester.tap(find.text('일부 사용자'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('document-access-add-지원')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('document-access-organization-dialog')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('취소').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('admin-document-access-save')));
+    await tester.pumpAndSettle();
+    expect(find.text('문서함 접근 권한을 저장했습니다.'), findsOneWidget);
 
     await tester.tap(find.text('사원 관리').first);
     await tester.pumpAndSettle();

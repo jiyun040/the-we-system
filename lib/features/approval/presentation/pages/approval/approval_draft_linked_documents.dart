@@ -90,7 +90,7 @@ class _LinkedDocumentDialogState extends State<_LinkedDocumentDialog> {
           TheWeModalActions(
             primaryLabel: '추가',
             secondaryLabel: '취소',
-            primaryColor: TheWeColor.green,
+            primaryColor: TheWeColor.blue300,
             onSecondaryPressed: () => Navigator.of(context).pop(),
             onPrimaryPressed: selectedId == null
                 ? null

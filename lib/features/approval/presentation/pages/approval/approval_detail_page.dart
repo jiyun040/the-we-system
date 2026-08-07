@@ -11,6 +11,7 @@ import 'package:the_we_system/features/approval/domain/entities/document/approva
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_document_pdf.dart';
 
 part 'approval_detail_panels.dart';
 
@@ -291,6 +292,13 @@ class _DocumentToolbar extends ConsumerWidget {
                   label: '결재 정보',
                   onPressed: () => showApprovalInfoDialog(context),
                 ),
+                if (document.status != '작성중')
+                  _ToolbarButton(
+                    icon: Icons.picture_as_pdf_outlined,
+                    label: 'PDF 출력',
+                    onPressed: () =>
+                        exportApprovalDocumentPdf(context, document),
+                  ),
               ],
             ),
           ),

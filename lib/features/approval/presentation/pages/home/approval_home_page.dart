@@ -9,7 +9,6 @@ import 'package:the_we_system/common/components/processing_card.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
-import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/layout.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -130,19 +129,6 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                         child: _PortalOverview(state: approvalState),
                       ),
                     ),
-                    if (approvalState.isAppEnabled(PortalAppId.leave) &&
-                        approvalState.actionableLeaveRequests.isNotEmpty)
-                      SliverPadding(
-                        padding: EdgeInsets.fromLTRB(
-                          isPhone ? 18 : 28,
-                          isPhone ? 18 : 28,
-                          isPhone ? 18 : 28,
-                          0,
-                        ),
-                        sliver: SliverToBoxAdapter(
-                          child: _LeaveApprovalSection(state: approvalState),
-                        ),
-                      ),
                     if (approvalState.isAppEnabled(PortalAppId.approval))
                       SliverPadding(
                         padding: EdgeInsets.fromLTRB(

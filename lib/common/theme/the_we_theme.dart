@@ -106,7 +106,33 @@ abstract final class TheWeTheme {
       textStyle: TheWeTextStyle.body,
       inputDecorationTheme: InputDecorationTheme(
         hintStyle: TheWeTextStyle.body.copyWith(color: TheWeColor.black300),
+        filled: true,
+        fillColor: TheWeColor.white,
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: TheWeColor.blue200.withValues(alpha: .8),
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: TheWeColor.blue300),
+          borderRadius: BorderRadius.circular(14),
+        ),
       ),
+      menuStyle: MenuStyle(
+        backgroundColor: const WidgetStatePropertyAll(TheWeColor.white),
+        elevation: const WidgetStatePropertyAll(10),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: TheWeColor.white,
+      surfaceTintColor: TheWeColor.white,
+      elevation: 10,
+      textStyle: TheWeTextStyle.body,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
   );
 }

@@ -6,6 +6,13 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
     required String action,
     required String opinion,
   }) async {
+    if (documentId.startsWith('LEAVE-DOC-')) {
+      actOnLeave(
+        documentId.substring('LEAVE-DOC-'.length),
+        approve: action != '반려',
+      );
+      return;
+    }
     final current = _currentState;
     final user = current?.currentUser;
     if (current == null || user == null) {

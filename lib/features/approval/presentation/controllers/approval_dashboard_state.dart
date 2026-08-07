@@ -30,6 +30,13 @@ class ApprovalDashboardState {
       PortalAppId.leave,
     },
     this.disabledFormTemplateIds = const <String>{},
+    this.organizationWideDocumentCategories = const <String>{
+      '지원',
+      '회계',
+      '근태',
+      '급여',
+    },
+    this.documentCategoryViewerIds = const <String, Set<String>>{},
   });
 
   final List<EmployeeAccount> accounts;
@@ -56,6 +63,8 @@ class ApprovalDashboardState {
   final bool adminDocumentAccessEnabled;
   final Set<String> enabledAppIds;
   final Set<String> disabledFormTemplateIds;
+  final Set<String> organizationWideDocumentCategories;
+  final Map<String, Set<String>> documentCategoryViewerIds;
 
   ApprovalDashboardState copyWith({
     List<EmployeeAccount>? accounts,
@@ -85,6 +94,8 @@ class ApprovalDashboardState {
     bool? adminDocumentAccessEnabled,
     Set<String>? enabledAppIds,
     Set<String>? disabledFormTemplateIds,
+    Set<String>? organizationWideDocumentCategories,
+    Map<String, Set<String>>? documentCategoryViewerIds,
   }) {
     return ApprovalDashboardState(
       accounts: accounts ?? this.accounts,
@@ -123,6 +134,11 @@ class ApprovalDashboardState {
       enabledAppIds: enabledAppIds ?? this.enabledAppIds,
       disabledFormTemplateIds:
           disabledFormTemplateIds ?? this.disabledFormTemplateIds,
+      organizationWideDocumentCategories:
+          organizationWideDocumentCategories ??
+          this.organizationWideDocumentCategories,
+      documentCategoryViewerIds:
+          documentCategoryViewerIds ?? this.documentCategoryViewerIds,
     );
   }
 
@@ -164,6 +180,10 @@ class ApprovalDashboardState {
       if (document.status == '작성중') {
         return isDrafter;
       }
+      final category = documentCategory(document);
+      final hasCategoryAccess =
+          organizationWideDocumentCategories.contains(category) ||
+          (documentCategoryViewerIds[category]?.contains(user.id) ?? false);
       final isReader =
           document.references.contains(user.name) ||
           document.viewers.contains(user.name);
@@ -172,8 +192,26 @@ class ApprovalDashboardState {
       if (isRestricted) {
         return isDrafter || isApprover;
       }
-      return isDrafter || isApprover || isReader || isDepartmentDocument;
+      return isDrafter ||
+          isApprover ||
+          isReader ||
+          isDepartmentDocument ||
+          hasCategoryAccess;
     }).toList();
+  }
+
+  String documentCategory(ApprovalDocument document) {
+    if (document.documentLayout == ApprovalDocumentLayout.payroll ||
+        document.form.contains('급여')) {
+      return '급여';
+    }
+    final template = formTemplates
+        .where((item) => item.name == document.form)
+        .firstOrNull;
+    final category = template?.category ?? '';
+    if (category == '회계') return '회계';
+    if (category == '근태' || document.form.contains('휴가')) return '근태';
+    return '지원';
   }
 
   List<ApprovalDocument> get authoredDocuments {

@@ -241,6 +241,29 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     );
   }
 
+  void updateDocumentCategoryAccess({
+    required String category,
+    required bool organizationWide,
+    required Set<String> userIds,
+  }) {
+    if (!const {'지원', '회계', '근태', '급여'}.contains(category)) return;
+    _setDashboardState(this, (value) {
+      final wideCategories = {...value.organizationWideDocumentCategories};
+      if (organizationWide) {
+        wideCategories.add(category);
+      } else {
+        wideCategories.remove(category);
+      }
+      return value.copyWith(
+        organizationWideDocumentCategories: wideCategories,
+        documentCategoryViewerIds: {
+          ...value.documentCategoryViewerIds,
+          category: {...userIds},
+        },
+      );
+    });
+  }
+
   String? setAdminPermission(String userId, bool enabled) {
     return userId == 'edu_manager' && enabled
         ? null
@@ -386,10 +409,64 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       days: days,
       reason: reason,
     );
+    final ceo = current.accounts
+        .where((account) => account.id == 'ceo')
+        .firstOrNull;
+    final document = ApprovalDocument(
+      id: 'LEAVE-DOC-${request.id}',
+      title: '${user.name} $type 신청',
+      drafter: user.name,
+      department: user.department,
+      form: '휴가 신청서',
+      status: '결재대기',
+      draftedAt: _today(),
+      dueDate: startDate,
+      progress: 50,
+      documentNo:
+          'LEAVE-${_today().replaceAll('-', '')}-${current.leaveRequests.length + 1}',
+      effectiveDate: startDate,
+      content:
+          '휴가 종류: $type\n기간: $startDate ~ $endDate\n사용 일수: $days일\n신청 사유: $reason',
+      receivedRequest: true,
+      canCancel: false,
+      canReuse: false,
+      canEdit: false,
+      receivers: const ['대표'],
+      references: const ['경영관리팀'],
+      steps: [
+        ApprovalStep(
+          name: user.name,
+          department: user.department,
+          type: '신청',
+          role: user.position,
+          status: '완료',
+          approvedAt: '${_today()} 09:00',
+        ),
+        ApprovalStep(
+          name: ceo?.name ?? '조상훈',
+          department: ceo?.department ?? '경영관리팀',
+          type: '승인',
+          role: ceo?.position ?? '대표',
+          status: '진행중',
+        ),
+      ],
+      histories: [
+        ApprovalHistory(
+          id: 'HIS-${request.id}',
+          category: '휴가 신청',
+          date: '${_today()} 09:00',
+          user: '${user.name} ${user.position}',
+          description: '휴가 신청 결재 요청',
+          snapshot: '$type · $startDate ~ $endDate',
+        ),
+      ],
+    );
     _setDashboardState(
       this,
-      (value) =>
-          value.copyWith(leaveRequests: [request, ...value.leaveRequests]),
+      (value) => value.copyWith(
+        leaveRequests: [request, ...value.leaveRequests],
+        documents: [document, ...value.documents],
+      ),
     );
   }
 
@@ -405,6 +482,13 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
                       ceoStatus: status == '승인완료' ? '완료' : request.ceoStatus,
                     )
                   : request,
+            )
+            .toList(),
+        documents: value.documents
+            .map(
+              (document) => document.id == 'LEAVE-DOC-$requestId'
+                  ? _resolvedLeaveDocument(document, status)
+                  : document,
             )
             .toList(),
       ),
@@ -437,6 +521,13 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         leaveRequests: value.leaveRequests
             .map((item) => item.id == requestId ? updated : item)
             .toList(),
+        documents: value.documents
+            .map(
+              (document) => document.id == 'LEAVE-DOC-$requestId'
+                  ? _resolvedLeaveDocument(document, approve ? '승인완료' : '반려')
+                  : document,
+            )
+            .toList(),
       ),
     );
     return true;
@@ -457,4 +548,28 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       );
     });
   }
+}
+
+ApprovalDocument _resolvedLeaveDocument(
+  ApprovalDocument document,
+  String leaveStatus,
+) {
+  final approved = leaveStatus == '승인완료';
+  final rejected = leaveStatus == '반려';
+  if (!approved && !rejected) return document;
+  final steps = document.steps
+      .map(
+        (step) => step.status == '진행중'
+            ? step.copyWith(
+                status: approved ? '완료' : '반려',
+                approvedAt: '${_today()} 09:30',
+              )
+            : step,
+      )
+      .toList();
+  return document.copyWith(
+    status: approved ? '완료' : '반려',
+    progress: approved ? 100 : _progressFor(steps),
+    steps: steps,
+  );
 }

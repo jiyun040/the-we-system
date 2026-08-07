@@ -149,7 +149,7 @@ class _OvertimeRequestDialogState extends State<_OvertimeRequestDialog> {
           TheWeModalActions(
             primaryLabel: '전자결재 상신',
             secondaryLabel: '취소',
-            primaryColor: TheWeColor.green,
+            primaryColor: TheWeColor.blue300,
             onSecondaryPressed: () => Navigator.of(context).pop(),
             onPrimaryPressed: _invalidTime
                 ? null
@@ -417,7 +417,7 @@ class _WorkTimeCorrectionDialogState extends State<_WorkTimeCorrectionDialog> {
           TheWeModalActions(
             primaryLabel: '전자결재 상신',
             secondaryLabel: '취소',
-            primaryColor: TheWeColor.green,
+            primaryColor: TheWeColor.blue300,
             onSecondaryPressed: () => Navigator.of(context).pop(),
             onPrimaryPressed: () => Navigator.of(context).pop(
               AttendanceRequestRecord(

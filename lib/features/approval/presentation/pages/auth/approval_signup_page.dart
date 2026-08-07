@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -276,34 +277,13 @@ class _SelectionDropdown extends StatelessWidget {
   final ValueChanged<String?> onChanged;
 
   @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      onChanged: onChanged,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: TheWeColor.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: TheWeColor.black900),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: TheWeColor.blue300),
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      style: TheWeTextStyle.hintText,
-      dropdownColor: TheWeColor.white,
-      items: items
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-          .toList(),
-    );
-  }
+  Widget build(BuildContext context) => TheWeDropdown<String>(
+    value: value,
+    width: double.infinity,
+    items: items,
+    labelBuilder: (item) => item,
+    onChanged: onChanged,
+  );
 }
 
 class _FieldLabel extends StatelessWidget {
