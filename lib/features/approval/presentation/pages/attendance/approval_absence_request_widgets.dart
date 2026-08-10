@@ -1,7 +1,8 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
 
-class _OvertimeDateTimeRow extends StatelessWidget {
-  const _OvertimeDateTimeRow({
+class ApprovalOvertimeDateTimeRow extends StatelessWidget {
+  const ApprovalOvertimeDateTimeRow({
+    super.key,
     required this.label,
     required this.date,
     required this.hour,
@@ -55,7 +56,7 @@ class _OvertimeDateTimeRow extends StatelessWidget {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(flex: 3, child: _InlineBox(text: date)),
+                  Expanded(flex: 3, child: ApprovalInlineBox(text: date)),
                   const SizedBox(width: 8),
                   Expanded(flex: 2, child: timeField),
                 ],
@@ -70,7 +71,7 @@ class _OvertimeDateTimeRow extends StatelessWidget {
               width: 132,
               child: Text(label, style: const TextStyle(fontSize: 14)),
             ),
-            Expanded(child: _InlineBox(text: date)),
+            Expanded(child: ApprovalInlineBox(text: date)),
             const SizedBox(width: 10),
             SizedBox(width: 140, child: timeField),
           ],
@@ -132,8 +133,12 @@ class _TimePickerField extends StatelessWidget {
   }
 }
 
-class _SmallStat extends StatelessWidget {
-  const _SmallStat({required this.label, required this.value});
+class ApprovalSmallStat extends StatelessWidget {
+  const ApprovalSmallStat({
+    super.key,
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;
@@ -151,8 +156,12 @@ class _SmallStat extends StatelessWidget {
   }
 }
 
-class _DialogField extends StatelessWidget {
-  const _DialogField({required this.label, required this.child});
+class ApprovalDialogField extends StatelessWidget {
+  const ApprovalDialogField({
+    super.key,
+    required this.label,
+    required this.child,
+  });
 
   final String label;
   final Widget child;
@@ -186,8 +195,8 @@ class _DialogField extends StatelessWidget {
   }
 }
 
-class _InlineBox extends StatelessWidget {
-  const _InlineBox({required this.text});
+class ApprovalInlineBox extends StatelessWidget {
+  const ApprovalInlineBox({super.key, required this.text});
 
   final String text;
 

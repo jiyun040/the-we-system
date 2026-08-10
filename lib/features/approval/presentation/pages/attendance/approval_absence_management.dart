@@ -1,17 +1,19 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_cards.dart';
+import 'approval_absence_tables.dart';
 
-class _WorkGroupManagementSection extends StatefulWidget {
-  const _WorkGroupManagementSection();
+class ApprovalWorkGroupManagementSection extends StatefulWidget {
+  const ApprovalWorkGroupManagementSection({super.key});
 
   @override
-  State<_WorkGroupManagementSection> createState() =>
+  State<ApprovalWorkGroupManagementSection> createState() =>
       _WorkGroupManagementSectionState();
 }
 
 class _WorkGroupManagementSectionState
-    extends State<_WorkGroupManagementSection> {
-  final List<_ManagementGroupCardData> _cards = const [
-    _ManagementGroupCardData(
+    extends State<ApprovalWorkGroupManagementSection> {
+  final List<ApprovalManagementGroupCardData> _cards = const [
+    ApprovalManagementGroupCardData(
       badge: '기본',
       title: '기본그룹',
       rows: [
@@ -22,7 +24,7 @@ class _WorkGroupManagementSectionState
         '적용멤버  9명',
       ],
     ),
-    _ManagementGroupCardData(
+    ApprovalManagementGroupCardData(
       badge: '고정근로',
       title: '시차출퇴근 그룹',
       rows: [
@@ -41,7 +43,7 @@ class _WorkGroupManagementSectionState
     );
     final timeController = TextEditingController(text: '10:00 ~ 19:00 (8h)');
 
-    final result = await showDialog<_ManagementGroupCardData>(
+    final result = await showDialog<ApprovalManagementGroupCardData>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('근무그룹 추가'),
@@ -76,7 +78,7 @@ class _WorkGroupManagementSectionState
                   ? '10:00 ~ 19:00 (8h)'
                   : timeController.text.trim();
               Navigator.of(context).pop(
-                _ManagementGroupCardData(
+                ApprovalManagementGroupCardData(
                   badge: '신규',
                   title: title,
                   rows: [
@@ -110,14 +112,16 @@ class _WorkGroupManagementSectionState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionCard(
+        ApprovalAttendanceSectionCard(
           title: '근무그룹 관리',
           child: LayoutBuilder(
             builder: (context, constraints) {
               final singleColumn = constraints.maxWidth < 980;
               final widgets = [
-                ..._cards.map((card) => _ManagementGroupCard(data: card)),
-                _AddManagementCard(title: '근무그룹 추가하기', onTap: _addGroup),
+                ..._cards.map(
+                  (card) => ApprovalManagementGroupCard(data: card),
+                ),
+                ApprovalAddManagementCard(title: '근무그룹 추가하기', onTap: _addGroup),
               ];
 
               if (singleColumn) {
@@ -149,38 +153,39 @@ class _WorkGroupManagementSectionState
   }
 }
 
-class _CompensatoryLeaveSection extends StatefulWidget {
-  const _CompensatoryLeaveSection();
+class ApprovalCompensatoryLeaveSection extends StatefulWidget {
+  const ApprovalCompensatoryLeaveSection({super.key});
 
   @override
-  State<_CompensatoryLeaveSection> createState() =>
+  State<ApprovalCompensatoryLeaveSection> createState() =>
       _CompensatoryLeaveSectionState();
 }
 
-class _CompensatoryLeaveSectionState extends State<_CompensatoryLeaveSection> {
+class _CompensatoryLeaveSectionState
+    extends State<ApprovalCompensatoryLeaveSection> {
   bool _showGrantTarget = true;
 
   @override
   Widget build(BuildContext context) {
     final headers = _showGrantTarget
         ? const [
-            _TableHeader('사번', flex: 2),
-            _TableHeader('사원명', flex: 2),
-            _TableHeader('부서명', flex: 2),
-            _TableHeader('근무그룹', flex: 2),
-            _TableHeader('총 초과근로', flex: 2),
-            _TableHeader('부여가능시간', flex: 2),
-            _TableHeader('부여시간', flex: 2),
-            _TableHeader('수당지급', flex: 2),
+            ApprovalAttendanceTableHeader('사번', flex: 2),
+            ApprovalAttendanceTableHeader('사원명', flex: 2),
+            ApprovalAttendanceTableHeader('부서명', flex: 2),
+            ApprovalAttendanceTableHeader('근무그룹', flex: 2),
+            ApprovalAttendanceTableHeader('총 초과근로', flex: 2),
+            ApprovalAttendanceTableHeader('부여가능시간', flex: 2),
+            ApprovalAttendanceTableHeader('부여시간', flex: 2),
+            ApprovalAttendanceTableHeader('수당지급', flex: 2),
           ]
         : const [
-            _TableHeader('부여일', flex: 2),
-            _TableHeader('사원명', flex: 2),
-            _TableHeader('부서명', flex: 2),
-            _TableHeader('부여시간', flex: 2),
-            _TableHeader('사용기한', flex: 2),
-            _TableHeader('상태', flex: 2),
-            _TableHeader('처리자', flex: 2),
+            ApprovalAttendanceTableHeader('부여일', flex: 2),
+            ApprovalAttendanceTableHeader('사원명', flex: 2),
+            ApprovalAttendanceTableHeader('부서명', flex: 2),
+            ApprovalAttendanceTableHeader('부여시간', flex: 2),
+            ApprovalAttendanceTableHeader('사용기한', flex: 2),
+            ApprovalAttendanceTableHeader('상태', flex: 2),
+            ApprovalAttendanceTableHeader('처리자', flex: 2),
           ];
     final rows = _showGrantTarget
         ? const [
@@ -192,22 +197,24 @@ class _CompensatoryLeaveSectionState extends State<_CompensatoryLeaveSection> {
             ['2026-06-18', '이재오', '영업', '2h', '2026-12-31', '수당지급', '관리자'],
           ];
 
-    return _SectionCard(
+    return ApprovalAttendanceSectionCard(
       title: '보상휴가 관리',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _FeatureActionRow(actions: ['보상휴가 부여', '수당지급 취소', '사용기한 변경']),
+          const ApprovalFeatureActionRow(
+            actions: ['보상휴가 부여', '수당지급 취소', '사용기한 변경'],
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
-              _TabPill(
+              ApprovalAttendanceTabPill(
                 label: '부여 대상',
                 selected: _showGrantTarget,
                 onTap: () => setState(() => _showGrantTarget = true),
               ),
               const SizedBox(width: 8),
-              _TabPill(
+              ApprovalAttendanceTabPill(
                 label: '부여 내역',
                 selected: !_showGrantTarget,
                 onTap: () => setState(() => _showGrantTarget = false),
@@ -234,15 +241,19 @@ class _CompensatoryLeaveSectionState extends State<_CompensatoryLeaveSection> {
             ],
           ),
           const SizedBox(height: 16),
-          _GenericTable(headers: headers, rows: rows),
+          ApprovalGenericTable(headers: headers, rows: rows),
         ],
       ),
     );
   }
 }
 
-class _FeatureActionRow extends StatelessWidget {
-  const _FeatureActionRow({required this.actions, this.onAction});
+class ApprovalFeatureActionRow extends StatelessWidget {
+  const ApprovalFeatureActionRow({
+    super.key,
+    required this.actions,
+    this.onAction,
+  });
 
   final List<String> actions;
   final ValueChanged<String>? onAction;
@@ -274,16 +285,16 @@ class _FeatureActionRow extends StatelessWidget {
   }
 }
 
-class _HolidayReplacementSection extends StatefulWidget {
-  const _HolidayReplacementSection();
+class ApprovalHolidayReplacementSection extends StatefulWidget {
+  const ApprovalHolidayReplacementSection({super.key});
 
   @override
-  State<_HolidayReplacementSection> createState() =>
+  State<ApprovalHolidayReplacementSection> createState() =>
       _HolidayReplacementSectionState();
 }
 
 class _HolidayReplacementSectionState
-    extends State<_HolidayReplacementSection> {
+    extends State<ApprovalHolidayReplacementSection> {
   final List<List<String>> _rows = [
     [
       '승인대기',
@@ -379,12 +390,12 @@ class _HolidayReplacementSectionState
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
+    return ApprovalAttendanceSectionCard(
       title: '휴일대체 관리',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _FeatureActionRow(
+          ApprovalFeatureActionRow(
             actions: const ['휴일대체 등록', '휴일대체일 변경', '임직원 신청현황'],
             onAction: (action) {
               if (action == '휴일대체 등록') {
@@ -415,16 +426,16 @@ class _HolidayReplacementSectionState
             ],
           ),
           const SizedBox(height: 16),
-          _GenericTable(
+          ApprovalGenericTable(
             headers: const [
-              _TableHeader('상태', flex: 2),
-              _TableHeader('사원명', flex: 2),
-              _TableHeader('사번', flex: 2),
-              _TableHeader('부서', flex: 2),
-              _TableHeader('근무그룹명', flex: 2),
-              _TableHeader('선택 휴일', flex: 2),
-              _TableHeader('대체일', flex: 2),
-              _TableHeader('신청사유', flex: 3),
+              ApprovalAttendanceTableHeader('상태', flex: 2),
+              ApprovalAttendanceTableHeader('사원명', flex: 2),
+              ApprovalAttendanceTableHeader('사번', flex: 2),
+              ApprovalAttendanceTableHeader('부서', flex: 2),
+              ApprovalAttendanceTableHeader('근무그룹명', flex: 2),
+              ApprovalAttendanceTableHeader('선택 휴일', flex: 2),
+              ApprovalAttendanceTableHeader('대체일', flex: 2),
+              ApprovalAttendanceTableHeader('신청사유', flex: 3),
             ],
             rows: _rows,
           ),

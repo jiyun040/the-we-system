@@ -1,4 +1,17 @@
-part of 'approval_absence_page.dart';
+import 'dart:math' as math;
+
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_cards.dart';
+import 'approval_absence_company_status.dart';
+import 'approval_absence_company_table.dart';
+import 'approval_absence_leave_policy.dart';
+import 'approval_absence_leave_status.dart';
+import 'approval_absence_management.dart';
+import 'approval_absence_my_status.dart';
+import 'approval_absence_request_dialogs.dart';
+import 'approval_absence_seed.dart';
+import 'approval_attendance_models.dart';
+import 'approval_attendance_controller.dart';
 
 class ApprovalAbsencePage extends ConsumerWidget {
   const ApprovalAbsencePage({super.key});
@@ -30,8 +43,12 @@ class ApprovalAbsencePage extends ConsumerWidget {
               : AttendanceSection.myStatus;
 
           final attendanceMap = ref.watch(attendanceControllerProvider);
-          final snapshot = attendanceMap[user.id] ?? _seedState[user.id]!;
-          final companyRows = _buildCompanyRows(value.accounts, attendanceMap);
+          final snapshot =
+              attendanceMap[user.id] ?? approvalAttendanceSeedState[user.id]!;
+          final companyRows = buildApprovalCompanyRows(
+            value.accounts,
+            attendanceMap,
+          );
           final isPhone = MediaQuery.sizeOf(context).width < 520;
 
           final content = Expanded(
@@ -182,9 +199,9 @@ class ApprovalAbsencePage extends ConsumerWidget {
     final request = await showDialog<AttendanceRequestRecord>(
       context: context,
       builder: (context) => switch (kind) {
-        AttendanceRequestKind.overtime => const _OvertimeRequestDialog(),
+        AttendanceRequestKind.overtime => const ApprovalOvertimeRequestDialog(),
         AttendanceRequestKind.workTimeCorrection =>
-          const _WorkTimeCorrectionDialog(),
+          const ApprovalWorkTimeCorrectionDialog(),
       },
     );
     if (request == null) {
@@ -263,7 +280,7 @@ class _AttendanceControlPanel extends StatelessWidget {
       snapshot.weeklyRequiredHours - snapshot.weeklyWorkedHours,
     );
 
-    return _SurfaceCard(
+    return ApprovalAttendanceSurfaceCard(
       padding: const EdgeInsets.all(18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -318,7 +335,7 @@ class _AttendanceControlPanel extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            _formatKoreanDateTime(DateTime.now()),
+            formatApprovalKoreanDateTime(DateTime.now()),
             style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
           ),
           const SizedBox(height: 8),
@@ -345,14 +362,14 @@ class _AttendanceControlPanel extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _PrimaryStatusBox(
+                child: ApprovalPrimaryStatusBox(
                   label: '출근 시간',
                   value: snapshot.clockInTime ?? '-',
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _PrimaryStatusBox(
+                child: ApprovalPrimaryStatusBox(
                   label: '퇴근 시간',
                   value: snapshot.clockOutTime ?? '-',
                 ),
@@ -385,23 +402,23 @@ class _AttendanceControlPanel extends StatelessWidget {
           const SizedBox(height: 14),
           Text('빠른 현황', style: TheWeTextStyle.section),
           const SizedBox(height: 10),
-          _QuickMetric(
+          ApprovalQuickMetric(
             label: '기본그룹',
             value: snapshot.workPolicy,
             accent: TheWeColor.blue300,
           ),
-          _QuickMetric(
+          ApprovalQuickMetric(
             label: '주간 누적',
             value:
                 '${(currentView == AttendanceView.weekly ? snapshot.weeklyWorkedHours : snapshot.weeklyWorkedHours * 4).toStringAsFixed(1)}h',
             accent: TheWeColor.green,
           ),
-          _QuickMetric(
+          ApprovalQuickMetric(
             label: '잔여 근로시간',
             value: '${remainingHours.toStringAsFixed(1)}h',
             accent: TheWeColor.black900,
           ),
-          _QuickMetric(
+          ApprovalQuickMetric(
             label: '잔여 근무일',
             value: '${snapshot.remainingWorkDays}일',
             accent: TheWeColor.blue300,
@@ -417,7 +434,7 @@ class _AttendanceControlPanel extends StatelessWidget {
               AttendanceSection.leavePolicy,
             ],
           ].map(
-            (section) => _QuickLinkTile(
+            (section) => ApprovalQuickLinkTile(
               label: section.title,
               selected: currentSection == section,
               onTap: () => onNavigate(section),
@@ -446,30 +463,33 @@ class _AttendanceSectionContent extends StatelessWidget {
   final EmployeeAccount user;
   final AttendanceSnapshot snapshot;
   final List<EmployeeAccount> accounts;
-  final List<_CompanyAttendanceRowData> companyRows;
+  final List<ApprovalCompanyAttendanceRowData> companyRows;
   final ValueChanged<AttendanceView> onChangeView;
   final ValueChanged<AttendanceRequestKind> onOpenRequest;
 
   @override
   Widget build(BuildContext context) {
     return switch (section) {
-      AttendanceSection.myStatus => _MyAttendanceSection(
+      AttendanceSection.myStatus => ApprovalMyAttendanceSection(
         view: view,
         user: user,
         snapshot: snapshot,
         onChangeView: onChangeView,
         onOpenRequest: onOpenRequest,
       ),
-      AttendanceSection.companyStatus => _CompanyAttendanceSection(
+      AttendanceSection.companyStatus => ApprovalCompanyAttendanceSection(
         rows: companyRows,
       ),
-      AttendanceSection.workGroup => const _WorkGroupManagementSection(),
-      AttendanceSection.compensatoryLeave => const _CompensatoryLeaveSection(),
+      AttendanceSection.workGroup => const ApprovalWorkGroupManagementSection(),
+      AttendanceSection.compensatoryLeave =>
+        const ApprovalCompensatoryLeaveSection(),
       AttendanceSection.holidayReplacement =>
-        const _HolidayReplacementSection(),
-      AttendanceSection.leavePolicy => _LeavePolicySection(accounts: accounts),
-      AttendanceSection.leavePromotion => const _LeavePromotionSection(),
-      AttendanceSection.retiredLeave => const _RetiredLeaveSection(),
+        const ApprovalHolidayReplacementSection(),
+      AttendanceSection.leavePolicy => ApprovalLeavePolicySection(
+        accounts: accounts,
+      ),
+      AttendanceSection.leavePromotion => const ApprovalLeavePromotionSection(),
+      AttendanceSection.retiredLeave => const ApprovalRetiredLeaveSection(),
     };
   }
 }

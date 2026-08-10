@@ -1,7 +1,8 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_cards.dart';
 
-class _LeavePolicySection extends StatelessWidget {
-  const _LeavePolicySection({required this.accounts});
+class ApprovalLeavePolicySection extends StatelessWidget {
+  const ApprovalLeavePolicySection({super.key, required this.accounts});
 
   final List<EmployeeAccount> accounts;
 
@@ -31,7 +32,7 @@ class _LeavePolicySection extends StatelessWidget {
       ),
     ];
 
-    return _SectionCard(
+    return ApprovalAttendanceSectionCard(
       title: '연차정책 관리',
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -126,7 +127,7 @@ class _LeavePolicyGroupCardState extends State<_LeavePolicyGroupCard> {
 
   @override
   Widget build(BuildContext context) {
-    return _SurfaceCard(
+    return ApprovalAttendanceSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

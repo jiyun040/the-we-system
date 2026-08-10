@@ -1,13 +1,15 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_company_table.dart';
+import 'approval_attendance_models.dart';
 
-List<_CompanyAttendanceRowData> _buildCompanyRows(
+List<ApprovalCompanyAttendanceRowData> buildApprovalCompanyRows(
   List<EmployeeAccount> accounts,
   Map<String, AttendanceSnapshot> attendanceMap,
 ) {
   return accounts.map((account) {
     final snapshot =
         attendanceMap[account.id] ??
-        _seedState[account.id] ??
+        approvalAttendanceSeedState[account.id] ??
         _emptyAttendanceSnapshot;
     final hasPendingOvertime = snapshot.requests.any(
       (item) => item.type.contains('초과근로') && item.status.contains('결재대기'),
@@ -19,7 +21,7 @@ List<_CompanyAttendanceRowData> _buildCompanyRows(
         ? '지각'
         : '정상';
 
-    return _CompanyAttendanceRowData(
+    return ApprovalCompanyAttendanceRowData(
       account: account,
       snapshot: snapshot,
       stateLabel: stateLabel,
@@ -28,19 +30,19 @@ List<_CompanyAttendanceRowData> _buildCompanyRows(
   }).toList();
 }
 
-String _formatTime(DateTime time) {
+String formatApprovalTime(DateTime time) {
   final hour = time.hour.toString().padLeft(2, '0');
   final minute = time.minute.toString().padLeft(2, '0');
   return '$hour:$minute';
 }
 
-String _formatDate(DateTime time) {
+String formatApprovalDate(DateTime time) {
   final month = time.month.toString().padLeft(2, '0');
   final day = time.day.toString().padLeft(2, '0');
   return '${time.year}-$month-$day';
 }
 
-String _formatKoreanDateTime(DateTime time) {
+String formatApprovalKoreanDateTime(DateTime time) {
   const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
   final month = time.month.toString().padLeft(2, '0');
   final day = time.day.toString().padLeft(2, '0');
@@ -65,7 +67,7 @@ const _emptyAttendanceSnapshot = AttendanceSnapshot(
   delegations: [],
 );
 
-final _seedState = <String, AttendanceSnapshot>{
+final approvalAttendanceSeedState = <String, AttendanceSnapshot>{
   'edu_teacher': const AttendanceSnapshot(
     workPolicy: '기본그룹 (09:00 ~ 18:00)',
     clockInTime: '08:57',

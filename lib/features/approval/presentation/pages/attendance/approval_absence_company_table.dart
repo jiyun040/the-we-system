@@ -1,7 +1,9 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_tables.dart';
+import 'approval_attendance_models.dart';
 
-class _CompanyAttendanceRowData {
-  const _CompanyAttendanceRowData({
+class ApprovalCompanyAttendanceRowData {
+  const ApprovalCompanyAttendanceRowData({
     required this.account,
     required this.snapshot,
     required this.stateLabel,
@@ -14,10 +16,10 @@ class _CompanyAttendanceRowData {
   final String anomalyLabel;
 }
 
-class _CompanyAttendanceTable extends StatelessWidget {
-  const _CompanyAttendanceTable({required this.rows});
+class ApprovalCompanyAttendanceTable extends StatelessWidget {
+  const ApprovalCompanyAttendanceTable({super.key, required this.rows});
 
-  final List<_CompanyAttendanceRowData> rows;
+  final List<ApprovalCompanyAttendanceRowData> rows;
 
   @override
   Widget build(BuildContext context) {
@@ -25,13 +27,13 @@ class _CompanyAttendanceTable extends StatelessWidget {
       builder: (context, constraints) {
         if (constraints.maxWidth < 640) {
           if (rows.isEmpty) {
-            return const _MobileEmptyTable(message: '검색 결과가 없습니다.');
+            return const ApprovalMobileEmptyTable(message: '검색 결과가 없습니다.');
           }
 
           return Column(
             children: rows
                 .map(
-                  (row) => _MobileDataCard(
+                  (row) => ApprovalMobileDataCard(
                     entries: [
                       MapEntry('사번', row.account.id),
                       MapEntry('사원명', row.account.name),
@@ -82,16 +84,40 @@ class _CompanyAttendanceTable extends StatelessWidget {
                   ),
                   child: Row(
                     children: const [
-                      _TableCell('사번', flex: 2, header: true),
-                      _TableCell('사원명', flex: 2, header: true),
-                      _TableCell('부서명', flex: 2, header: true),
-                      _TableCell('근무그룹형', flex: 2, header: true),
-                      _TableCell('출근시간', flex: 2, header: true),
-                      _TableCell('퇴근시간', flex: 2, header: true),
-                      _TableCell('총 근로시간', flex: 2, header: true),
-                      _TableCell('휴가', flex: 2, header: true),
-                      _TableCell('휴일대체', flex: 2, header: true),
-                      _TableCell('근태이상', flex: 2, header: true),
+                      ApprovalAttendanceTableCell('사번', flex: 2, header: true),
+                      ApprovalAttendanceTableCell('사원명', flex: 2, header: true),
+                      ApprovalAttendanceTableCell('부서명', flex: 2, header: true),
+                      ApprovalAttendanceTableCell(
+                        '근무그룹형',
+                        flex: 2,
+                        header: true,
+                      ),
+                      ApprovalAttendanceTableCell(
+                        '출근시간',
+                        flex: 2,
+                        header: true,
+                      ),
+                      ApprovalAttendanceTableCell(
+                        '퇴근시간',
+                        flex: 2,
+                        header: true,
+                      ),
+                      ApprovalAttendanceTableCell(
+                        '총 근로시간',
+                        flex: 2,
+                        header: true,
+                      ),
+                      ApprovalAttendanceTableCell('휴가', flex: 2, header: true),
+                      ApprovalAttendanceTableCell(
+                        '휴일대체',
+                        flex: 2,
+                        header: true,
+                      ),
+                      ApprovalAttendanceTableCell(
+                        '근태이상',
+                        flex: 2,
+                        header: true,
+                      ),
                     ],
                   ),
                 ),
@@ -120,27 +146,39 @@ class _CompanyAttendanceTable extends StatelessWidget {
                     ),
                     child: Row(
                       children: [
-                        _TableCell(row.account.id, flex: 2),
-                        _TableCell(row.account.name, flex: 2),
-                        _TableCell(row.account.department, flex: 2),
-                        _TableCell(row.snapshot.workPolicy, flex: 2),
-                        _TableCell(row.snapshot.clockInTime ?? '-', flex: 2),
-                        _TableCell(row.snapshot.clockOutTime ?? '-', flex: 2),
-                        _TableCell(
+                        ApprovalAttendanceTableCell(row.account.id, flex: 2),
+                        ApprovalAttendanceTableCell(row.account.name, flex: 2),
+                        ApprovalAttendanceTableCell(
+                          row.account.department,
+                          flex: 2,
+                        ),
+                        ApprovalAttendanceTableCell(
+                          row.snapshot.workPolicy,
+                          flex: 2,
+                        ),
+                        ApprovalAttendanceTableCell(
+                          row.snapshot.clockInTime ?? '-',
+                          flex: 2,
+                        ),
+                        ApprovalAttendanceTableCell(
+                          row.snapshot.clockOutTime ?? '-',
+                          flex: 2,
+                        ),
+                        ApprovalAttendanceTableCell(
                           row.snapshot.clockOutTime == null
                               ? '0h 0m 0s'
                               : '8h 0m 0s',
                           flex: 2,
                         ),
-                        _TableCell(
+                        ApprovalAttendanceTableCell(
                           '${row.snapshot.annualLeaveUsed.toStringAsFixed(1)}일',
                           flex: 2,
                         ),
-                        _TableCell(
+                        ApprovalAttendanceTableCell(
                           row.snapshot.delegations.isEmpty ? '-' : '신청중',
                           flex: 2,
                         ),
-                        _StatusBadgeCell(row.anomalyLabel, flex: 2),
+                        ApprovalStatusBadgeCell(row.anomalyLabel, flex: 2),
                       ],
                     ),
                   ),
@@ -154,8 +192,13 @@ class _CompanyAttendanceTable extends StatelessWidget {
   }
 }
 
-class _TableCell extends StatelessWidget {
-  const _TableCell(this.text, {required this.flex, this.header = false});
+class ApprovalAttendanceTableCell extends StatelessWidget {
+  const ApprovalAttendanceTableCell(
+    this.text, {
+    super.key,
+    required this.flex,
+    this.header = false,
+  });
 
   final String text;
   final int flex;
@@ -178,8 +221,8 @@ class _TableCell extends StatelessWidget {
   }
 }
 
-class _StatusBadgeCell extends StatelessWidget {
-  const _StatusBadgeCell(this.text, {required this.flex});
+class ApprovalStatusBadgeCell extends StatelessWidget {
+  const ApprovalStatusBadgeCell(this.text, {super.key, required this.flex});
 
   final String text;
   final int flex;
@@ -212,8 +255,8 @@ class _StatusBadgeCell extends StatelessWidget {
   }
 }
 
-class _DelegationItem extends StatelessWidget {
-  const _DelegationItem({required this.item});
+class ApprovalDelegationItem extends StatelessWidget {
+  const ApprovalDelegationItem({super.key, required this.item});
 
   final AttendanceDelegation item;
 
@@ -246,8 +289,12 @@ class _DelegationItem extends StatelessWidget {
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  const _LegendDot({required this.label, required this.color});
+class ApprovalLegendDot extends StatelessWidget {
+  const ApprovalLegendDot({
+    super.key,
+    required this.label,
+    required this.color,
+  });
 
   final String label;
   final Color color;

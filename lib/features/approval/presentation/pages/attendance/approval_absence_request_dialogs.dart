@@ -1,17 +1,23 @@
-part of 'approval_absence_page.dart';
+import 'dart:math' as math;
 
-class _OvertimeRequestDialog extends StatefulWidget {
-  const _OvertimeRequestDialog();
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_request_widgets.dart';
+import 'approval_absence_seed.dart';
+import 'approval_attendance_models.dart';
+
+class ApprovalOvertimeRequestDialog extends StatefulWidget {
+  const ApprovalOvertimeRequestDialog({super.key});
 
   @override
-  State<_OvertimeRequestDialog> createState() => _OvertimeRequestDialogState();
+  State<ApprovalOvertimeRequestDialog> createState() =>
+      _OvertimeRequestDialogState();
 }
 
-class _OvertimeRequestDialogState extends State<_OvertimeRequestDialog> {
+class _OvertimeRequestDialogState extends State<ApprovalOvertimeRequestDialog> {
   final reasonController = TextEditingController();
-  final String checkDate = _formatDate(DateTime.now());
-  final String startDate = _formatDate(DateTime.now());
-  final String endDate = _formatDate(DateTime.now());
+  final String checkDate = formatApprovalDate(DateTime.now());
+  final String startDate = formatApprovalDate(DateTime.now());
+  final String endDate = formatApprovalDate(DateTime.now());
   int startHour = 18;
   int startMinute = 0;
   int endHour = 21;
@@ -76,15 +82,15 @@ class _OvertimeRequestDialogState extends State<_OvertimeRequestDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _DialogField(
+                    ApprovalDialogField(
                       label: '출근체크일',
-                      child: _InlineBox(text: checkDate),
+                      child: ApprovalInlineBox(text: checkDate),
                     ),
-                    _DialogField(
+                    ApprovalDialogField(
                       label: '초과근로신청',
                       child: Column(
                         children: [
-                          _OvertimeDateTimeRow(
+                          ApprovalOvertimeDateTimeRow(
                             label: '초과근로발생시작일',
                             date: startDate,
                             hour: startHour,
@@ -96,7 +102,7 @@ class _OvertimeRequestDialogState extends State<_OvertimeRequestDialog> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          _OvertimeDateTimeRow(
+                          ApprovalOvertimeDateTimeRow(
                             label: '초과근로발생종료일',
                             date: endDate,
                             hour: endHour,
@@ -114,9 +120,18 @@ class _OvertimeRequestDialogState extends State<_OvertimeRequestDialog> {
                       spacing: 24,
                       runSpacing: 12,
                       children: [
-                        _SmallStat(label: '초과근로시간', value: _durationLabel),
-                        const _SmallStat(label: '잔여 초과근로시간', value: '12h 0m'),
-                        _SmallStat(label: '신청 후 초과근로시간', value: _durationLabel),
+                        ApprovalSmallStat(
+                          label: '초과근로시간',
+                          value: _durationLabel,
+                        ),
+                        const ApprovalSmallStat(
+                          label: '잔여 초과근로시간',
+                          value: '12h 0m',
+                        ),
+                        ApprovalSmallStat(
+                          label: '신청 후 초과근로시간',
+                          value: _durationLabel,
+                        ),
                       ],
                     ),
                     if (_invalidTime) ...[
@@ -129,7 +144,7 @@ class _OvertimeRequestDialogState extends State<_OvertimeRequestDialog> {
                       ),
                     ],
                     const SizedBox(height: 18),
-                    _DialogField(
+                    ApprovalDialogField(
                       label: '신청사유',
                       child: CustomTextFormField(
                         controller: reasonController,
@@ -172,17 +187,18 @@ class _OvertimeRequestDialogState extends State<_OvertimeRequestDialog> {
   }
 }
 
-class _WorkTimeCorrectionDialog extends StatefulWidget {
-  const _WorkTimeCorrectionDialog();
+class ApprovalWorkTimeCorrectionDialog extends StatefulWidget {
+  const ApprovalWorkTimeCorrectionDialog({super.key});
 
   @override
-  State<_WorkTimeCorrectionDialog> createState() =>
+  State<ApprovalWorkTimeCorrectionDialog> createState() =>
       _WorkTimeCorrectionDialogState();
 }
 
-class _WorkTimeCorrectionDialogState extends State<_WorkTimeCorrectionDialog> {
+class _WorkTimeCorrectionDialogState
+    extends State<ApprovalWorkTimeCorrectionDialog> {
   final reasonController = TextEditingController();
-  final String selectedDate = _formatDate(DateTime.now());
+  final String selectedDate = formatApprovalDate(DateTime.now());
   final List<_WorkTimeCorrectionEntry> corrections = [];
   int startHour = 9;
   int startMinute = 0;
@@ -274,16 +290,16 @@ class _WorkTimeCorrectionDialogState extends State<_WorkTimeCorrectionDialog> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _DialogField(
+                    ApprovalDialogField(
                       label: '수정 신청일',
-                      child: _InlineBox(text: selectedDate),
+                      child: ApprovalInlineBox(text: selectedDate),
                     ),
-                    _DialogField(
+                    ApprovalDialogField(
                       label: '근무시간 수정',
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _OvertimeDateTimeRow(
+                          ApprovalOvertimeDateTimeRow(
                             label: '수정 시작 시간',
                             date: selectedDate,
                             hour: startHour,
@@ -295,7 +311,7 @@ class _WorkTimeCorrectionDialogState extends State<_WorkTimeCorrectionDialog> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          _OvertimeDateTimeRow(
+                          ApprovalOvertimeDateTimeRow(
                             label: '수정 종료 시간',
                             date: selectedDate,
                             hour: endHour,
@@ -385,19 +401,19 @@ class _WorkTimeCorrectionDialogState extends State<_WorkTimeCorrectionDialog> {
                       spacing: 32,
                       runSpacing: 12,
                       children: [
-                        const _SmallStat(label: '신청일 근로시간', value: '0h'),
-                        _SmallStat(
+                        const ApprovalSmallStat(label: '신청일 근로시간', value: '0h'),
+                        ApprovalSmallStat(
                           label: '수정 후 근로시간',
                           value: _durationText(_correctedMinutes),
                         ),
-                        _SmallStat(
+                        ApprovalSmallStat(
                           label: '주간 총 근로시간',
                           value: _durationText(_correctedMinutes),
                         ),
                       ],
                     ),
                     const SizedBox(height: 18),
-                    _DialogField(
+                    ApprovalDialogField(
                       label: '신청사유',
                       child: CustomTextFormField(
                         controller: reasonController,

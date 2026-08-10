@@ -1,7 +1,17 @@
-part of 'approval_absence_page.dart';
+import 'dart:math' as math;
 
-class _TabPill extends StatelessWidget {
-  const _TabPill({required this.label, this.selected = false, this.onTap});
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_cards.dart';
+import 'approval_absence_company_table.dart';
+import 'approval_attendance_models.dart';
+
+class ApprovalAttendanceTabPill extends StatelessWidget {
+  const ApprovalAttendanceTabPill({
+    super.key,
+    required this.label,
+    this.selected = false,
+    this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -30,8 +40,8 @@ class _TabPill extends StatelessWidget {
   }
 }
 
-class _ManagementGroupCardData {
-  const _ManagementGroupCardData({
+class ApprovalManagementGroupCardData {
+  const ApprovalManagementGroupCardData({
     required this.badge,
     required this.title,
     required this.rows,
@@ -42,14 +52,14 @@ class _ManagementGroupCardData {
   final List<String> rows;
 }
 
-class _ManagementGroupCard extends StatelessWidget {
-  const _ManagementGroupCard({required this.data});
+class ApprovalManagementGroupCard extends StatelessWidget {
+  const ApprovalManagementGroupCard({super.key, required this.data});
 
-  final _ManagementGroupCardData data;
+  final ApprovalManagementGroupCardData data;
 
   @override
   Widget build(BuildContext context) {
-    return _SurfaceCard(
+    return ApprovalAttendanceSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -79,8 +89,8 @@ class _ManagementGroupCard extends StatelessWidget {
   }
 }
 
-class _AddManagementCard extends StatelessWidget {
-  const _AddManagementCard({required this.title, this.onTap});
+class ApprovalAddManagementCard extends StatelessWidget {
+  const ApprovalAddManagementCard({super.key, required this.title, this.onTap});
 
   final String title;
   final VoidCallback? onTap;
@@ -126,21 +136,22 @@ class _AddManagementCard extends StatelessWidget {
   }
 }
 
-class _TableHeader {
-  const _TableHeader(this.label, {this.flex = 2});
+class ApprovalAttendanceTableHeader {
+  const ApprovalAttendanceTableHeader(this.label, {this.flex = 2});
 
   final String label;
   final int flex;
 }
 
-class _GenericTable extends StatelessWidget {
-  const _GenericTable({
+class ApprovalGenericTable extends StatelessWidget {
+  const ApprovalGenericTable({
+    super.key,
     required this.headers,
     required this.rows,
     this.emptyMessage = '목록이 없습니다.',
   });
 
-  final List<_TableHeader> headers;
+  final List<ApprovalAttendanceTableHeader> headers;
   final List<List<String>> rows;
   final String emptyMessage;
 
@@ -155,13 +166,13 @@ class _GenericTable extends StatelessWidget {
       builder: (context, constraints) {
         if (constraints.maxWidth < 640) {
           if (rows.isEmpty) {
-            return _MobileEmptyTable(message: emptyMessage);
+            return ApprovalMobileEmptyTable(message: emptyMessage);
           }
 
           return Column(
             children: rows
                 .map(
-                  (row) => _MobileDataCard(
+                  (row) => ApprovalMobileDataCard(
                     entries: [
                       for (var index = 0; index < headers.length; index++)
                         MapEntry(headers[index].label, row[index]),
@@ -192,7 +203,7 @@ class _GenericTable extends StatelessWidget {
                   child: Row(
                     children: headers
                         .map(
-                          (header) => _TableCell(
+                          (header) => ApprovalAttendanceTableCell(
                             header.label,
                             flex: header.flex,
                             header: true,
@@ -235,7 +246,10 @@ class _GenericTable extends StatelessWidget {
                       child: Row(
                         children: [
                           for (var index = 0; index < headers.length; index++)
-                            _TableCell(row[index], flex: headers[index].flex),
+                            ApprovalAttendanceTableCell(
+                              row[index],
+                              flex: headers[index].flex,
+                            ),
                         ],
                       ),
                     ),
@@ -249,8 +263,8 @@ class _GenericTable extends StatelessWidget {
   }
 }
 
-class _RequestTable extends StatelessWidget {
-  const _RequestTable({required this.requests});
+class ApprovalRequestTable extends StatelessWidget {
+  const ApprovalRequestTable({super.key, required this.requests});
 
   final List<AttendanceRequestRecord> requests;
 
@@ -260,13 +274,13 @@ class _RequestTable extends StatelessWidget {
       builder: (context, constraints) {
         if (constraints.maxWidth < 640) {
           if (requests.isEmpty) {
-            return const _MobileEmptyTable(message: '목록이 없습니다.');
+            return const ApprovalMobileEmptyTable(message: '목록이 없습니다.');
           }
 
           return Column(
             children: requests
                 .map(
-                  (item) => _MobileDataCard(
+                  (item) => ApprovalMobileDataCard(
                     entries: [
                       MapEntry('신청유형', item.type),
                       MapEntry('신청일', item.date),
@@ -298,11 +312,15 @@ class _RequestTable extends StatelessWidget {
                   ),
                   child: Row(
                     children: const [
-                      _TableCell('신청유형', flex: 2, header: true),
-                      _TableCell('신청일', flex: 2, header: true),
-                      _TableCell('시간', flex: 2, header: true),
-                      _TableCell('사유', flex: 5, header: true),
-                      _TableCell('상태', flex: 2, header: true),
+                      ApprovalAttendanceTableCell(
+                        '신청유형',
+                        flex: 2,
+                        header: true,
+                      ),
+                      ApprovalAttendanceTableCell('신청일', flex: 2, header: true),
+                      ApprovalAttendanceTableCell('시간', flex: 2, header: true),
+                      ApprovalAttendanceTableCell('사유', flex: 5, header: true),
+                      ApprovalAttendanceTableCell('상태', flex: 2, header: true),
                     ],
                   ),
                 ),
@@ -338,11 +356,11 @@ class _RequestTable extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          _TableCell(item.type, flex: 2),
-                          _TableCell(item.date, flex: 2),
-                          _TableCell(item.timeRange, flex: 2),
-                          _TableCell(item.reason, flex: 5),
-                          _StatusBadgeCell(item.status, flex: 2),
+                          ApprovalAttendanceTableCell(item.type, flex: 2),
+                          ApprovalAttendanceTableCell(item.date, flex: 2),
+                          ApprovalAttendanceTableCell(item.timeRange, flex: 2),
+                          ApprovalAttendanceTableCell(item.reason, flex: 5),
+                          ApprovalStatusBadgeCell(item.status, flex: 2),
                         ],
                       ),
                     ),
@@ -356,8 +374,8 @@ class _RequestTable extends StatelessWidget {
   }
 }
 
-class _MobileEmptyTable extends StatelessWidget {
-  const _MobileEmptyTable({required this.message});
+class ApprovalMobileEmptyTable extends StatelessWidget {
+  const ApprovalMobileEmptyTable({super.key, required this.message});
 
   final String message;
 
@@ -380,8 +398,8 @@ class _MobileEmptyTable extends StatelessWidget {
   }
 }
 
-class _MobileDataCard extends StatelessWidget {
-  const _MobileDataCard({required this.entries});
+class ApprovalMobileDataCard extends StatelessWidget {
+  const ApprovalMobileDataCard({super.key, required this.entries});
 
   final List<MapEntry<String, String>> entries;
 

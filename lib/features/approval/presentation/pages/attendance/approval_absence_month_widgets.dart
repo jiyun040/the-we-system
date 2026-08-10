@@ -1,4 +1,5 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_company_table.dart';
 
 class _MonthScheduleTag extends StatelessWidget {
   const _MonthScheduleTag({required this.label, required this.color});
@@ -44,8 +45,8 @@ class _MonthScheduleTag extends StatelessWidget {
   }
 }
 
-class _MonthAttendanceGrid extends StatelessWidget {
-  const _MonthAttendanceGrid({required this.now});
+class ApprovalMonthAttendanceGrid extends StatelessWidget {
+  const ApprovalMonthAttendanceGrid({super.key, required this.now});
 
   final DateTime now;
 
@@ -196,10 +197,10 @@ class _MonthAttendanceGrid extends StatelessWidget {
             spacing: 12,
             runSpacing: 6,
             children: [
-              _LegendDot(label: '정상근무', color: Color(0xFF34D399)),
-              _LegendDot(label: '휴일', color: Color(0xFF60A5FA)),
-              _LegendDot(label: '휴무', color: Color(0xFF93C5FD)),
-              _LegendDot(label: '공휴일', color: TheWeColor.pink),
+              ApprovalLegendDot(label: '정상근무', color: Color(0xFF34D399)),
+              ApprovalLegendDot(label: '휴일', color: Color(0xFF60A5FA)),
+              ApprovalLegendDot(label: '휴무', color: Color(0xFF93C5FD)),
+              ApprovalLegendDot(label: '공휴일', color: TheWeColor.pink),
             ],
           ),
         ],
@@ -208,8 +209,9 @@ class _MonthAttendanceGrid extends StatelessWidget {
   }
 }
 
-class _TimelineChart extends StatelessWidget {
-  const _TimelineChart({
+class ApprovalTimelineChart extends StatelessWidget {
+  const ApprovalTimelineChart({
+    super.key,
     required this.clockInTime,
     required this.clockOutTime,
     required this.requestCount,
@@ -322,8 +324,9 @@ class _TimelineChart extends StatelessWidget {
   }
 }
 
-class _StatusMetricCard extends StatelessWidget {
-  const _StatusMetricCard({
+class ApprovalStatusMetricCard extends StatelessWidget {
+  const ApprovalStatusMetricCard({
+    super.key,
     required this.title,
     required this.value,
     required this.caption,

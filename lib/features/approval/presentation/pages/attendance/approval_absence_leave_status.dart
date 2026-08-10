@@ -1,16 +1,20 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
+import 'approval_absence_cards.dart';
+import 'approval_absence_management.dart';
+import 'approval_absence_month_widgets.dart';
+import 'approval_absence_tables.dart';
 
-class _LeavePromotionSection extends StatelessWidget {
-  const _LeavePromotionSection();
+class ApprovalLeavePromotionSection extends StatelessWidget {
+  const ApprovalLeavePromotionSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
+    return ApprovalAttendanceSectionCard(
       title: '연차촉진 현황',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _FeatureActionRow(
+          const ApprovalFeatureActionRow(
             actions: ['항목별 대상자 조회', '통지문 발송', '발송 이력 확인'],
           ),
           const SizedBox(height: 16),
@@ -31,56 +35,56 @@ class _LeavePromotionSection extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '전체',
                 value: '0명',
                 caption: '촉진대상자',
                 accent: TheWeColor.black900,
                 width: 180,
               ),
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '매칭',
                 value: '0명',
                 caption: '진행중',
                 accent: TheWeColor.black500,
                 width: 150,
               ),
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '1차 촉진',
                 value: '0명',
                 caption: '1차 진행',
                 accent: TheWeColor.green,
                 width: 150,
               ),
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '미회송',
                 value: '0명',
                 caption: '응답대기',
                 accent: Color(0xFF8B5CF6),
                 width: 150,
               ),
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '제출완료',
                 value: '0명',
                 caption: '문서 완료',
                 accent: Color(0xFF10B981),
                 width: 150,
               ),
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '통보완료',
                 value: '0명',
                 caption: '알림 완료',
                 accent: Color(0xFF22C55E),
                 width: 150,
               ),
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '확인완료',
                 value: '0명',
                 caption: '확인 처리',
                 accent: TheWeColor.black500,
                 width: 150,
               ),
-              _StatusMetricCard(
+              ApprovalStatusMetricCard(
                 title: '무효불가',
                 value: '0명',
                 caption: '예외 대상',
@@ -90,18 +94,18 @@ class _LeavePromotionSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          _GenericTable(
+          ApprovalGenericTable(
             headers: const [
-              _TableHeader('상태', flex: 2),
-              _TableHeader('사원명', flex: 2),
-              _TableHeader('입사일', flex: 2),
-              _TableHeader('촉진구분', flex: 2),
-              _TableHeader('촉진연차', flex: 2),
-              _TableHeader('촉진기간', flex: 2),
-              _TableHeader('1차 촉진일시', flex: 2),
-              _TableHeader('제출기한', flex: 2),
-              _TableHeader('파일 수신일시', flex: 2),
-              _TableHeader('작성내역', flex: 2),
+              ApprovalAttendanceTableHeader('상태', flex: 2),
+              ApprovalAttendanceTableHeader('사원명', flex: 2),
+              ApprovalAttendanceTableHeader('입사일', flex: 2),
+              ApprovalAttendanceTableHeader('촉진구분', flex: 2),
+              ApprovalAttendanceTableHeader('촉진연차', flex: 2),
+              ApprovalAttendanceTableHeader('촉진기간', flex: 2),
+              ApprovalAttendanceTableHeader('1차 촉진일시', flex: 2),
+              ApprovalAttendanceTableHeader('제출기한', flex: 2),
+              ApprovalAttendanceTableHeader('파일 수신일시', flex: 2),
+              ApprovalAttendanceTableHeader('작성내역', flex: 2),
             ],
             rows: const [],
             emptyMessage: '촉진 대상자가 없습니다.',
@@ -112,17 +116,17 @@ class _LeavePromotionSection extends StatelessWidget {
   }
 }
 
-class _RetiredLeaveSection extends StatelessWidget {
-  const _RetiredLeaveSection();
+class ApprovalRetiredLeaveSection extends StatelessWidget {
+  const ApprovalRetiredLeaveSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return _SectionCard(
+    return ApprovalAttendanceSectionCard(
       title: '퇴사자 연차관리',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _FeatureActionRow(
+          const ApprovalFeatureActionRow(
             actions: ['퇴사자 연차정산', '연차 정산 조정', '연도별 퇴사자 관리'],
           ),
           const SizedBox(height: 16),
@@ -164,17 +168,17 @@ class _RetiredLeaveSection extends StatelessWidget {
             },
           ),
           const SizedBox(height: 16),
-          _GenericTable(
+          ApprovalGenericTable(
             headers: const [
-              _TableHeader('사번', flex: 2),
-              _TableHeader('사원명', flex: 2),
-              _TableHeader('부서명', flex: 2),
-              _TableHeader('입사일', flex: 2),
-              _TableHeader('퇴사일', flex: 2),
-              _TableHeader('입사일 기준 연차수', flex: 2),
-              _TableHeader('회계연도 기준 연차수', flex: 2),
-              _TableHeader('사용 연차수', flex: 2),
-              _TableHeader('미사용 연차수', flex: 2),
+              ApprovalAttendanceTableHeader('사번', flex: 2),
+              ApprovalAttendanceTableHeader('사원명', flex: 2),
+              ApprovalAttendanceTableHeader('부서명', flex: 2),
+              ApprovalAttendanceTableHeader('입사일', flex: 2),
+              ApprovalAttendanceTableHeader('퇴사일', flex: 2),
+              ApprovalAttendanceTableHeader('입사일 기준 연차수', flex: 2),
+              ApprovalAttendanceTableHeader('회계연도 기준 연차수', flex: 2),
+              ApprovalAttendanceTableHeader('사용 연차수', flex: 2),
+              ApprovalAttendanceTableHeader('미사용 연차수', flex: 2),
             ],
             rows: const [
               [

@@ -1,7 +1,8 @@
-part of 'approval_absence_page.dart';
+import 'approval_absence_dependencies.dart';
 
-class _SurfaceCard extends StatelessWidget {
-  const _SurfaceCard({
+class ApprovalAttendanceSurfaceCard extends StatelessWidget {
+  const ApprovalAttendanceSurfaceCard({
+    super.key,
     required this.child,
     this.padding = TheWeInsets.panel,
     this.color,
@@ -26,8 +27,13 @@ class _SurfaceCard extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.title, this.subtitle, required this.child});
+class ApprovalAttendanceSectionCard extends StatelessWidget {
+  const ApprovalAttendanceSectionCard({
+    super.key,
+    required this.title,
+    this.subtitle,
+    required this.child,
+  });
 
   final String title;
   final String? subtitle;
@@ -35,7 +41,7 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _SurfaceCard(
+    return ApprovalAttendanceSurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -48,8 +54,12 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _PrimaryStatusBox extends StatelessWidget {
-  const _PrimaryStatusBox({required this.label, required this.value});
+class ApprovalPrimaryStatusBox extends StatelessWidget {
+  const ApprovalPrimaryStatusBox({
+    super.key,
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;
@@ -74,8 +84,9 @@ class _PrimaryStatusBox extends StatelessWidget {
   }
 }
 
-class _QuickMetric extends StatelessWidget {
-  const _QuickMetric({
+class ApprovalQuickMetric extends StatelessWidget {
+  const ApprovalQuickMetric({
+    super.key,
     required this.label,
     required this.value,
     required this.accent,
@@ -110,8 +121,9 @@ class _QuickMetric extends StatelessWidget {
   }
 }
 
-class _QuickLinkTile extends StatelessWidget {
-  const _QuickLinkTile({
+class ApprovalQuickLinkTile extends StatelessWidget {
+  const ApprovalQuickLinkTile({
+    super.key,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -157,8 +169,13 @@ class _QuickLinkTile extends StatelessWidget {
   }
 }
 
-class _ModeToggle extends StatelessWidget {
-  const _ModeToggle({required this.label, required this.selected, this.onTap});
+class ApprovalModeToggle extends StatelessWidget {
+  const ApprovalModeToggle({
+    super.key,
+    required this.label,
+    required this.selected,
+    this.onTap,
+  });
 
   final String label;
   final bool selected;
@@ -189,8 +206,9 @@ class _ModeToggle extends StatelessWidget {
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({
+class ApprovalMetricTile extends StatelessWidget {
+  const ApprovalMetricTile({
+    super.key,
     required this.label,
     required this.value,
     required this.accent,
@@ -224,8 +242,8 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-class _WeekStrip extends StatelessWidget {
-  const _WeekStrip({required this.now});
+class ApprovalWeekStrip extends StatelessWidget {
+  const ApprovalWeekStrip({super.key, required this.now});
 
   final DateTime now;
 
