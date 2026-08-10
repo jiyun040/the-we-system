@@ -1,17 +1,19 @@
-part of 'approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardDraftActions on ApprovalDashboardController {
   ApprovalDocument buildDraftDocument(String formId) {
-    final current = _currentState;
+    final current = currentDashboardState;
     final user = current?.currentUser;
     final template = current?.formTemplates
         .where((item) => item.id == formId)
         .firstOrNull;
     if (current == null || user == null || template == null) {
-      return _fallbackDraft;
+      return fallbackApprovalDraft;
     }
 
-    final now = _today();
+    final now = approvalToday();
     return ApprovalDocument(
       id: 'DRAFT-$formId',
       title: template.defaultTitle,
@@ -35,8 +37,8 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       linkedDocuments: const [],
       attachments: const [],
       documentLayout: template.documentLayout,
-      lineItems: _emptyLineItems(template),
-      steps: _buildStepsFor(user, current.accounts),
+      lineItems: emptyApprovalLineItems(template),
+      steps: buildApprovalStepsFor(user, current.accounts),
       histories: [
         ApprovalHistory(
           id: 'HIS-DRAFT-$formId',
@@ -61,7 +63,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     required Map<String, String> formFields,
     required List<Map<String, String>> lineItems,
   }) async {
-    final current = _currentState;
+    final current = currentDashboardState;
     final user = current?.currentUser;
     final template = current?.formTemplates
         .where((item) => item.id == formId)
@@ -75,8 +77,8 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
         : current.documents.where((item) => item.id == documentId).firstOrNull;
     final id = currentDocument?.status == '작성중'
         ? currentDocument!.id
-        : _nextDraftId(current.documents);
-    final now = _today();
+        : nextDraftId(current.documents);
+    final now = approvalToday();
 
     final draft = ApprovalDocument(
       id: id,
@@ -109,7 +111,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       documentLayout: template.documentLayout,
       formFields: formFields,
       lineItems: lineItems,
-      steps: _buildStepsFor(user, current.accounts),
+      steps: buildApprovalStepsFor(user, current.accounts),
       histories: [
         ApprovalHistory(
           id: 'HIS-SAVE-$id',
@@ -122,7 +124,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       ],
     );
 
-    _setDashboardState(this, (value) {
+    setApprovalDashboardState(this, (value) {
       final documents = [
         ...value.documents.where((item) => item.id != id),
         draft,
@@ -145,7 +147,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     String? documentId,
     required ApprovalRequestDraft draft,
   }) async {
-    final current = _currentState;
+    final current = currentDashboardState;
     final user = current?.currentUser;
     final template = current?.formTemplates
         .where((item) => item.id == draft.formId)
@@ -160,9 +162,9 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     final isEditableDraft = sourceDocument?.status == '작성중';
     final id = isEditableDraft == true
         ? sourceDocument!.id
-        : _nextApprovalId(current.documents);
-    final today = _today();
-    final steps = _submitSteps(user, current.accounts);
+        : nextApprovalId(current.documents);
+    final today = approvalToday();
+    final steps = submittedApprovalSteps(user, current.accounts);
     final document = ApprovalDocument(
       id: id,
       title: draft.title,
@@ -175,10 +177,10 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
                 ? draft.formFields['draftedAt']!.trim()
                 : today)
           : sourceDocument?.draftedAt ?? today,
-      dueDate: _dueDate(days: 3),
-      progress: _progressFor(steps),
+      dueDate: approvalDueDate(days: 3),
+      progress: approvalProgressFor(steps),
       documentNo: id,
-      effectiveDate: _dueDate(days: 3),
+      effectiveDate: approvalDueDate(days: 3),
       cooperationDepartment: template.cooperationDepartment,
       agreement: template.agreement,
       content: draft.content,
@@ -209,7 +211,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       ],
     );
 
-    _setDashboardState(this, (value) {
+    setApprovalDashboardState(this, (value) {
       final documents = [
         ...value.documents.where((item) => item.id != document.id),
         document,

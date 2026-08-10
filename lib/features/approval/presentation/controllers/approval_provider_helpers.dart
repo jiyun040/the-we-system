@@ -1,10 +1,11 @@
-part of 'approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
-void _replaceDocument(
+void replaceApprovalDocument(
   ApprovalDashboardController controller,
   ApprovalDocument document,
 ) {
-  _setDashboardState(controller, (current) {
+  setApprovalDashboardState(controller, (current) {
     final documents = [
       ...current.documents.where((item) => item.id != document.id),
       document,
@@ -13,23 +14,23 @@ void _replaceDocument(
   });
 }
 
-void _setDashboardState(
+void setApprovalDashboardState(
   ApprovalDashboardController controller,
   ApprovalDashboardState Function(ApprovalDashboardState current) update,
 ) {
-  final current = controller._currentState;
+  final current = controller.currentDashboardState;
   if (current == null) {
     return;
   }
 
-  controller._emitState(update(current));
+  controller.emitDashboardState(update(current));
 }
 
-List<ApprovalStep> _buildStepsFor(
+List<ApprovalStep> buildApprovalStepsFor(
   EmployeeAccount drafter,
   List<EmployeeAccount> accounts,
 ) {
-  final chain = _approvalChain(drafter, accounts);
+  final chain = approvalChainFor(drafter, accounts);
   return [
     ApprovalStep(
       name: drafter.name,
@@ -50,7 +51,9 @@ List<ApprovalStep> _buildStepsFor(
   ];
 }
 
-List<Map<String, String>> _emptyLineItems(ApprovalFormTemplate template) {
+List<Map<String, String>> emptyApprovalLineItems(
+  ApprovalFormTemplate template,
+) {
   if (template.documentLayout == ApprovalDocumentLayout.basic ||
       template.documentLayout == ApprovalDocumentLayout.payroll) {
     return const [];
@@ -58,24 +61,27 @@ List<Map<String, String>> _emptyLineItems(ApprovalFormTemplate template) {
   return List.generate(template.lineItemRows, (_) => <String, String>{});
 }
 
-List<ApprovalStep> _submitSteps(
+List<ApprovalStep> submittedApprovalSteps(
   EmployeeAccount drafter,
   List<EmployeeAccount> accounts,
 ) {
-  final draftSteps = _buildStepsFor(drafter, accounts);
+  final draftSteps = buildApprovalStepsFor(drafter, accounts);
   if (draftSteps.isEmpty) {
     return draftSteps;
   }
 
   final steps = [...draftSteps];
-  steps[0] = steps[0].copyWith(status: '완료', approvedAt: '${_today()} 09:20');
+  steps[0] = steps[0].copyWith(
+    status: '완료',
+    approvedAt: '${approvalToday()} 09:20',
+  );
   if (steps.length > 1) {
     steps[1] = steps[1].copyWith(status: '진행중');
   }
   return steps;
 }
 
-List<EmployeeAccount> _approvalChain(
+List<EmployeeAccount> approvalChainFor(
   EmployeeAccount drafter,
   List<EmployeeAccount> accounts,
 ) {
@@ -104,7 +110,7 @@ List<EmployeeAccount> _approvalChain(
   return accounts.where((account) => account.id != drafter.id).take(1).toList();
 }
 
-int _progressFor(List<ApprovalStep> steps) {
+int approvalProgressFor(List<ApprovalStep> steps) {
   if (steps.isEmpty) {
     return 0;
   }
@@ -113,7 +119,7 @@ int _progressFor(List<ApprovalStep> steps) {
   return ((completed / steps.length) * 100).round();
 }
 
-const _fallbackDraft = ApprovalDocument(
+const fallbackApprovalDraft = ApprovalDocument(
   id: 'DRAFT-FALLBACK',
   title: '기안 문서',
   drafter: '사용자',
@@ -129,36 +135,36 @@ const _fallbackDraft = ApprovalDocument(
   steps: [],
 );
 
-String _today() {
+String approvalToday() {
   final now = DateTime.now();
   final month = now.month.toString().padLeft(2, '0');
   final day = now.day.toString().padLeft(2, '0');
   return '${now.year}-$month-$day';
 }
 
-String _dueDate({required int days}) {
+String approvalDueDate({required int days}) {
   final date = DateTime.now().add(Duration(days: days));
   final month = date.month.toString().padLeft(2, '0');
   final day = date.day.toString().padLeft(2, '0');
   return '${date.year}-$month-$day';
 }
 
-String _nextApprovalId(List<ApprovalDocument> documents) {
+String nextApprovalId(List<ApprovalDocument> documents) {
   final approvals = documents
       .where((document) => document.id.startsWith('APR-'))
       .length;
   final suffix = (approvals + 1).toString().padLeft(3, '0');
-  return 'APR-${_today().replaceAll('-', '')}-$suffix';
+  return 'APR-${approvalToday().replaceAll('-', '')}-$suffix';
 }
 
-String _nextDraftId(List<ApprovalDocument> documents) {
+String nextDraftId(List<ApprovalDocument> documents) {
   final drafts = documents
       .where((document) => document.id.startsWith('DRF-'))
       .length;
   final suffix = (drafts + 1).toString().padLeft(3, '0');
-  return 'DRF-${_today().replaceAll('-', '')}-$suffix';
+  return 'DRF-${approvalToday().replaceAll('-', '')}-$suffix';
 }
 
-extension<T> on Iterable<T> {
+extension ApprovalIterableFirstOrNull<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }

@@ -1,6 +1,6 @@
-part of 'approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 
-const _frequentForms = [
+const approvalFrequentForms = [
   ApprovalForm(
     id: 'team-vacation',
     name: '팀 휴가 결재서',
@@ -21,7 +21,7 @@ const _frequentForms = [
   ),
 ];
 
-const _templates = [
+const approvalFormTemplates = [
   ApprovalFormTemplate(
     id: 'business-draft',
     category: '지원',
@@ -135,7 +135,7 @@ const _templates = [
   ),
 ];
 
-const _accounts = [
+const approvalAccounts = [
   EmployeeAccount(
     id: 'edu_teacher',
     password: '1234',

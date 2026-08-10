@@ -1,26 +1,33 @@
-part of 'approval_providers.dart';
+import 'dart:typed_data';
+
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   bool verifyAdminOtp(String otp) => otp.trim() == '123456';
 
   bool enterAdminMode(String otp) {
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null ||
         current.currentUser?.id != 'edu_manager' ||
         current.currentUser?.isAdmin != true ||
         (current.adminOtpEnabled && !verifyAdminOtp(otp))) {
       return false;
     }
-    _setDashboardState(this, (value) => value.copyWith(adminMode: true));
+    setApprovalDashboardState(this, (value) => value.copyWith(adminMode: true));
     return true;
   }
 
   void leaveAdminMode() {
-    _setDashboardState(this, (value) => value.copyWith(adminMode: false));
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(adminMode: false),
+    );
   }
 
   bool verifyCurrentPassword(String password) {
-    return _currentState?.currentUser?.password == password;
+    return currentDashboardState?.currentUser?.password == password;
   }
 
   void updateEmployee({
@@ -31,7 +38,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     String? password,
     bool? isAdmin,
   }) {
-    _setDashboardState(this, (value) {
+    setApprovalDashboardState(this, (value) {
       final accounts = value.accounts.map((account) {
         if (account.id != userId) return account;
         return account.copyWith(
@@ -59,7 +66,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String hireDate,
     required bool isAdmin,
   }) {
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null) return '직원 정보를 불러오지 못했습니다.';
     final normalizedId = id.trim();
     final normalizedEmail = email.trim();
@@ -93,7 +100,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       hireDate: hireDate.trim(),
       isAdmin: false,
     );
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(accounts: [...value.accounts, account]),
     );
@@ -101,7 +108,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void toggleApp(String appId, bool enabled) {
-    _setDashboardState(this, (value) {
+    setApprovalDashboardState(this, (value) {
       final enabledIds = {...value.enabledAppIds};
       if (enabled) {
         enabledIds.add(appId);
@@ -113,7 +120,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void toggleFormTemplate(String templateId, bool enabled) {
-    _setDashboardState(this, (value) {
+    setApprovalDashboardState(this, (value) {
       final disabledIds = {...value.disabledFormTemplateIds};
       if (enabled) {
         disabledIds.remove(templateId);
@@ -134,7 +141,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     String documentLayout = ApprovalDocumentLayout.basic,
     int lineItemRows = 8,
   }) {
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null) return '양식 정보를 불러오지 못했습니다.';
     if ([
       category,
@@ -180,7 +187,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         lineItemRows: lineItemRows,
       );
     }
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(formTemplates: templates),
     );
@@ -188,7 +195,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void deleteFormTemplate(String templateId) {
-    _setDashboardState(this, (value) {
+    setApprovalDashboardState(this, (value) {
       final disabledIds = {...value.disabledFormTemplateIds}
         ..remove(templateId);
       return value.copyWith(
@@ -206,7 +213,10 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   void updatePortalName(String name) {
     final normalized = name.trim();
     if (normalized.isEmpty) return;
-    _setDashboardState(this, (value) => value.copyWith(portalName: normalized));
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(portalName: normalized),
+    );
   }
 
   String? updatePortalLogo(Uint8List bytes, String fileName) {
@@ -214,7 +224,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (bytes.lengthInBytes > 5 * 1024 * 1024) {
       return '로고 파일은 5MB 이하만 사용할 수 있습니다.';
     }
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) =>
           value.copyWith(customLogoBytes: bytes, customLogoFileName: fileName),
@@ -223,7 +233,10 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void resetPortalLogo() {
-    _setDashboardState(this, (value) => value.copyWith(clearCustomLogo: true));
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(clearCustomLogo: true),
+    );
   }
 
   void updateSecurityPolicy({
@@ -231,7 +244,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     bool? settingsPasswordEnabled,
     bool? adminDocumentAccessEnabled,
   }) {
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         adminOtpEnabled: adminOtpEnabled,
@@ -246,8 +259,14 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required bool organizationWide,
     required Set<String> userIds,
   }) {
-    if (!const {'지원', '회계', '근태', '급여'}.contains(category)) return;
-    _setDashboardState(this, (value) {
+    final current = currentDashboardState;
+    if (current == null ||
+        !current.formTemplates.any(
+          (template) => template.category == category,
+        )) {
+      return;
+    }
+    setApprovalDashboardState(this, (value) {
       final wideCategories = {...value.organizationWideDocumentCategories};
       if (organizationWide) {
         wideCategories.add(category);
@@ -273,7 +292,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   String? renameDepartment(String currentName, String nextName) {
     final normalized = nextName.trim();
     if (normalized.isEmpty) return '변경할 부서명을 입력해 주세요.';
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null) return '조직 정보를 불러오지 못했습니다.';
     if (normalized != currentName &&
         current.accounts.any((account) => account.department == normalized)) {
@@ -291,7 +310,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         : accounts
               .where((account) => account.id == current.currentUser!.id)
               .first;
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         accounts: accounts,
@@ -305,7 +324,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void updateAnnualLeavePolicy(int year, int days) {
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         annualLeaveByYear: {...value.annualLeaveByYear, year: days},
@@ -325,7 +344,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         (monthlyLeavePerMonth < 1 || monthlyLeavePerMonth > 31)) {
       return '월차 지급 일수는 1일 이상 31일 이하로 입력해 주세요.';
     }
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         annualLeaveByYear: {...policies},
@@ -343,7 +362,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required double days,
     required String reason,
   }) {
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null || !current.isAdminMode) {
       return '관리자 모드에서만 휴가를 직접 등록할 수 있습니다.';
     }
@@ -377,7 +396,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       directEntry: true,
       registeredBy: current.currentUser!.name,
     );
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         leaveRequests: [request, ...value.leaveRequests],
@@ -397,7 +416,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required double days,
     required String reason,
   }) {
-    final current = _currentState;
+    final current = currentDashboardState;
     final user = current?.currentUser;
     if (current == null || user == null) return;
     final request = LeaveRequest(
@@ -419,11 +438,11 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       department: user.department,
       form: '휴가 신청서',
       status: '결재대기',
-      draftedAt: _today(),
+      draftedAt: approvalToday(),
       dueDate: startDate,
       progress: 50,
       documentNo:
-          'LEAVE-${_today().replaceAll('-', '')}-${current.leaveRequests.length + 1}',
+          'LEAVE-${approvalToday().replaceAll('-', '')}-${current.leaveRequests.length + 1}',
       effectiveDate: startDate,
       content:
           '휴가 종류: $type\n기간: $startDate ~ $endDate\n사용 일수: $days일\n신청 사유: $reason',
@@ -440,7 +459,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           type: '신청',
           role: user.position,
           status: '완료',
-          approvedAt: '${_today()} 09:00',
+          approvedAt: '${approvalToday()} 09:00',
         ),
         ApprovalStep(
           name: ceo?.name ?? '조상훈',
@@ -454,14 +473,14 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         ApprovalHistory(
           id: 'HIS-${request.id}',
           category: '휴가 신청',
-          date: '${_today()} 09:00',
+          date: '${approvalToday()} 09:00',
           user: '${user.name} ${user.position}',
           description: '휴가 신청 결재 요청',
           snapshot: '$type · $startDate ~ $endDate',
         ),
       ],
     );
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         leaveRequests: [request, ...value.leaveRequests],
@@ -471,7 +490,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void updateLeaveStatus(String requestId, String status) {
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         leaveRequests: value.leaveRequests
@@ -496,7 +515,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   bool actOnLeave(String requestId, {required bool approve}) {
-    final current = _currentState;
+    final current = currentDashboardState;
     final user = current?.currentUser;
     if (current == null || user == null) return false;
     final request = current.leaveRequests
@@ -515,7 +534,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       updated = request.copyWith(status: '승인완료', ceoStatus: '완료');
     }
 
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         leaveRequests: value.leaveRequests
@@ -534,7 +553,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void acknowledgeApprovedLeaves([Iterable<String>? requestIds]) {
-    _setDashboardState(this, (value) {
+    setApprovalDashboardState(this, (value) {
       final targets =
           requestIds?.toSet() ??
           value.unacknowledgedApprovedLeaveRequests
@@ -562,14 +581,14 @@ ApprovalDocument _resolvedLeaveDocument(
         (step) => step.status == '진행중'
             ? step.copyWith(
                 status: approved ? '완료' : '반려',
-                approvedAt: '${_today()} 09:30',
+                approvedAt: '${approvalToday()} 09:30',
               )
             : step,
       )
       .toList();
   return document.copyWith(
     status: approved ? '완료' : '반려',
-    progress: approved ? 100 : _progressFor(steps),
+    progress: approved ? 100 : approvalProgressFor(steps),
     steps: steps,
   );
 }

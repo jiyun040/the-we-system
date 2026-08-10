@@ -1,6 +1,6 @@
-part of 'approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 
-final _seedDocuments = [
+final approvalSeedDocuments = [
   ApprovalDocument(
     id: 'APR-260629-001',
     title: '업무용 PC 구매 예산 할당 요청',

@@ -1,16 +1,21 @@
-part of 'approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   void updateKeyword(String keyword) {
-    _setDashboardState(this, (current) => current.copyWith(keyword: keyword));
+    setApprovalDashboardState(
+      this,
+      (current) => current.copyWith(keyword: keyword),
+    );
   }
 
   Future<void> refresh() async {
-    _setDashboardState(this, (current) => current);
+    setApprovalDashboardState(this, (current) => current);
   }
 
   Future<bool> login(String id, String password) async {
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null) {
       return false;
     }
@@ -19,14 +24,14 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
         .where((item) => item.id == id && item.password == password)
         .firstOrNull;
     if (account == null) {
-      _setDashboardState(
+      setApprovalDashboardState(
         this,
         (value) => value.copyWith(loginError: '아이디 또는 비밀번호를 확인해 주세요.'),
       );
       return false;
     }
 
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         currentUser: account,
@@ -41,7 +46,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   bool hasValidAdminCredentials(String id, String password) {
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null) return false;
     return current.accounts.any(
       (account) =>
@@ -58,7 +63,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
     required String email,
     required bool isAdmin,
   }) async {
-    final current = _currentState;
+    final current = currentDashboardState;
     if (current == null) {
       return '회원가입 상태를 불러오지 못했습니다.';
     }
@@ -87,7 +92,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
     final accounts = [...current.accounts, newAccount]
       ..sort((a, b) => a.name.compareTo(b.name));
 
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         accounts: accounts,
@@ -102,7 +107,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   void logout() {
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (current) => current.copyWith(
         clearCurrentUser: true,
@@ -116,18 +121,21 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   void clearLoginError() {
-    _setDashboardState(this, (current) => current.copyWith(loginError: ''));
+    setApprovalDashboardState(
+      this,
+      (current) => current.copyWith(loginError: ''),
+    );
   }
 
   void adjustZoom(double delta) {
-    _setDashboardState(this, (current) {
+    setApprovalDashboardState(this, (current) {
       final next = (current.zoom + delta).clamp(0.85, 1.55);
       return current.copyWith(zoom: next);
     });
   }
 
   void setDepartment(String department) {
-    _setDashboardState(this, (current) {
+    setApprovalDashboardState(this, (current) {
       final members =
           current.accounts
               .where((account) => account.department == department)
@@ -141,7 +149,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   void setOrgMember(String userId) {
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (current) => current.copyWith(selectedOrgUserId: userId),
     );

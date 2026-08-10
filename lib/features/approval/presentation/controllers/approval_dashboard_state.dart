@@ -1,4 +1,6 @@
-part of 'approval_providers.dart';
+import 'dart:typed_data';
+
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 
 class ApprovalDashboardState {
   const ApprovalDashboardState({
@@ -34,7 +36,7 @@ class ApprovalDashboardState {
       '지원',
       '회계',
       '근태',
-      '급여',
+      '협조',
     },
     this.documentCategoryViewerIds = const <String, Set<String>>{},
   });
@@ -148,7 +150,7 @@ class ApprovalDashboardState {
 
   bool get isAdminMode => isAdmin && adminMode;
 
-  bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
+  bool get hasAdminDocumentAccess => false;
 
   bool isAppEnabled(String appId) => enabledAppIds.contains(appId);
 
@@ -170,10 +172,6 @@ class ApprovalDashboardState {
       return const [];
     }
 
-    if (hasAdminDocumentAccess) {
-      return documents;
-    }
-
     return documents.where((document) {
       final isDrafter = document.drafter == user.name;
       final isApprover = document.steps.any((step) => step.name == user.name);
@@ -182,37 +180,35 @@ class ApprovalDashboardState {
       }
       final category = documentCategory(document);
       final hasCategoryAccess =
-          organizationWideDocumentCategories.contains(category) ||
+          isDocumentCategoryOrganizationWide(category) ||
           (documentCategoryViewerIds[category]?.contains(user.id) ?? false);
-      final isReader =
-          document.references.contains(user.name) ||
-          document.viewers.contains(user.name);
-      final isDepartmentDocument = document.department == user.department;
       final isRestricted = restrictedDocumentIds.contains(document.id);
       if (isRestricted) {
         return isDrafter || isApprover;
       }
-      return isDrafter ||
-          isApprover ||
-          isReader ||
-          isDepartmentDocument ||
-          hasCategoryAccess;
+      return isDrafter || isApprover || hasCategoryAccess;
     }).toList();
   }
 
   String documentCategory(ApprovalDocument document) {
-    if (document.documentLayout == ApprovalDocumentLayout.payroll ||
-        document.form.contains('급여')) {
-      return '급여';
-    }
     final template = formTemplates
         .where((item) => item.name == document.form)
         .firstOrNull;
     final category = template?.category ?? '';
-    if (category == '회계') return '회계';
-    if (category == '근태' || document.form.contains('휴가')) return '근태';
+    if (category.isNotEmpty) return category;
+    if (document.documentLayout == ApprovalDocumentLayout.payroll ||
+        document.documentLayout == ApprovalDocumentLayout.expense ||
+        document.documentLayout == ApprovalDocumentLayout.hospitality) {
+      return '회계';
+    }
+    if (document.form.contains('휴가')) return '근태';
+    if (document.form.contains('협조')) return '협조';
     return '지원';
   }
+
+  bool isDocumentCategoryOrganizationWide(String category) =>
+      organizationWideDocumentCategories.contains(category) ||
+      !documentCategoryViewerIds.containsKey(category);
 
   List<ApprovalDocument> get authoredDocuments {
     final user = currentUser;
@@ -230,21 +226,16 @@ class ApprovalDashboardState {
   }
 
   List<ApprovalDocument> get sharedDraftDocuments {
-    return [...documents]..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
+    return [...visibleDocuments]
+      ..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
   }
 
   List<ApprovalDocument> get departmentDocuments {
     final user = currentUser;
     if (user == null) return const [];
-    final result = documents.where((document) {
-      if (hasAdminDocumentAccess) return true;
+    final result = visibleDocuments.where((document) {
       if (document.department != user.department) return false;
-      if (document.status == '작성중') {
-        return document.drafter == user.name;
-      }
-      if (!restrictedDocumentIds.contains(document.id)) return true;
-      return document.drafter == user.name ||
-          document.steps.any((step) => step.name == user.name);
+      return true;
     }).toList()..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
     return result;
   }
@@ -292,11 +283,7 @@ class ApprovalDashboardState {
       return const [];
     }
 
-    if (hasAdminDocumentAccess) {
-      return documents;
-    }
-
-    return documents
+    return visibleDocuments
         .where(
           (document) =>
               document.references.contains(user.name) ||

@@ -1,4 +1,6 @@
-part of 'approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
   Future<void> approveDocument(
@@ -13,7 +15,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
       );
       return;
     }
-    final current = _currentState;
+    final current = currentDashboardState;
     final user = current?.currentUser;
     if (current == null || user == null) {
       return;
@@ -38,7 +40,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
       return;
     }
 
-    final today = _today();
+    final today = approvalToday();
     final updatedSteps = [...document.steps];
     if (action == '반려') {
       updatedSteps[activeIndex] = activeStep.copyWith(
@@ -49,7 +51,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
         status: '반려',
         canCancel: false,
         canEdit: true,
-        progress: _progressFor(updatedSteps),
+        progress: approvalProgressFor(updatedSteps),
         steps: updatedSteps,
         histories: [
           ApprovalHistory(
@@ -63,7 +65,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
           ...document.histories,
         ],
       );
-      _replaceDocument(this, rejectedDocument);
+      replaceApprovalDocument(this, rejectedDocument);
       return;
     }
 
@@ -88,7 +90,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
       status: status,
       canCancel: !completedAfterSubmit && status != '완료',
       canEdit: false,
-      progress: _progressFor(updatedSteps),
+      progress: approvalProgressFor(updatedSteps),
       steps: updatedSteps,
       histories: [
         ApprovalHistory(
@@ -103,11 +105,11 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
       ],
     );
 
-    _replaceDocument(this, approvedDocument);
+    replaceApprovalDocument(this, approvedDocument);
   }
 
   Future<void> cancelSubmission(String documentId) async {
-    final current = _currentState;
+    final current = currentDashboardState;
     final user = current?.currentUser;
     if (current == null || user == null) {
       return;
@@ -142,7 +144,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
       canCancel: false,
       canEdit: true,
       documentNo: '임시저장',
-      steps: _buildStepsFor(
+      steps: buildApprovalStepsFor(
         current.accounts
             .where((account) => account.name == document.drafter)
             .first,
@@ -152,7 +154,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
         ApprovalHistory(
           id: 'HIS-CANCEL-${document.id}',
           category: '결재문서 변경',
-          date: '${_today()} 09:40',
+          date: '${approvalToday()} 09:40',
           user: '${user.name} ${user.position}',
           description: '상신 취소',
           snapshot: document.title,
@@ -160,6 +162,6 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
         ...document.histories,
       ],
     );
-    _replaceDocument(this, reverted);
+    replaceApprovalDocument(this, reverted);
   }
 }
