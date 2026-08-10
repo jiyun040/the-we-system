@@ -81,42 +81,22 @@ void main() {
     expect(find.text('교육관리자 휴가 현황'), findsOneWidget);
     await tester.tap(find.byIcon(Icons.close).last);
     await tester.pumpAndSettle();
-    expect(find.text('전자결재 문서 관리'), findsOneWidget);
+    expect(find.text('전자결재 문서 관리'), findsNothing);
     expect(
       find.byKey(const ValueKey('admin-document-filter-전체')),
-      findsOneWidget,
+      findsNothing,
     );
-    expect(
-      find.byKey(const ValueKey('admin-document-filter-결재대기')),
-      findsOneWidget,
-    );
-    expect(
-      tester
-          .widget<ChoiceChip>(
-            find.byKey(const ValueKey('admin-document-filter-전체')),
-          )
-          .checkmarkColor,
-      TheWeColor.blue300,
-    );
-    expect(find.text('상세'), findsNWidgets(6));
-    await tester.tap(find.text('상세').first);
-    await tester.pumpAndSettle();
-    expect(find.text('결재 정보'), findsOneWidget);
-    appRouter.pop();
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('admin-document-category-지원')));
-    await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('document-access-category')),
       findsNothing,
     );
-    await tester.tap(find.text('문서함 권한').first);
+    await tester.tap(find.text('결재 문서 관리').first);
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('admin-document-access-page')),
       findsOneWidget,
     );
-    expect(find.text('문서함 접근 권한 관리'), findsOneWidget);
+    expect(find.text('결재 문서 관리'), findsWidgets);
     expect(
       find.byKey(const ValueKey('document-access-category')),
       findsOneWidget,
@@ -140,7 +120,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('admin-document-access-save')));
     await tester.pumpAndSettle();
-    expect(find.text('문서함 접근 권한을 저장했습니다.'), findsOneWidget);
+    expect(find.text('결재 문서 열람 권한을 저장했습니다.'), findsOneWidget);
 
     await tester.tap(find.text('사원 관리').first);
     await tester.pumpAndSettle();

@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 void main() {
-  test('관리자 통합설정과 전체 문서 권한이 상태에 반영된다', () async {
+  test('관리자 통합설정은 전체 결재 문서 권한을 부여하지 않는다', () async {
     final container = ProviderContainer();
     addTearDown(container.dispose);
 
@@ -26,7 +26,7 @@ void main() {
         .read(approvalDashboardControllerProvider)
         .requireValue;
     expect(state.isAdminMode, isTrue);
-    expect(state.visibleDocuments.length, state.documents.length);
+    expect(state.hasAdminDocumentAccess, isFalse);
     expect(state.adminOtpEnabled, isFalse);
     expect(state.settingsPasswordEnabled, isFalse);
 

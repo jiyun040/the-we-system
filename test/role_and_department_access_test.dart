@@ -189,7 +189,7 @@ void main() {
         .requireValue;
     expect(
       state.organizationWideDocumentCategories,
-      containsAll(const ['지원', '회계', '근태', '급여']),
+      containsAll(const ['지원', '회계', '근태', '협조']),
     );
 
     notifier.updateDocumentCategoryAccess(
@@ -207,6 +207,53 @@ void main() {
     );
     state = container.read(approvalDashboardControllerProvider).requireValue;
     expect(state.organizationWideDocumentCategories, contains('근태'));
+  });
+
+  test('일부 사용자 문서 권한은 선택된 직원에게만 적용된다', () async {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    final notifier = container.read(
+      approvalDashboardControllerProvider.notifier,
+    );
+
+    notifier.updateDocumentCategoryAccess(
+      category: '회계',
+      organizationWide: false,
+      userIds: const {'jiyun'},
+    );
+    expect(await notifier.login('edu_teacher', '1234'), isTrue);
+    var state = container
+        .read(approvalDashboardControllerProvider)
+        .requireValue;
+    final accountingDocument = state.documents.firstWhere(
+      (document) =>
+          state.documentCategory(document) == '회계' &&
+          document.drafter != state.currentUser!.name &&
+          !document.steps.any((step) => step.name == state.currentUser!.name),
+    );
+    expect(
+      state.visibleDocuments.any(
+        (document) => document.id == accountingDocument.id,
+      ),
+      isFalse,
+    );
+    expect(
+      state.departmentDocuments.any(
+        (document) => document.id == accountingDocument.id,
+      ),
+      isFalse,
+    );
+
+    notifier.logout();
+    expect(await notifier.login('jiyun', '1234'), isTrue);
+    state = container.read(approvalDashboardControllerProvider).requireValue;
+    expect(
+      state.visibleDocuments.any(
+        (document) => document.id == accountingDocument.id,
+      ),
+      isTrue,
+    );
   });
 
   test('근속연수별 연차 설정을 한 번에 저장할 수 있다', () async {
