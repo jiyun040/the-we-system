@@ -1,16 +1,22 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
+import 'approval_home_calendar_models.dart';
 
-class _CalendarEventDialog extends StatefulWidget {
-  const _CalendarEventDialog({required this.date, this.initialEvent});
+class ApprovalCalendarEventDialog extends StatefulWidget {
+  const ApprovalCalendarEventDialog({
+    super.key,
+    required this.date,
+    this.initialEvent,
+  });
 
   final DateTime date;
-  final _PortalCalendarEvent? initialEvent;
+  final ApprovalCalendarEvent? initialEvent;
 
   @override
-  State<_CalendarEventDialog> createState() => _CalendarEventDialogState();
+  State<ApprovalCalendarEventDialog> createState() =>
+      _CalendarEventDialogState();
 }
 
-class _CalendarEventDialogState extends State<_CalendarEventDialog> {
+class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
   final titleController = TextEditingController();
   final placeController = TextEditingController();
   String colorKey = 'blue';
@@ -58,7 +64,7 @@ class _CalendarEventDialogState extends State<_CalendarEventDialog> {
         children: [
           TheWeModalHeader(
             title:
-                '${_formatKoreanDate(widget.date)} 일정 ${widget.initialEvent == null ? '추가' : '수정'}',
+                '${formatApprovalKoreanDate(widget.date)} 일정 ${widget.initialEvent == null ? '추가' : '수정'}',
             onClose: () => Navigator.of(context).pop(),
           ),
           const SizedBox(height: 16),
@@ -119,7 +125,7 @@ class _CalendarEventDialogState extends State<_CalendarEventDialog> {
                 return;
               }
               Navigator.of(context).pop(
-                _PortalCalendarEvent(
+                ApprovalCalendarEvent(
                   title: title,
                   time:
                       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
@@ -340,8 +346,12 @@ class _CalendarTextField extends StatelessWidget {
   }
 }
 
-class _CalendarDetailLine extends StatelessWidget {
-  const _CalendarDetailLine({required this.label, required this.value});
+class ApprovalCalendarDetailLine extends StatelessWidget {
+  const ApprovalCalendarDetailLine({
+    super.key,
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;
@@ -368,8 +378,8 @@ class _CalendarDetailLine extends StatelessWidget {
   }
 }
 
-class _CalendarColorDetailLine extends StatelessWidget {
-  const _CalendarColorDetailLine({required this.color});
+class ApprovalCalendarColorDetailLine extends StatelessWidget {
+  const ApprovalCalendarColorDetailLine({super.key, required this.color});
 
   final Color color;
 
@@ -408,6 +418,6 @@ Color _calendarColor(String colorKey) {
   };
 }
 
-String _formatKoreanDate(DateTime date) {
+String formatApprovalKoreanDate(DateTime date) {
   return '${date.year}년 ${date.month}월 ${date.day}일';
 }

@@ -1,33 +1,17 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
-import 'package:the_we_system/common/components/processing_card.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
-import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/constants/color.dart';
-import 'package:the_we_system/common/constants/layout.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_empty_state.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_mobile_document_card.dart';
-
-part 'approval_home_overview.dart';
-part 'approval_home_calendar_panel.dart';
-part 'approval_home_notice.dart';
-part 'approval_home_calendar_models.dart';
-part 'approval_home_calendar_day.dart';
-part 'approval_home_calendar_dialog.dart';
-part 'approval_home_trend.dart';
-part 'approval_home_processing.dart';
-part 'approval_home_leave_approvals.dart';
+import 'approval_home_overview.dart';
+import 'approval_home_processing.dart';
 
 class ApprovalHomePage extends ConsumerStatefulWidget {
   const ApprovalHomePage({super.key});
@@ -126,7 +110,7 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                         0,
                       ),
                       sliver: SliverToBoxAdapter(
-                        child: _PortalOverview(state: approvalState),
+                        child: ApprovalHomeOverview(state: approvalState),
                       ),
                     ),
                     if (approvalState.isAppEnabled(PortalAppId.approval))
@@ -138,7 +122,7 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                           0,
                         ),
                         sliver: SliverToBoxAdapter(
-                          child: _ProcessingSection(
+                          child: ApprovalProcessingSection(
                             title: '결재 대기 문서',
                             documents: waitingDocuments,
                             controller: waitingScrollController,
@@ -177,7 +161,7 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
             ],
           );
         },
-        error: (error, stackTrace) => _LoadFailed(
+        error: (error, stackTrace) => ApprovalHomeLoadFailed(
           onRetry: () =>
               ref.read(approvalDashboardControllerProvider.notifier).refresh(),
         ),
@@ -287,13 +271,13 @@ class _Header extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  _IconAction(
+                  ApprovalHomeIconAction(
                     icon: Icons.settings_outlined,
                     message: '설정',
                     onPressed: () => context.pushNamed(AppRouteName.settings),
                   ),
                   const SizedBox(width: 6),
-                  _IconAction(
+                  ApprovalHomeIconAction(
                     icon: Icons.help_outline,
                     message: '도움말',
                     onPressed: () => context.pushNamed(AppRouteName.help),

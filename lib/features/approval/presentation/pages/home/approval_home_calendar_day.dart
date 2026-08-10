@@ -1,7 +1,9 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
+import 'approval_home_calendar_models.dart';
 
-class _CalendarDayCard extends StatelessWidget {
-  const _CalendarDayCard({
+class ApprovalCalendarDayCard extends StatelessWidget {
+  const ApprovalCalendarDayCard({
+    super.key,
     required this.date,
     required this.isCurrentMonth,
     required this.isToday,
@@ -14,8 +16,8 @@ class _CalendarDayCard extends StatelessWidget {
   final bool isCurrentMonth;
   final bool isToday;
   final bool isSelected;
-  final List<_PortalCalendarEvent> events;
-  final ValueChanged<_PortalCalendarEvent> onEventTap;
+  final List<ApprovalCalendarEvent> events;
+  final ValueChanged<ApprovalCalendarEvent> onEventTap;
 
   @override
   Widget build(BuildContext context) {

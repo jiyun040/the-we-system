@@ -1,7 +1,13 @@
-part of 'approval_home_page.dart';
+import 'dart:math' as math;
 
-class _HeadcountLegend extends StatelessWidget {
-  const _HeadcountLegend({required this.label, required this.color});
+import 'approval_home_dependencies.dart';
+
+class ApprovalHeadcountLegend extends StatelessWidget {
+  const ApprovalHeadcountLegend({
+    super.key,
+    required this.label,
+    required this.color,
+  });
 
   final String label;
   final Color color;
@@ -32,8 +38,9 @@ class _HeadcountLegend extends StatelessWidget {
   }
 }
 
-class _PortalTrendChart extends StatelessWidget {
-  const _PortalTrendChart({
+class ApprovalHomeTrendChart extends StatelessWidget {
+  const ApprovalHomeTrendChart({
+    super.key,
     required this.totalCount,
     required this.joinerCount,
   });

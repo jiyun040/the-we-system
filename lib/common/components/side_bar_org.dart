@@ -1,7 +1,7 @@
-part of 'side_bar.dart';
+import 'side_bar_dependencies.dart';
 
-class _OrgButton extends ConsumerWidget {
-  const _OrgButton({required this.isCompact});
+class SideBarOrgButton extends ConsumerWidget {
+  const SideBarOrgButton({super.key, required this.isCompact});
 
   final bool isCompact;
 

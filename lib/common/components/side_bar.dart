@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:the_we_system/common/components/the_we_modal.dart';
-import 'package:the_we_system/common/components/the_we_logo.dart';
-import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/layout.dart';
-import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/form/approval_form.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 
-part 'side_bar_sections.dart';
-part 'side_bar_org.dart';
-part 'side_bar_menu.dart';
+import 'side_bar_menu.dart';
+import 'side_bar_org.dart';
+import 'side_bar_sections.dart';
 
 class SideBar extends ConsumerWidget {
   const SideBar({
@@ -80,10 +75,10 @@ class SideBar extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Brand(isCompact: isCompact, currentUser: currentUser),
+              SideBarBrand(isCompact: isCompact, currentUser: currentUser),
               TheWeGaps.verticalXxl,
               if (approvalEnabled) ...[
-                _NewApprovalButton(isCompact: isCompact),
+                SideBarNewApprovalButton(isCompact: isCompact),
                 TheWeGaps.verticalXxl,
               ],
               Expanded(
@@ -91,7 +86,7 @@ class SideBar extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _SideMenuItem(
+                      SideBarMenuItem(
                         icon: Icons.home_outlined,
                         label: '홈',
                         selected: onHomePage,
@@ -100,18 +95,18 @@ class SideBar extends ConsumerWidget {
                       ),
                       TheWeGaps.verticalSm,
                       if (approvalEnabled) ...[
-                        _CategorySection(
+                        SideBarCategorySection(
                           title: '전자결재',
                           icon: Icons.approval_outlined,
                           isCompact: isCompact,
                           initiallyExpanded: !onAttendancePage && !onHomePage,
                           children: [
-                            _MenuSection(
+                            SideBarMenuSection(
                               title: '자주 쓰는 양식',
                               isCompact: isCompact,
                               children: frequentForms
                                   .map(
-                                    (form) => _SideMenuItem(
+                                    (form) => SideBarMenuItem(
                                       icon: Icons.description_outlined,
                                       label: form.name,
                                       count: form.recentCount,
@@ -125,11 +120,11 @@ class SideBar extends ConsumerWidget {
                                   .toList(),
                             ),
                             TheWeGaps.verticalXxl,
-                            _MenuSection(
+                            SideBarMenuSection(
                               title: '결재하기',
                               isCompact: isCompact,
                               children: [
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.inbox_outlined,
                                   label: '결재대기문서',
                                   count: pendingDocument,
@@ -143,7 +138,7 @@ class SideBar extends ConsumerWidget {
                                     pathParameters: {'kind': 'waiting'},
                                   ),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.mark_email_unread_outlined,
                                   label: '결재수신문서',
                                   count: receiveDocument,
@@ -154,7 +149,7 @@ class SideBar extends ConsumerWidget {
                                     pathParameters: {'kind': 'received'},
                                   ),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.visibility_outlined,
                                   label: '참조/열람 대기',
                                   count: openPendingDocument,
@@ -165,7 +160,7 @@ class SideBar extends ConsumerWidget {
                                     pathParameters: {'kind': 'reference'},
                                   ),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.event_available_outlined,
                                   label: '결재예정문서',
                                   count: scheduledDocument,
@@ -179,11 +174,11 @@ class SideBar extends ConsumerWidget {
                               ],
                             ),
                             TheWeGaps.verticalXxl,
-                            _MenuSection(
+                            SideBarMenuSection(
                               title: '개인문서함',
                               isCompact: isCompact,
                               children: [
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.edit_document,
                                   label: '기안 문서함',
                                   selected: onDraftPage,
@@ -193,7 +188,7 @@ class SideBar extends ConsumerWidget {
                                     pathParameters: {'kind': 'drafts'},
                                   ),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.drafts_outlined,
                                   label: '임시 저장함',
                                   selected: onTemporaryPage,
@@ -202,7 +197,7 @@ class SideBar extends ConsumerWidget {
                                     AppRouteName.temporaryBox,
                                   ),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.archive_outlined,
                                   label: '결재 문서함',
                                   selected: onArchivePage,
@@ -215,11 +210,11 @@ class SideBar extends ConsumerWidget {
                               ],
                             ),
                             TheWeGaps.verticalXxl,
-                            _MenuSection(
+                            SideBarMenuSection(
                               title: '부서 문서함',
                               isCompact: isCompact,
                               children: [
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.folder_shared_outlined,
                                   label: currentUser == null
                                       ? '부서 문서함'
@@ -240,7 +235,7 @@ class SideBar extends ConsumerWidget {
                         TheWeGaps.verticalXxl,
                       ],
                       if (attendanceEnabled) ...[
-                        _SideMenuItem(
+                        SideBarMenuItem(
                           icon: Icons.schedule_outlined,
                           label: '근태 현황',
                           selected: onAttendancePage,
@@ -250,7 +245,7 @@ class SideBar extends ConsumerWidget {
                         TheWeGaps.verticalXxl,
                       ],
                       if (leaveEnabled)
-                        _SideMenuItem(
+                        SideBarMenuItem(
                           icon: Icons.beach_access_outlined,
                           label: '휴가 현황/신청',
                           selected: onLeavePage,
@@ -259,17 +254,17 @@ class SideBar extends ConsumerWidget {
                         ),
                       if (state?.isAdminMode == true && attendanceEnabled) ...[
                         TheWeGaps.verticalXxl,
-                        _CategorySection(
+                        SideBarCategorySection(
                           title: '근태관리',
                           icon: Icons.schedule_outlined,
                           isCompact: isCompact,
                           initiallyExpanded: onAttendancePage,
                           children: [
-                            _MenuSection(
+                            SideBarMenuSection(
                               title: '근태',
                               isCompact: isCompact,
                               children: [
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.schedule_outlined,
                                   label: '내 근태현황',
                                   selected:
@@ -278,7 +273,7 @@ class SideBar extends ConsumerWidget {
                                   isCompact: isCompact,
                                   onTap: () => openAttendance('my-status'),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.groups_outlined,
                                   label: '전사 근태현황',
                                   selected:
@@ -287,7 +282,7 @@ class SideBar extends ConsumerWidget {
                                   isCompact: isCompact,
                                   onTap: () => openAttendance('company-status'),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.work_outline_rounded,
                                   label: '근무그룹 관리',
                                   selected:
@@ -296,7 +291,7 @@ class SideBar extends ConsumerWidget {
                                   isCompact: isCompact,
                                   onTap: () => openAttendance('work-group'),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.history_toggle_off_outlined,
                                   label: '보상휴가 관리',
                                   selected:
@@ -306,7 +301,7 @@ class SideBar extends ConsumerWidget {
                                   onTap: () =>
                                       openAttendance('compensatory-leave'),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.event_repeat_outlined,
                                   label: '휴일대체 관리',
                                   selected:
@@ -320,11 +315,11 @@ class SideBar extends ConsumerWidget {
                               ],
                             ),
                             TheWeGaps.verticalXxl,
-                            _MenuSection(
+                            SideBarMenuSection(
                               title: '휴가',
                               isCompact: isCompact,
                               children: [
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.policy_outlined,
                                   label: '연차정책 관리',
                                   selected:
@@ -333,7 +328,7 @@ class SideBar extends ConsumerWidget {
                                   isCompact: isCompact,
                                   onTap: () => openAttendance('leave-policy'),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.campaign_outlined,
                                   label: '연차촉진 현황',
                                   selected:
@@ -343,7 +338,7 @@ class SideBar extends ConsumerWidget {
                                   onTap: () =>
                                       openAttendance('leave-promotion'),
                                 ),
-                                _SideMenuItem(
+                                SideBarMenuItem(
                                   icon: Icons.person_off_outlined,
                                   label: '퇴사자 연차관리',
                                   selected:
@@ -366,7 +361,7 @@ class SideBar extends ConsumerWidget {
                   height: 18,
                   color: TheWeColor.black300.withValues(alpha: 0.24),
                 ),
-                _OrgButton(isCompact: isCompact),
+                SideBarOrgButton(isCompact: isCompact),
               ],
             ],
           ),

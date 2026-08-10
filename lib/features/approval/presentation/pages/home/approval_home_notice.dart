@@ -1,13 +1,13 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
 
-class _PortalNoticePanel extends StatefulWidget {
-  const _PortalNoticePanel();
+class ApprovalHomeNoticePanel extends StatefulWidget {
+  const ApprovalHomeNoticePanel({super.key});
 
   @override
-  State<_PortalNoticePanel> createState() => _PortalNoticePanelState();
+  State<ApprovalHomeNoticePanel> createState() => _PortalNoticePanelState();
 }
 
-class _PortalNoticePanelState extends State<_PortalNoticePanel> {
+class _PortalNoticePanelState extends State<ApprovalHomeNoticePanel> {
   static const _pageSize = 5;
   int page = 0;
 

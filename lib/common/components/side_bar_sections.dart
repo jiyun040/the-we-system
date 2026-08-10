@@ -1,7 +1,8 @@
-part of 'side_bar.dart';
+import 'side_bar_dependencies.dart';
 
-class _CategorySection extends StatelessWidget {
-  const _CategorySection({
+class SideBarCategorySection extends StatelessWidget {
+  const SideBarCategorySection({
+    super.key,
     required this.title,
     required this.icon,
     required this.isCompact,
@@ -45,8 +46,12 @@ class _CategorySection extends StatelessWidget {
   }
 }
 
-class _Brand extends ConsumerWidget {
-  const _Brand({required this.isCompact, required this.currentUser});
+class SideBarBrand extends ConsumerWidget {
+  const SideBarBrand({
+    super.key,
+    required this.isCompact,
+    required this.currentUser,
+  });
 
   final bool isCompact;
   final EmployeeAccount? currentUser;
@@ -238,8 +243,8 @@ Future<String?> _showAdminOtpDialog(BuildContext context) {
   );
 }
 
-class _NewApprovalButton extends ConsumerWidget {
-  const _NewApprovalButton({required this.isCompact});
+class SideBarNewApprovalButton extends ConsumerWidget {
+  const SideBarNewApprovalButton({super.key, required this.isCompact});
 
   final bool isCompact;
 

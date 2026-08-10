@@ -1,16 +1,19 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
+import 'approval_home_calendar_day.dart';
+import 'approval_home_calendar_dialog.dart';
+import 'approval_home_calendar_models.dart';
 
-class _PortalCalendarPanel extends StatefulWidget {
-  const _PortalCalendarPanel();
+class ApprovalHomeCalendarPanel extends StatefulWidget {
+  const ApprovalHomeCalendarPanel({super.key});
 
   @override
-  State<_PortalCalendarPanel> createState() => _PortalCalendarPanelState();
+  State<ApprovalHomeCalendarPanel> createState() => _PortalCalendarPanelState();
 }
 
-class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
+class _PortalCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
   late DateTime _focusedDay;
   late DateTime _selectedDay;
-  late final Map<DateTime, List<_PortalCalendarEvent>> _events;
+  late final Map<DateTime, List<ApprovalCalendarEvent>> _events;
 
   @override
   void initState() {
@@ -21,13 +24,13 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
     _events = _seedEvents(now);
   }
 
-  Map<DateTime, List<_PortalCalendarEvent>> _seedEvents(DateTime baseDate) {
+  Map<DateTime, List<ApprovalCalendarEvent>> _seedEvents(DateTime baseDate) {
     final year = baseDate.year;
     final month = baseDate.month;
 
     return {
       DateTime(year, month, 3): const [
-        _PortalCalendarEvent(
+        ApprovalCalendarEvent(
           title: '세무 마감',
           time: '09:00',
           place: '회계팀',
@@ -35,7 +38,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
         ),
       ],
       DateTime(year, month, 5): const [
-        _PortalCalendarEvent(
+        ApprovalCalendarEvent(
           title: '주간 보고',
           time: '10:00',
           place: '회의실 A',
@@ -43,7 +46,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
         ),
       ],
       DateTime(year, month, 8): const [
-        _PortalCalendarEvent(
+        ApprovalCalendarEvent(
           title: '근태 점검',
           time: '14:00',
           place: '인사팀',
@@ -51,13 +54,13 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
         ),
       ],
       DateTime(year, month, 14): const [
-        _PortalCalendarEvent(
+        ApprovalCalendarEvent(
           title: '부서 회의',
           time: '09:30',
           place: '회의실 B',
           colorKey: 'blue',
         ),
-        _PortalCalendarEvent(
+        ApprovalCalendarEvent(
           title: '문서 검수',
           time: '16:00',
           place: '전자결재',
@@ -65,7 +68,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
         ),
       ],
       DateTime(year, month, 27): const [
-        _PortalCalendarEvent(
+        ApprovalCalendarEvent(
           title: '교육 일정',
           time: '13:00',
           place: '교육장',
@@ -75,7 +78,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
     };
   }
 
-  List<_PortalCalendarEvent> _eventsForDay(DateTime day) {
+  List<ApprovalCalendarEvent> _eventsForDay(DateTime day) {
     return _events[DateUtils.dateOnly(day)] ?? const [];
   }
 
@@ -87,9 +90,9 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
   }
 
   Future<void> _openAddEventDialog(DateTime day) async {
-    final event = await showDialog<_PortalCalendarEvent>(
+    final event = await showDialog<ApprovalCalendarEvent>(
       context: context,
-      builder: (context) => _CalendarEventDialog(date: day),
+      builder: (context) => ApprovalCalendarEventDialog(date: day),
     );
 
     if (event == null) {
@@ -106,9 +109,9 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
 
   Future<void> _openEventDetail(
     DateTime day,
-    _PortalCalendarEvent event,
+    ApprovalCalendarEvent event,
   ) async {
-    final action = await showDialog<_CalendarEventAction>(
+    final action = await showDialog<ApprovalCalendarEventAction>(
       context: context,
       builder: (context) => TheWeModalSurface(
         maxWidth: 440,
@@ -131,10 +134,13 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _CalendarDetailLine(label: '날짜', value: _formatKoreanDate(day)),
-                _CalendarDetailLine(label: '시간', value: event.time),
-                _CalendarDetailLine(label: '장소', value: event.place),
-                _CalendarColorDetailLine(color: event.color),
+                ApprovalCalendarDetailLine(
+                  label: '날짜',
+                  value: formatApprovalKoreanDate(day),
+                ),
+                ApprovalCalendarDetailLine(label: '시간', value: event.time),
+                ApprovalCalendarDetailLine(label: '장소', value: event.place),
+                ApprovalCalendarColorDetailLine(color: event.color),
               ],
             ),
             const SizedBox(height: 22),
@@ -142,8 +148,9 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 OutlinedButton(
-                  onPressed: () =>
-                      Navigator.of(context).pop(_CalendarEventAction.delete),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(ApprovalCalendarEventAction.delete),
                   child: Text(
                     '삭제',
                     style: TheWeTextStyle.body.copyWith(color: TheWeColor.pink),
@@ -151,8 +158,9 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
                 ),
                 const SizedBox(width: 10),
                 OutlinedButton(
-                  onPressed: () =>
-                      Navigator.of(context).pop(_CalendarEventAction.edit),
+                  onPressed: () => Navigator.of(
+                    context,
+                  ).pop(ApprovalCalendarEventAction.edit),
                   child: const Text('수정'),
                 ),
                 const SizedBox(width: 10),
@@ -170,7 +178,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
       ),
     );
 
-    if (action == _CalendarEventAction.delete) {
+    if (action == ApprovalCalendarEventAction.delete) {
       setState(() {
         final key = DateUtils.dateOnly(day);
         _events[key]?.remove(event);
@@ -178,7 +186,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
       return;
     }
 
-    if (action != _CalendarEventAction.edit) {
+    if (action != ApprovalCalendarEventAction.edit) {
       return;
     }
 
@@ -186,10 +194,10 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
       return;
     }
 
-    final edited = await showDialog<_PortalCalendarEvent>(
+    final edited = await showDialog<ApprovalCalendarEvent>(
       context: context,
       builder: (context) =>
-          _CalendarEventDialog(date: day, initialEvent: event),
+          ApprovalCalendarEventDialog(date: day, initialEvent: event),
     );
 
     if (edited == null || !mounted) {
@@ -234,12 +242,12 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
                     ),
                   ),
                 ),
-                _CalendarNavButton(
+                ApprovalCalendarNavButton(
                   icon: Icons.chevron_left_rounded,
                   onPressed: () => _moveMonth(-1),
                 ),
                 const SizedBox(width: 8),
-                _CalendarNavButton(
+                ApprovalCalendarNavButton(
                   icon: Icons.chevron_right_rounded,
                   onPressed: () => _moveMonth(1),
                 ),
@@ -267,7 +275,7 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
                   )
                   .toList(),
             ),
-            TableCalendar<_PortalCalendarEvent>(
+            TableCalendar<ApprovalCalendarEvent>(
               firstDay: DateTime(2020),
               lastDay: DateTime(2035, 12, 31),
               focusedDay: _focusedDay,
@@ -292,55 +300,61 @@ class _PortalCalendarPanelState extends State<_PortalCalendarPanel> {
               onPageChanged: (focusedDay) {
                 setState(() => _focusedDay = focusedDay);
               },
-              calendarBuilders: CalendarBuilders<_PortalCalendarEvent>(
-                defaultBuilder: (context, day, focusedDay) => _CalendarDayCard(
-                  date: day,
-                  isCurrentMonth: day.month == focusedDay.month,
-                  isToday: isSameDay(day, DateTime.now()),
-                  isSelected: isSameDay(day, _selectedDay),
-                  events: _eventsForDay(day),
-                  onEventTap: (event) => _openEventDetail(day, event),
-                ),
-                todayBuilder: (context, day, focusedDay) => _CalendarDayCard(
-                  date: day,
-                  isCurrentMonth: day.month == focusedDay.month,
-                  isToday: true,
-                  isSelected: isSameDay(day, _selectedDay),
-                  events: _eventsForDay(day),
-                  onEventTap: (event) => _openEventDetail(day, event),
-                ),
-                selectedBuilder: (context, day, focusedDay) => _CalendarDayCard(
-                  date: day,
-                  isCurrentMonth: day.month == focusedDay.month,
-                  isToday: isSameDay(day, DateTime.now()),
-                  isSelected: true,
-                  events: _eventsForDay(day),
-                  onEventTap: (event) => _openEventDetail(day, event),
-                ),
-                outsideBuilder: (context, day, focusedDay) => _CalendarDayCard(
-                  date: day,
-                  isCurrentMonth: false,
-                  isToday: isSameDay(day, DateTime.now()),
-                  isSelected: isSameDay(day, _selectedDay),
-                  events: _eventsForDay(day),
-                  onEventTap: (event) => _openEventDetail(day, event),
-                ),
-                disabledBuilder: (context, day, focusedDay) => _CalendarDayCard(
-                  date: day,
-                  isCurrentMonth: day.month == focusedDay.month,
-                  isToday: isSameDay(day, DateTime.now()),
-                  isSelected: isSameDay(day, _selectedDay),
-                  events: _eventsForDay(day),
-                  onEventTap: (event) => _openEventDetail(day, event),
-                ),
-                holidayBuilder: (context, day, focusedDay) => _CalendarDayCard(
-                  date: day,
-                  isCurrentMonth: day.month == focusedDay.month,
-                  isToday: isSameDay(day, DateTime.now()),
-                  isSelected: isSameDay(day, _selectedDay),
-                  events: _eventsForDay(day),
-                  onEventTap: (event) => _openEventDetail(day, event),
-                ),
+              calendarBuilders: CalendarBuilders<ApprovalCalendarEvent>(
+                defaultBuilder: (context, day, focusedDay) =>
+                    ApprovalCalendarDayCard(
+                      date: day,
+                      isCurrentMonth: day.month == focusedDay.month,
+                      isToday: isSameDay(day, DateTime.now()),
+                      isSelected: isSameDay(day, _selectedDay),
+                      events: _eventsForDay(day),
+                      onEventTap: (event) => _openEventDetail(day, event),
+                    ),
+                todayBuilder: (context, day, focusedDay) =>
+                    ApprovalCalendarDayCard(
+                      date: day,
+                      isCurrentMonth: day.month == focusedDay.month,
+                      isToday: true,
+                      isSelected: isSameDay(day, _selectedDay),
+                      events: _eventsForDay(day),
+                      onEventTap: (event) => _openEventDetail(day, event),
+                    ),
+                selectedBuilder: (context, day, focusedDay) =>
+                    ApprovalCalendarDayCard(
+                      date: day,
+                      isCurrentMonth: day.month == focusedDay.month,
+                      isToday: isSameDay(day, DateTime.now()),
+                      isSelected: true,
+                      events: _eventsForDay(day),
+                      onEventTap: (event) => _openEventDetail(day, event),
+                    ),
+                outsideBuilder: (context, day, focusedDay) =>
+                    ApprovalCalendarDayCard(
+                      date: day,
+                      isCurrentMonth: false,
+                      isToday: isSameDay(day, DateTime.now()),
+                      isSelected: isSameDay(day, _selectedDay),
+                      events: _eventsForDay(day),
+                      onEventTap: (event) => _openEventDetail(day, event),
+                    ),
+                disabledBuilder: (context, day, focusedDay) =>
+                    ApprovalCalendarDayCard(
+                      date: day,
+                      isCurrentMonth: day.month == focusedDay.month,
+                      isToday: isSameDay(day, DateTime.now()),
+                      isSelected: isSameDay(day, _selectedDay),
+                      events: _eventsForDay(day),
+                      onEventTap: (event) => _openEventDetail(day, event),
+                    ),
+                holidayBuilder: (context, day, focusedDay) =>
+                    ApprovalCalendarDayCard(
+                      date: day,
+                      isCurrentMonth: day.month == focusedDay.month,
+                      isToday: isSameDay(day, DateTime.now()),
+                      isSelected: isSameDay(day, _selectedDay),
+                      events: _eventsForDay(day),
+                      onEventTap: (event) => _openEventDetail(day, event),
+                    ),
               ),
             ),
             const SizedBox(height: 10),
@@ -366,9 +380,9 @@ class _SelectedDayEvents extends StatelessWidget {
   });
 
   final DateTime date;
-  final List<_PortalCalendarEvent> events;
+  final List<ApprovalCalendarEvent> events;
   final VoidCallback onAddEvent;
-  final ValueChanged<_PortalCalendarEvent> onEventTap;
+  final ValueChanged<ApprovalCalendarEvent> onEventTap;
 
   @override
   Widget build(BuildContext context) {

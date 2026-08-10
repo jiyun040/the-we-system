@@ -1,7 +1,8 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
 
-class _IconAction extends StatelessWidget {
-  const _IconAction({
+class ApprovalHomeIconAction extends StatelessWidget {
+  const ApprovalHomeIconAction({
+    super.key,
     required this.icon,
     required this.message,
     required this.onPressed,
@@ -24,8 +25,9 @@ class _IconAction extends StatelessWidget {
   }
 }
 
-class _ProcessingSection extends StatelessWidget {
-  const _ProcessingSection({
+class ApprovalProcessingSection extends StatelessWidget {
+  const ApprovalProcessingSection({
+    super.key,
     required this.title,
     required this.documents,
     required this.controller,
@@ -160,8 +162,9 @@ class _RoundMoveButton extends StatelessWidget {
   }
 }
 
-class _DraftProgressSection extends StatelessWidget {
-  const _DraftProgressSection({
+class ApprovalDraftProgressSection extends StatelessWidget {
+  const ApprovalDraftProgressSection({
+    super.key,
     required this.documents,
     required this.totalCount,
   });
@@ -421,8 +424,8 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _LoadFailed extends StatelessWidget {
-  const _LoadFailed({required this.onRetry});
+class ApprovalHomeLoadFailed extends StatelessWidget {
+  const ApprovalHomeLoadFailed({super.key, required this.onRetry});
 
   final VoidCallback onRetry;
 

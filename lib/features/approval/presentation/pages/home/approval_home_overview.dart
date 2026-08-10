@@ -1,7 +1,11 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
+import 'approval_home_calendar_panel.dart';
+import 'approval_home_notice.dart';
+import 'approval_home_processing.dart';
+import 'approval_home_trend.dart';
 
-class _PortalOverview extends StatelessWidget {
-  const _PortalOverview({required this.state});
+class ApprovalHomeOverview extends StatelessWidget {
+  const ApprovalHomeOverview({super.key, required this.state});
 
   final ApprovalDashboardState state;
 
@@ -26,13 +30,19 @@ class _PortalOverview extends StatelessWidget {
                 spacing: 14,
                 runSpacing: 8,
                 children: [
-                  _HeadcountLegend(label: '총 인원', color: TheWeColor.green),
-                  _HeadcountLegend(label: '입사자', color: TheWeColor.blue300),
-                  _HeadcountLegend(label: '퇴사자', color: TheWeColor.pink),
+                  ApprovalHeadcountLegend(
+                    label: '총 인원',
+                    color: TheWeColor.green,
+                  ),
+                  ApprovalHeadcountLegend(
+                    label: '입사자',
+                    color: TheWeColor.blue300,
+                  ),
+                  ApprovalHeadcountLegend(label: '퇴사자', color: TheWeColor.pink),
                 ],
               ),
               const SizedBox(height: 18),
-              _PortalTrendChart(
+              ApprovalHomeTrendChart(
                 totalCount: accountCount,
                 joinerCount: joinerCount,
               ),
@@ -44,13 +54,15 @@ class _PortalOverview extends StatelessWidget {
             LayoutBuilder(
               builder: (context, innerConstraints) {
                 if (!state.isAdminMode) {
-                  return const _PortalSurface(child: _PortalCalendarPanel());
+                  return const _PortalSurface(
+                    child: ApprovalHomeCalendarPanel(),
+                  );
                 }
                 final compact = innerConstraints.maxWidth < 720;
                 if (compact) {
                   return Column(
                     children: [
-                      const _PortalSurface(child: _PortalCalendarPanel()),
+                      const _PortalSurface(child: ApprovalHomeCalendarPanel()),
                       const SizedBox(height: 24),
                       headcountChild,
                     ],
@@ -62,7 +74,7 @@ class _PortalOverview extends StatelessWidget {
                   children: [
                     const Expanded(
                       flex: 5,
-                      child: _PortalSurface(child: _PortalCalendarPanel()),
+                      child: _PortalSurface(child: ApprovalHomeCalendarPanel()),
                     ),
                     const SizedBox(width: 24),
                     Expanded(flex: 6, child: headcountChild),
@@ -75,12 +87,12 @@ class _PortalOverview extends StatelessWidget {
         final processingDocuments = state.dashboard.processingDocuments;
         final rightChild = Column(
           children: [
-            const _PortalSurface(child: _PortalNoticePanel()),
+            const _PortalSurface(child: ApprovalHomeNoticePanel()),
             if (state.isAppEnabled(PortalAppId.approval) &&
                 processingDocuments.isNotEmpty) ...[
               const SizedBox(height: 18),
               _PortalSurface(
-                child: _DraftProgressSection(
+                child: ApprovalDraftProgressSection(
                   documents: processingDocuments.take(5).toList(),
                   totalCount: processingDocuments.length,
                 ),
