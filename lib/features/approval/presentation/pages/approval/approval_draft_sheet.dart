@@ -401,10 +401,7 @@ class _PdfLayoutEditor extends StatelessWidget {
         children: [
           Expanded(
             flex: columnFlex - valueFlex,
-            child: const ApprovalPdfTableCell(
-              text: '합    계 (V.A.T 포함)',
-              header: true,
-            ),
+            child: const ApprovalPdfTableCell(text: '합    계', header: true),
           ),
           Expanded(
             flex: valueFlex,

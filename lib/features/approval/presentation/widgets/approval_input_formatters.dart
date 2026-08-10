@@ -71,3 +71,22 @@ String formatApprovalAmount(String value) {
       ? value
       : ApprovalAmountInputFormatter._format.format(number);
 }
+
+/// 수량과 단가가 모두 입력되면 행 합계 금액을 계산한다.
+String calculateApprovalLineItemTotal({
+  required String quantity,
+  required String amount,
+}) {
+  final quantityDigits = quantity.replaceAll(RegExp(r'[^0-9]'), '');
+  final amountDigits = amount.replaceAll(RegExp(r'[^0-9]'), '');
+  if (quantityDigits.isEmpty || amountDigits.isEmpty) {
+    return '';
+  }
+
+  final parsedQuantity = BigInt.tryParse(quantityDigits);
+  final parsedAmount = BigInt.tryParse(amountDigits);
+  if (parsedQuantity == null || parsedAmount == null) {
+    return '';
+  }
+  return (parsedQuantity * parsedAmount).toString();
+}

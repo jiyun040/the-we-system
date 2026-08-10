@@ -13,6 +13,7 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_input_formatters.dart';
 
 import 'approval_draft_linked_documents.dart';
 import 'approval_draft_sheet.dart';
@@ -41,6 +42,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   List<ApprovalAttachment> attachments = [];
   Map<String, String> formFields = {};
   List<Map<String, String>> lineItems = [];
+  final Set<int> manuallyEditedLineTotals = {};
   bool departmentVisible = true;
   bool initialized = false;
 
@@ -159,6 +161,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                                   template.lineItemRows,
                                   (_) => <String, String>{},
                                 );
+                          manuallyEditedLineTotals.clear();
                           departmentVisible = true;
                           editingDocumentId = null;
                         });
@@ -213,10 +216,35 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                             },
                             onLineItemChanged: (index, key, value) {
                               setState(() {
-                                lineItems[index] = {
+                                final updatedItem = <String, String>{
                                   ...lineItems[index],
                                   key: value,
                                 };
+                                if (key == 'total') {
+                                  final calculated =
+                                      calculateApprovalLineItemTotal(
+                                        quantity: updatedItem['quantity'] ?? '',
+                                        amount: updatedItem['amount'] ?? '',
+                                      );
+                                  final entered = value.replaceAll(
+                                    RegExp(r'[^0-9]'),
+                                    '',
+                                  );
+                                  if (entered == calculated) {
+                                    manuallyEditedLineTotals.remove(index);
+                                  } else {
+                                    manuallyEditedLineTotals.add(index);
+                                  }
+                                } else if ((key == 'quantity' ||
+                                        key == 'amount') &&
+                                    !manuallyEditedLineTotals.contains(index)) {
+                                  updatedItem['total'] =
+                                      calculateApprovalLineItemTotal(
+                                        quantity: updatedItem['quantity'] ?? '',
+                                        amount: updatedItem['amount'] ?? '',
+                                      );
+                                }
+                                lineItems[index] = updatedItem;
                               });
                             },
                           ),

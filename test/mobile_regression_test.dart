@@ -31,6 +31,35 @@ void main() {
       expect(find.text('합계'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
+      await tester.enterText(
+        find.byKey(const ValueKey('mobile-document-line-0-quantity')),
+        '3',
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('mobile-document-line-0-amount')),
+        '1250000',
+      );
+      await tester.pump();
+      final totalField = find.byKey(
+        const ValueKey('mobile-document-line-0-total'),
+      );
+      expect(totalField, findsOneWidget);
+      expect(
+        tester.widget<TextFormField>(totalField).controller?.text,
+        '3,750,000',
+      );
+
+      await tester.enterText(totalField, '4000000');
+      await tester.enterText(
+        find.byKey(const ValueKey('mobile-document-line-0-quantity')),
+        '4',
+      );
+      await tester.pump();
+      expect(
+        tester.widget<TextFormField>(totalField).controller?.text,
+        '4,000,000',
+      );
+
       appRouter.go('/approval/APR-260629-001');
       await tester.pumpAndSettle();
       expect(find.text('업무용 PC 구매 예산 할당 요청'), findsWidgets);

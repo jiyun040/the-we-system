@@ -43,6 +43,24 @@ void main() {
     );
   });
 
+  test('수량과 금액이 입력되면 행 합계금액을 자동 계산한다', () {
+    expect(
+      calculateApprovalLineItemTotal(quantity: '3', amount: '1,250,000'),
+      '3750000',
+    );
+    expect(
+      calculateApprovalLineItemTotal(quantity: '', amount: '1,250,000'),
+      isEmpty,
+    );
+    expect(
+      calculateApprovalLineItemTotal(
+        quantity: '123123123123123',
+        amount: '1,231,231,231,154,645,000,000',
+      ),
+      isNotEmpty,
+    );
+  });
+
   testWidgets('상신 문서는 추가 결재 정보 없이 빈 표 행까지 유지한다', (tester) async {
     tester.view.physicalSize = const Size(1200, 1600);
     tester.view.devicePixelRatio = 1;
@@ -115,7 +133,7 @@ void main() {
     expect(find.text('열 람 자'), findsNothing);
     expect(find.text('협조부서'), findsNothing);
     expect(find.text('합    의'), findsNothing);
-    expect(find.text('합    계 (V.A.T 포함)'), findsOneWidget);
+    expect(find.text('합    계'), findsOneWidget);
   });
 
   test('상신 문서를 인쇄 가능한 PDF 바이트로 만든다', () async {

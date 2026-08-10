@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'approval_draft_dependencies.dart';
 
 class ApprovalDraftManualDateRow extends StatelessWidget {
@@ -74,9 +76,9 @@ class ApprovalMobileLineItemEditor extends StatelessWidget {
         for (final column in columns) ...[
           Text(column.$2, style: TheWeTextStyle.caption),
           const SizedBox(height: 5),
-          TextFormField(
-            key: ValueKey('mobile-document-line-$index-${column.$1}'),
-            initialValue: column.$1 == 'amount' || column.$1 == 'total'
+          _ApprovalSynchronizedTextFormField(
+            fieldKey: ValueKey('mobile-document-line-$index-${column.$1}'),
+            value: column.$1 == 'amount' || column.$1 == 'total'
                 ? formatApprovalAmount(item[column.$1] ?? '')
                 : item[column.$1] ?? '',
             onChanged: (value) => onChanged(column.$1, value),
@@ -261,8 +263,8 @@ class ApprovalPdfInputCell extends StatelessWidget {
       color: TheWeColor.white,
       border: Border.all(color: TheWeColor.black900, width: .6),
     ),
-    child: TextFormField(
-      initialValue: value,
+    child: _ApprovalSynchronizedTextFormField(
+      value: value,
       onChanged: onChanged,
       textAlign: TextAlign.center,
       keyboardType: isAmount || isQuantity
@@ -298,5 +300,78 @@ class ApprovalPdfInputCell extends StatelessWidget {
         contentPadding: const EdgeInsets.symmetric(horizontal: 9, vertical: 13),
       ),
     ),
+  );
+}
+
+class _ApprovalSynchronizedTextFormField extends StatefulWidget {
+  const _ApprovalSynchronizedTextFormField({
+    this.fieldKey,
+    required this.value,
+    required this.onChanged,
+    required this.keyboardType,
+    required this.inputFormatters,
+    required this.decoration,
+    this.textAlign = TextAlign.start,
+    this.minLines,
+    this.maxLines = 1,
+    this.style,
+  });
+
+  final Key? fieldKey;
+  final String value;
+  final ValueChanged<String> onChanged;
+  final TextInputType keyboardType;
+  final List<TextInputFormatter> inputFormatters;
+  final InputDecoration decoration;
+  final TextAlign textAlign;
+  final int? minLines;
+  final int? maxLines;
+  final TextStyle? style;
+
+  @override
+  State<_ApprovalSynchronizedTextFormField> createState() =>
+      _ApprovalSynchronizedTextFormFieldState();
+}
+
+class _ApprovalSynchronizedTextFormFieldState
+    extends State<_ApprovalSynchronizedTextFormField> {
+  late final TextEditingController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = TextEditingController(text: widget.value);
+  }
+
+  @override
+  void didUpdateWidget(_ApprovalSynchronizedTextFormField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (controller.text == widget.value) {
+      return;
+    }
+    controller.value = TextEditingValue(
+      text: widget.value,
+      selection: TextSelection.collapsed(offset: widget.value.length),
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextFormField(
+    key: widget.fieldKey,
+    controller: controller,
+    onChanged: widget.onChanged,
+    textAlign: widget.textAlign,
+    keyboardType: widget.keyboardType,
+    inputFormatters: widget.inputFormatters,
+    minLines: widget.minLines,
+    maxLines: widget.maxLines,
+    style: widget.style,
+    decoration: widget.decoration,
   );
 }

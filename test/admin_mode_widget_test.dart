@@ -107,10 +107,13 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('document-access-category-지원')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('document-access-지원')), findsOneWidget);
-    expect(find.byKey(const ValueKey('document-access-add-지원')), findsNothing);
+    expect(
+      find.byKey(const ValueKey('document-access-selector-지원')),
+      findsNothing,
+    );
     await tester.tap(find.text('일부 사용자'));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('document-access-add-지원')));
+    await tester.tap(find.byKey(const ValueKey('document-access-selector-지원')));
     await tester.pumpAndSettle();
     expect(
       find.byKey(const ValueKey('document-access-organization-dialog')),

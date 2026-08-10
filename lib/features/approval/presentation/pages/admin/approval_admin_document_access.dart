@@ -230,8 +230,6 @@ class _DocumentCategoryAccessPanel extends StatefulWidget {
 
 class _DocumentCategoryAccessPanelState
     extends State<_DocumentCategoryAccessPanel> {
-  String targetType = '사용자';
-
   @override
   Widget build(BuildContext context) {
     final selectedAccounts = widget.accounts
@@ -275,44 +273,55 @@ class _DocumentCategoryAccessPanelState
           ),
           if (!widget.organizationWide) ...[
             const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                SizedBox(
-                  width: 220,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '대상 구분',
-                        style: TheWeTextStyle.caption.copyWith(
-                          color: TheWeColor.black500,
+            Text(
+              '열람 대상',
+              style: TheWeTextStyle.caption.copyWith(
+                color: TheWeColor.black500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 360),
+              child: Material(
+                color: TheWeColor.white,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  key: ValueKey('document-access-selector-${widget.category}'),
+                  onTap: _selectUsers,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: TheWeColor.black300.withValues(alpha: .45),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.account_tree_outlined,
+                          color: TheWeColor.blue300,
+                          size: 21,
                         ),
-                      ),
-                      const SizedBox(height: 6),
-                      TheWeDropdown<String>(
-                        value: targetType,
-                        width: double.infinity,
-                        items: const ['사용자', '부서', '직위', '직책', '직급', '사용자 그룹'],
-                        labelBuilder: (item) => item,
-                        onChanged: (value) {
-                          if (value != null) {
-                            setState(() => targetType = value);
-                          }
-                        },
-                      ),
-                    ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            selectedAccounts.isEmpty
+                                ? '조직도에서 사용자 또는 부서 선택'
+                                : '${selectedAccounts.length}명 선택됨',
+                            style: TheWeTextStyle.body,
+                          ),
+                        ),
+                        const Icon(Icons.keyboard_arrow_down_rounded),
+                      ],
+                    ),
                   ),
                 ),
-                OutlinedButton.icon(
-                  key: ValueKey('document-access-add-${widget.category}'),
-                  onPressed: _selectUsers,
-                  icon: const Icon(Icons.add),
-                  label: const Text('추가'),
-                ),
-              ],
+              ),
             ),
             if (selectedAccounts.isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -347,7 +356,6 @@ class _DocumentCategoryAccessPanelState
       builder: (context) => _DocumentAccessOrganizationDialog(
         accounts: widget.accounts,
         selectedUserIds: widget.selectedUserIds,
-        targetType: targetType,
       ),
     );
     if (selected == null) return;
@@ -390,12 +398,10 @@ class _DocumentAccessOrganizationDialog extends StatefulWidget {
   const _DocumentAccessOrganizationDialog({
     required this.accounts,
     required this.selectedUserIds,
-    required this.targetType,
   });
 
   final List<EmployeeAccount> accounts;
   final Set<String> selectedUserIds;
-  final String targetType;
 
   @override
   State<_DocumentAccessOrganizationDialog> createState() =>
@@ -414,35 +420,112 @@ class _DocumentAccessOrganizationDialogState
     return AlertDialog(
       key: const ValueKey('document-access-organization-dialog'),
       backgroundColor: TheWeColor.white,
-      title: Text('${widget.targetType} 선택 · 조직도'),
+      title: const Text('사용자 · 부서 선택'),
       content: SizedBox(
         width: 520,
         height: MediaQuery.sizeOf(context).height * .58,
-        child: ListView(
-          children: departments.map((department) {
-            final members = widget.accounts
-                .where((account) => account.department == department)
-                .toList();
-            return ExpansionTile(
-              title: Text(department),
-              children: members
-                  .map(
-                    (account) => CheckboxListTile(
-                      value: selectedUserIds.contains(account.id),
-                      title: Text(account.name),
-                      subtitle: Text('${account.position} · ${account.id}'),
-                      onChanged: (selected) => setState(() {
-                        if (selected == true) {
-                          selectedUserIds.add(account.id);
-                        } else {
-                          selectedUserIds.remove(account.id);
-                        }
-                      }),
-                    ),
-                  )
-                  .toList(),
-            );
-          }).toList(),
+        child: Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: ListView.separated(
+            itemCount: departments.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final department = departments[index];
+              final members = widget.accounts
+                  .where((account) => account.department == department)
+                  .toList();
+              final selectedCount = members
+                  .where((member) => selectedUserIds.contains(member.id))
+                  .length;
+              final allSelected =
+                  members.isNotEmpty && selectedCount == members.length;
+              final partiallySelected = selectedCount > 0 && !allSelected;
+              return Container(
+                decoration: BoxDecoration(
+                  color: TheWeColor.surfaceAlt,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: TheWeColor.black300.withValues(alpha: .28),
+                  ),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: ExpansionTile(
+                  tilePadding: const EdgeInsets.symmetric(horizontal: 12),
+                  childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                  shape: const RoundedRectangleBorder(side: BorderSide.none),
+                  collapsedShape: const RoundedRectangleBorder(
+                    side: BorderSide.none,
+                  ),
+                  leading: Icon(
+                    Icons.folder_outlined,
+                    color: TheWeColor.blue300,
+                  ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          department,
+                          style: TheWeTextStyle.body.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '$selectedCount/${members.length}명',
+                        style: TheWeTextStyle.caption.copyWith(
+                          color: TheWeColor.black500,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Checkbox(
+                        tristate: true,
+                        value: allSelected
+                            ? true
+                            : partiallySelected
+                            ? null
+                            : false,
+                        activeColor: TheWeColor.blue300,
+                        onChanged: (_) =>
+                            _toggleDepartment(members, selected: !allSelected),
+                      ),
+                    ],
+                  ),
+                  children: members
+                      .map(
+                        (account) => Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Material(
+                            color: TheWeColor.white,
+                            borderRadius: BorderRadius.circular(9),
+                            child: CheckboxListTile(
+                              value: selectedUserIds.contains(account.id),
+                              activeColor: TheWeColor.blue300,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(9),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              title: Text(account.name),
+                              subtitle: Text(
+                                '${account.position} · ${account.id}',
+                              ),
+                              onChanged: (selected) => setState(() {
+                                if (selected == true) {
+                                  selectedUserIds.add(account.id);
+                                } else {
+                                  selectedUserIds.remove(account.id);
+                                }
+                              }),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              );
+            },
+          ),
         ),
       ),
       actions: [
@@ -451,10 +534,27 @@ class _DocumentAccessOrganizationDialogState
           child: const Text('취소'),
         ),
         FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: TheWeColor.blue300,
+            foregroundColor: TheWeColor.white,
+          ),
           onPressed: () => Navigator.pop(context, selectedUserIds),
           child: const Text('저장'),
         ),
       ],
     );
+  }
+
+  void _toggleDepartment(
+    List<EmployeeAccount> members, {
+    required bool selected,
+  }) {
+    setState(() {
+      if (selected) {
+        selectedUserIds.addAll(members.map((member) => member.id));
+      } else {
+        selectedUserIds.removeAll(members.map((member) => member.id));
+      }
+    });
   }
 }

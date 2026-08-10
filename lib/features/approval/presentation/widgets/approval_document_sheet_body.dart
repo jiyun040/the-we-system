@@ -114,10 +114,7 @@ class ApprovalPdfDocumentBody extends StatelessWidget {
         children: [
           Expanded(
             flex: columnFlex - valueFlex,
-            child: const _ReadOnlyTableCell(
-              text: '합    계 (V.A.T 포함)',
-              header: true,
-            ),
+            child: const _ReadOnlyTableCell(text: '합    계', header: true),
           ),
           Expanded(
             flex: valueFlex,

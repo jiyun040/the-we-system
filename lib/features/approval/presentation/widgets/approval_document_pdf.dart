@@ -166,7 +166,7 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
   );
   widgets.add(
     _flexWideRow(
-      '합계 (V.A.T 포함)',
+      '합계',
       _totalAmount(document),
       labelFlex: columnFlex - columns.last.$3,
       valueFlex: columns.last.$3,
