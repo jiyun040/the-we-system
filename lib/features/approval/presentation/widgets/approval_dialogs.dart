@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
-import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
-import 'package:the_we_system/common/constants/layout.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 
-part 'approval_info_dialog.dart';
-part 'approval_dialog_layout.dart';
-part 'approval_line_dialog.dart';
+import 'approval_dialog_layout.dart';
+import 'approval_info_dialog.dart';
+import 'approval_line_dialog.dart';
 
 Future<void> showApprovalDecisionDialog(
   BuildContext context, {
@@ -41,7 +39,7 @@ Future<void> showApprovalDecisionDialog(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _DialogInfoRow(label: '결재문서명', value: document.title),
+                ApprovalDialogInfoRow(label: '결재문서명', value: document.title),
                 const SizedBox(height: 20),
                 Text('결재의견', style: TheWeTextStyle.body),
                 const SizedBox(height: 8),
@@ -88,14 +86,15 @@ Future<ApprovalFormTemplate?> showDraftFormSelectionDialog(
 }) {
   return showDialog<ApprovalFormTemplate>(
     context: context,
-    builder: (context) => _DraftFormSelectionDialog(templates: templates),
+    builder: (context) =>
+        ApprovalDraftFormSelectionDialog(templates: templates),
   );
 }
 
 Future<void> showApprovalFormDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
-    builder: (context) => _LargeDialog(
+    builder: (context) => ApprovalLargeDialog(
       title: '결재양식 선택',
       actions: const ['확인', '취소'],
       child: Row(
@@ -103,7 +102,7 @@ Future<void> showApprovalFormDialog(BuildContext context) {
         children: [
           Expanded(
             flex: 4,
-            child: _TreePanel(
+            child: ApprovalTreePanel(
               searchHint: '양식제목',
               nodes: const [
                 '근태',
@@ -121,7 +120,7 @@ Future<void> showApprovalFormDialog(BuildContext context) {
           const SizedBox(width: 14),
           Expanded(
             flex: 5,
-            child: _DetailBox(
+            child: ApprovalDetailBox(
               title: '상세정보',
               rows: const [
                 ('제목', '업무기안[기본양식]'),
@@ -142,14 +141,14 @@ Future<void> showApprovalFormDialog(BuildContext context) {
 Future<void> showAttachDocumentDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
-    builder: (context) => _LargeDialog(
+    builder: (context) => ApprovalLargeDialog(
       title: '결재 문서 첨부',
       actions: const ['확인', '취소'],
       child: Row(
         children: [
           Expanded(
             flex: 3,
-            child: _TreePanel(
+            child: ApprovalTreePanel(
               searchHint: '문서함',
               nodes: const [
                 '개인 문서함',
@@ -167,7 +166,7 @@ Future<void> showAttachDocumentDialog(BuildContext context) {
           const SizedBox(width: 14),
           Expanded(
             flex: 7,
-            child: _DocumentPickerTable(
+            child: ApprovalDocumentPickerTable(
               title: '다른 결재문서를 연결할 수도 있습니다',
               documents: const [
                 '노후PC 교체 예산 신청 기안',
@@ -185,7 +184,7 @@ Future<void> showAttachDocumentDialog(BuildContext context) {
 Future<void> showApprovalInfoDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
-    builder: (context) => const _ApprovalInfoDialog(),
+    builder: (context) => const ApprovalInfoDialog(),
   );
 }
 
@@ -256,7 +255,7 @@ Future<bool?> showRequestApprovalDialog(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _DialogInfoRow(label: '결재문서명', value: document.title),
+                  ApprovalDialogInfoRow(label: '결재문서명', value: document.title),
                   const SizedBox(height: 18),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,

@@ -1,13 +1,14 @@
-part of 'approval_dialogs.dart';
+import 'approval_dialog_dependencies.dart';
+import 'approval_line_dialog.dart';
 
-class _ApprovalInfoDialog extends StatefulWidget {
-  const _ApprovalInfoDialog();
+class ApprovalInfoDialog extends StatefulWidget {
+  const ApprovalInfoDialog({super.key});
 
   @override
-  State<_ApprovalInfoDialog> createState() => _ApprovalInfoDialogState();
+  State<ApprovalInfoDialog> createState() => _ApprovalInfoDialogState();
 }
 
-class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
+class _ApprovalInfoDialogState extends State<ApprovalInfoDialog> {
   int selectedIndex = 0;
 
   static const categories = ['* 결재선', '* 참조자', '* 수신자', '열람자', '* 공문서 수신처'];
@@ -44,11 +45,17 @@ class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
             const SizedBox(height: 16),
             Expanded(
               child: switch (selectedIndex) {
-                0 => _ApprovalLineSetup(),
-                1 => const _PeopleSetup(caption: '결재 진행 내용을 함께 확인할 사람을 선택하세요.'),
-                2 => const _PeopleSetup(caption: '수신자는 접수 대기 문서함에서 확인합니다.'),
-                3 => const _PeopleSetup(caption: '결재가 완료된 문서를 공유할 사람을 선택하세요.'),
-                _ => _PublicReceiverSetup(),
+                0 => ApprovalLineSetup(),
+                1 => const ApprovalPeopleSetup(
+                  caption: '결재 진행 내용을 함께 확인할 사람을 선택하세요.',
+                ),
+                2 => const ApprovalPeopleSetup(
+                  caption: '수신자는 접수 대기 문서함에서 확인합니다.',
+                ),
+                3 => const ApprovalPeopleSetup(
+                  caption: '결재가 완료된 문서를 공유할 사람을 선택하세요.',
+                ),
+                _ => ApprovalPublicReceiverSetup(),
               },
             ),
             const SizedBox(height: 16),
@@ -66,17 +73,18 @@ class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
   }
 }
 
-class _DraftFormSelectionDialog extends StatefulWidget {
-  const _DraftFormSelectionDialog({required this.templates});
+class ApprovalDraftFormSelectionDialog extends StatefulWidget {
+  const ApprovalDraftFormSelectionDialog({super.key, required this.templates});
 
   final List<ApprovalFormTemplate> templates;
 
   @override
-  State<_DraftFormSelectionDialog> createState() =>
+  State<ApprovalDraftFormSelectionDialog> createState() =>
       _DraftFormSelectionDialogState();
 }
 
-class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
+class _DraftFormSelectionDialogState
+    extends State<ApprovalDraftFormSelectionDialog> {
   late ApprovalFormTemplate selectedTemplate;
 
   @override
@@ -212,16 +220,22 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
         children: [
           Text('상세정보', style: TheWeTextStyle.subtitle),
           const SizedBox(height: 16),
-          _DialogInfoRow(label: '양식명', value: selectedTemplate.name),
+          ApprovalDialogInfoRow(label: '양식명', value: selectedTemplate.name),
           const SizedBox(height: 12),
-          _DialogInfoRow(label: '카테고리', value: selectedTemplate.category),
+          ApprovalDialogInfoRow(
+            label: '카테고리',
+            value: selectedTemplate.category,
+          ),
           const SizedBox(height: 12),
-          _DialogInfoRow(
+          ApprovalDialogInfoRow(
             label: '기안부서',
             value: selectedTemplate.cooperationDepartment,
           ),
           const SizedBox(height: 12),
-          _DialogInfoRow(label: '설명', value: selectedTemplate.description),
+          ApprovalDialogInfoRow(
+            label: '설명',
+            value: selectedTemplate.description,
+          ),
           const SizedBox(height: 18),
           Text('기본 제목', style: TheWeTextStyle.body),
           const SizedBox(height: 8),

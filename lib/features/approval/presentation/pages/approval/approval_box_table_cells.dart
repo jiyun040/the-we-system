@@ -1,7 +1,7 @@
-part of 'approval_box_page.dart';
+import 'approval_box_dependencies.dart';
 
-class _DocumentTableText extends StatelessWidget {
-  const _DocumentTableText(this.text);
+class ApprovalDocumentTableText extends StatelessWidget {
+  const ApprovalDocumentTableText(this.text, {super.key});
 
   final String text;
 
@@ -15,8 +15,8 @@ class _DocumentTableText extends StatelessWidget {
   );
 }
 
-class _UrgentChip extends StatelessWidget {
-  const _UrgentChip();
+class ApprovalUrgentChip extends StatelessWidget {
+  const ApprovalUrgentChip({super.key});
 
   @override
   Widget build(BuildContext context) => Container(
@@ -33,8 +33,8 @@ class _UrgentChip extends StatelessWidget {
   );
 }
 
-class _DocumentStatusChip extends StatelessWidget {
-  const _DocumentStatusChip(this.text);
+class ApprovalDocumentStatusChip extends StatelessWidget {
+  const ApprovalDocumentStatusChip(this.text, {super.key});
 
   final String text;
 

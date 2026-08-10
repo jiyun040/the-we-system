@@ -3,10 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
-import 'package:the_we_system/common/components/text_form_field.dart';
-import 'package:the_we_system/common/components/the_we_modal.dart';
-import 'package:the_we_system/common/components/the_we_back_button.dart';
-import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -17,11 +13,10 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_input_formatters.dart';
 
-part 'approval_draft_toolbar.dart';
-part 'approval_draft_sheet.dart';
-part 'approval_draft_linked_documents.dart';
+import 'approval_draft_linked_documents.dart';
+import 'approval_draft_sheet.dart';
+import 'approval_draft_toolbar.dart';
 
 class ApprovalDraftPage extends ConsumerStatefulWidget {
   const ApprovalDraftPage({
@@ -124,7 +119,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
 
             return Column(
               children: [
-                _DraftToolbar(
+                ApprovalDraftToolbar(
                   document: draftDocument,
                   canRequest: selectedFormId != null,
                   onPreview: () => _showPreview(context, draftDocument),
@@ -170,14 +165,14 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                       }
 
                       final catalog = isNarrow
-                          ? _CompactFormSelector(
+                          ? ApprovalCompactFormSelector(
                               templates: appState.formTemplates,
                               selectedFormId: currentFormId,
                               onFormSelected: selectForm,
                             )
                           : SizedBox(
                               width: 320,
-                              child: _FormCatalog(
+                              child: ApprovalFormCatalog(
                                 templates: appState.formTemplates,
                                 selectedFormId: currentFormId,
                                 onFormSelected: selectForm,
@@ -186,7 +181,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                       final sheet = SingleChildScrollView(
                         padding: EdgeInsets.all(isNarrow ? 16 : 28),
                         child: Center(
-                          child: _EditableDraftSheet(
+                          child: ApprovalEditableDraftSheet(
                             document: draftDocument,
                             titleController: titleController,
                             contentController: contentController,
@@ -473,7 +468,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   Future<void> _addLinkedDocument(ApprovalDashboardState appState) async {
     final selected = await showDialog<String>(
       context: context,
-      builder: (context) => _LinkedDocumentDialog(
+      builder: (context) => ApprovalLinkedDocumentDialog(
         documents: appState.documents
             .where((document) => document.id != editingDocumentId)
             .toList(),

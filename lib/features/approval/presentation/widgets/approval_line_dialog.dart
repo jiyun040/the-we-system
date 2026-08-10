@@ -1,13 +1,16 @@
-part of 'approval_dialogs.dart';
+import 'approval_dialog_dependencies.dart';
+import 'approval_dialog_layout.dart';
+import 'approval_dialogs.dart';
 
-class _ApprovalLineSetup extends StatelessWidget {
+class ApprovalLineSetup extends StatelessWidget {
+  const ApprovalLineSetup({super.key});
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         const Expanded(
           flex: 3,
-          child: _TreePanel(
+          child: ApprovalTreePanel(
             searchHint: '이름/아이디/부서/직위/직책/...',
             nodes: [
               '다우오피스',
@@ -82,8 +85,8 @@ class _AgreementOption extends StatelessWidget {
   }
 }
 
-class _PeopleSetup extends StatelessWidget {
-  const _PeopleSetup({required this.caption});
+class ApprovalPeopleSetup extends StatelessWidget {
+  const ApprovalPeopleSetup({super.key, required this.caption});
 
   final String caption;
 
@@ -93,7 +96,7 @@ class _PeopleSetup extends StatelessWidget {
       children: [
         const Expanded(
           flex: 3,
-          child: _TreePanel(
+          child: ApprovalTreePanel(
             searchHint: '이름/아이디/부서/직위/직책/...',
             nodes: ['교육관리팀', '  교육관리자 부장', '  교육강사 부장', '기획팀', '  김사원'],
             selectedIndex: 2,
@@ -115,14 +118,15 @@ class _PeopleSetup extends StatelessWidget {
   }
 }
 
-class _PublicReceiverSetup extends StatelessWidget {
+class ApprovalPublicReceiverSetup extends StatelessWidget {
+  const ApprovalPublicReceiverSetup({super.key});
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
         const Expanded(
           flex: 3,
-          child: _TreePanel(
+          child: ApprovalTreePanel(
             searchHint: '이름, 이메일',
             nodes: [
               '공용 주소록',
@@ -256,8 +260,12 @@ class _SelectedPeopleTable extends StatelessWidget {
   }
 }
 
-class _DialogInfoRow extends StatelessWidget {
-  const _DialogInfoRow({required this.label, required this.value});
+class ApprovalDialogInfoRow extends StatelessWidget {
+  const ApprovalDialogInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;

@@ -1,7 +1,8 @@
-part of 'approval_dialogs.dart';
+import 'approval_dialog_dependencies.dart';
 
-class _LargeDialog extends StatelessWidget {
-  const _LargeDialog({
+class ApprovalLargeDialog extends StatelessWidget {
+  const ApprovalLargeDialog({
+    super.key,
     required this.title,
     required this.child,
     required this.actions,
@@ -45,8 +46,9 @@ class _LargeDialog extends StatelessWidget {
   }
 }
 
-class _TreePanel extends StatelessWidget {
-  const _TreePanel({
+class ApprovalTreePanel extends StatelessWidget {
+  const ApprovalTreePanel({
+    super.key,
     required this.searchHint,
     required this.nodes,
     this.selectedIndex = 0,
@@ -123,8 +125,13 @@ class _TreePanel extends StatelessWidget {
   }
 }
 
-class _DetailBox extends StatelessWidget {
-  const _DetailBox({required this.title, required this.rows, this.topAction});
+class ApprovalDetailBox extends StatelessWidget {
+  const ApprovalDetailBox({
+    super.key,
+    required this.title,
+    required this.rows,
+    this.topAction,
+  });
 
   final String title;
   final List<(String, String)> rows;
@@ -175,8 +182,12 @@ class _DetailBox extends StatelessWidget {
   }
 }
 
-class _DocumentPickerTable extends StatelessWidget {
-  const _DocumentPickerTable({required this.title, required this.documents});
+class ApprovalDocumentPickerTable extends StatelessWidget {
+  const ApprovalDocumentPickerTable({
+    super.key,
+    required this.title,
+    required this.documents,
+  });
 
   final String title;
   final List<String> documents;

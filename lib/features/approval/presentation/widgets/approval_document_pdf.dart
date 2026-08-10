@@ -43,12 +43,22 @@ Future<Uint8List> buildApprovalDocumentPdf(ApprovalDocument document) async {
   final fontData = await rootBundle.load('assets/fonts/SUIT-Variable.ttf');
   final font = pw.Font.ttf(fontData);
   final pdf = pw.Document();
+  final baseTheme = pw.ThemeData.withFont(base: font, bold: font);
+  const strongText = pw.TextStyle(
+    color: PdfColors.black,
+    renderingMode: PdfTextRenderingMode.fillAndStroke,
+  );
 
   pdf.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(28),
-      theme: pw.ThemeData.withFont(base: font, bold: font),
+      theme: baseTheme.copyWith(
+        defaultTextStyle: strongText,
+        paragraphStyle: strongText,
+        tableHeader: strongText,
+        tableCell: strongText,
+      ),
       build: (_) => _buildDocument(document),
     ),
   );
@@ -59,7 +69,11 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
   final widgets = <pw.Widget>[
     pw.Text(
       _sheetTitle(document),
-      style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold),
+      style: pw.TextStyle(
+        color: PdfColors.black,
+        fontSize: 22,
+        fontWeight: pw.FontWeight.bold,
+      ),
       textAlign: pw.TextAlign.center,
     ),
     pw.SizedBox(height: 18),
@@ -80,15 +94,12 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
       ],
     ),
     pw.SizedBox(height: 14),
-    _wideRow('수신', _join(document.receivers)),
-    _wideRow('참조', _join(document.references)),
-    _wideRow('열람자', _join(document.viewers)),
-    _wideRow('협조부서', document.cooperationDepartment),
-    _wideRow('합의', document.agreement),
     if (document.documentLayout == 'payroll') _wideRow('제목', document.title),
-    if (document.linkedDocuments.isNotEmpty)
-      _wideRow('관련문서', _join(document.linkedDocuments)),
   ];
+
+  if (document.documentLayout == 'payroll') {
+    widgets.add(_wideRow('참조', document.formFields['reference'] ?? '-'));
+  }
 
   if (document.documentLayout == 'basic' ||
       document.documentLayout == 'payroll') {
@@ -96,19 +107,37 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
       _sectionHeader('상 세 내 용'),
       pw.Container(
         width: double.infinity,
-        constraints: const pw.BoxConstraints(minHeight: 220),
+        constraints: pw.BoxConstraints(
+          minHeight: document.documentLayout == 'basic' ? 320 : 250,
+        ),
         padding: const pw.EdgeInsets.all(14),
-        decoration: pw.BoxDecoration(border: pw.Border.all(width: .6)),
-        child: pw.Text(document.content.isEmpty ? '-' : document.content),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(color: PdfColors.black, width: .8),
+        ),
+        child: pw.Text(
+          document.content.isEmpty ? '-' : document.content,
+          style: const pw.TextStyle(
+            color: PdfColors.black,
+            fontSize: 11,
+            lineSpacing: 3,
+          ),
+        ),
       ),
     ]);
     return widgets;
   }
 
-  widgets.add(_wideRow('비고', document.formFields['note'] ?? '-'));
   final columns = _columnsFor(document.documentLayout);
+  final columnFlex = columns.fold<int>(0, (sum, column) => sum + column.$3);
+  widgets.add(
+    _flexWideRow(
+      '비고',
+      document.formFields['note'] ?? '-',
+      labelFlex: columns.first.$3,
+      valueFlex: columnFlex - columns.first.$3,
+    ),
+  );
   final rows = document.lineItems
-      .where((item) => item.values.any((value) => value.isNotEmpty))
       .map(
         (item) => columns
             .map((column) => _displayCell(column.$1, item[column.$1] ?? ''))
@@ -119,25 +148,44 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
     pw.TableHelper.fromTextArray(
       headers: columns.map((column) => column.$2).toList(),
       data: rows,
-      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9),
-      cellStyle: const pw.TextStyle(fontSize: 9),
+      headerStyle: pw.TextStyle(
+        color: PdfColors.black,
+        fontWeight: pw.FontWeight.bold,
+        fontSize: 9,
+      ),
+      cellStyle: const pw.TextStyle(color: PdfColors.black, fontSize: 9),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
       cellAlignment: pw.Alignment.center,
-      border: pw.TableBorder.all(width: .5),
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+      border: pw.TableBorder.all(color: PdfColors.black, width: .8),
       columnWidths: {
         for (var index = 0; index < columns.length; index++)
           index: pw.FlexColumnWidth(columns[index].$3.toDouble()),
       },
     ),
   );
-  widgets.add(_wideRow('합계 (V.A.T 포함)', _totalAmount(document)));
+  widgets.add(
+    _flexWideRow(
+      '합계 (V.A.T 포함)',
+      _totalAmount(document),
+      labelFlex: columnFlex - columns.last.$3,
+      valueFlex: columns.last.$3,
+    ),
+  );
   widgets.addAll([
     pw.SizedBox(height: 18),
-    pw.Text('위 금액을 청구하오니 결재하여 주시기 바랍니다.', textAlign: pw.TextAlign.center),
+    pw.Text(
+      '위 금액을 청구하오니 결재하여 주시기 바랍니다.',
+      style: const pw.TextStyle(color: PdfColors.black, fontSize: 10),
+      textAlign: pw.TextAlign.center,
+    ),
     pw.SizedBox(height: 18),
     pw.Text(
       '우리기술 주식회사',
-      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+      style: pw.TextStyle(
+        color: PdfColors.black,
+        fontWeight: pw.FontWeight.bold,
+      ),
       textAlign: pw.TextAlign.center,
     ),
   ]);
@@ -158,16 +206,33 @@ pw.Widget _approvalLine(List<ApprovalStep> steps) => pw.Column(
         return pw.Expanded(
           child: pw.Container(
             height: 72,
-            decoration: pw.BoxDecoration(border: pw.Border.all(width: .6)),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.black, width: .8),
+            ),
             child: pw.Column(
               mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
               children: [
                 pw.Text(
                   step.role.isEmpty ? step.type : step.role,
-                  style: const pw.TextStyle(fontSize: 8),
+                  style: const pw.TextStyle(
+                    color: PdfColors.black,
+                    fontSize: 8,
+                  ),
                 ),
-                pw.Text(step.name, style: const pw.TextStyle(fontSize: 9)),
-                pw.Text(result, style: const pw.TextStyle(fontSize: 8)),
+                pw.Text(
+                  step.name,
+                  style: const pw.TextStyle(
+                    color: PdfColors.black,
+                    fontSize: 9,
+                  ),
+                ),
+                pw.Text(
+                  result,
+                  style: const pw.TextStyle(
+                    color: PdfColors.black,
+                    fontSize: 8,
+                  ),
+                ),
               ],
             ),
           ),
@@ -181,7 +246,7 @@ pw.Widget _infoTable(List<(String, String)> rows) =>
     pw.Column(children: rows.map((row) => _wideRow(row.$1, row.$2)).toList());
 
 pw.Widget _wideRow(String label, String value) => pw.Table(
-  border: pw.TableBorder.all(width: .6),
+  border: pw.TableBorder.all(color: PdfColors.black, width: .8),
   columnWidths: const {0: pw.FixedColumnWidth(70), 1: pw.FlexColumnWidth()},
   children: [
     pw.TableRow(
@@ -192,12 +257,65 @@ pw.Widget _wideRow(String label, String value) => pw.Table(
           padding: const pw.EdgeInsets.all(6),
           child: pw.Text(
             label,
-            style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+            style: pw.TextStyle(
+              color: PdfColors.black,
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+            ),
           ),
         ),
         pw.Container(
           padding: const pw.EdgeInsets.all(6),
-          child: pw.Text(value.trim().isEmpty ? '-' : value),
+          child: pw.Text(
+            value.trim().isEmpty ? '-' : value,
+            style: const pw.TextStyle(color: PdfColors.black, fontSize: 10),
+          ),
+        ),
+      ],
+    ),
+  ],
+);
+
+pw.Widget _flexWideRow(
+  String label,
+  String value, {
+  required int labelFlex,
+  required int valueFlex,
+}) => pw.Table(
+  border: pw.TableBorder.all(color: PdfColors.black, width: .8),
+  columnWidths: {
+    0: pw.FlexColumnWidth(labelFlex.toDouble()),
+    1: pw.FlexColumnWidth(valueFlex.toDouble()),
+  },
+  children: [
+    pw.TableRow(
+      children: [
+        pw.Container(
+          color: PdfColors.grey200,
+          alignment: pw.Alignment.center,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+          child: pw.Text(
+            label,
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(
+              color: PdfColors.black,
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
+        ),
+        pw.Container(
+          alignment: pw.Alignment.center,
+          padding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 8),
+          child: pw.Text(
+            value.trim().isEmpty ? '-' : value,
+            textAlign: pw.TextAlign.center,
+            style: pw.TextStyle(
+              color: PdfColors.black,
+              fontSize: 9,
+              fontWeight: pw.FontWeight.bold,
+            ),
+          ),
         ),
       ],
     ),
@@ -210,11 +328,15 @@ pw.Widget _sectionHeader(String title) => pw.Container(
   padding: const pw.EdgeInsets.all(6),
   decoration: pw.BoxDecoration(
     color: PdfColors.grey200,
-    border: pw.Border.all(width: .6),
+    border: pw.Border.all(color: PdfColors.black, width: .8),
   ),
   child: pw.Text(
     title,
-    style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+    style: pw.TextStyle(
+      color: PdfColors.black,
+      fontSize: 9,
+      fontWeight: pw.FontWeight.bold,
+    ),
   ),
 );
 
@@ -254,8 +376,6 @@ String _totalAmount(ApprovalDocument document) {
   });
   return sum == 0 ? '-' : '${formatApprovalAmount(sum.toString())}원';
 }
-
-String _join(List<String> values) => values.isEmpty ? '-' : values.join(', ');
 
 String _sheetTitle(ApprovalDocument document) =>
     switch (document.documentLayout) {

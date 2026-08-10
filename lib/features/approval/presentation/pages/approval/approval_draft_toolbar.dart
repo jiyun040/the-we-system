@@ -1,7 +1,8 @@
-part of 'approval_draft_page.dart';
+import 'approval_draft_dependencies.dart';
 
-class _DraftToolbar extends StatelessWidget {
-  const _DraftToolbar({
+class ApprovalDraftToolbar extends StatelessWidget {
+  const ApprovalDraftToolbar({
+    super.key,
     required this.document,
     required this.onPreview,
     required this.onRequest,
@@ -103,8 +104,9 @@ class _DraftAction extends StatelessWidget {
   }
 }
 
-class _CompactFormSelector extends StatelessWidget {
-  const _CompactFormSelector({
+class ApprovalCompactFormSelector extends StatelessWidget {
+  const ApprovalCompactFormSelector({
+    super.key,
     required this.templates,
     required this.selectedFormId,
     required this.onFormSelected,
@@ -152,8 +154,9 @@ class _CompactFormSelector extends StatelessWidget {
   }
 }
 
-class _FormCatalog extends StatelessWidget {
-  const _FormCatalog({
+class ApprovalFormCatalog extends StatelessWidget {
+  const ApprovalFormCatalog({
+    super.key,
     required this.templates,
     required this.selectedFormId,
     required this.onFormSelected,

@@ -1,7 +1,8 @@
-part of 'approval_detail_page.dart';
+import 'approval_detail_dependencies.dart';
 
-class _ToolbarButton extends StatelessWidget {
-  const _ToolbarButton({
+class ApprovalToolbarButton extends StatelessWidget {
+  const ApprovalToolbarButton({
+    super.key,
     required this.icon,
     required this.label,
     required this.onPressed,
@@ -37,8 +38,8 @@ class _ToolbarButton extends StatelessWidget {
   }
 }
 
-class _RightPanel extends StatelessWidget {
-  const _RightPanel({required this.document});
+class ApprovalRightPanel extends StatelessWidget {
+  const ApprovalRightPanel({super.key, required this.document});
 
   final ApprovalDocument document;
 
@@ -365,8 +366,4 @@ class _SimplePerson extends StatelessWidget {
       title: Text(name, style: TheWeTextStyle.body),
     );
   }
-}
-
-extension<T> on Iterable<T> {
-  T? get firstOrNull => isEmpty ? null : first;
 }

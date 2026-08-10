@@ -1,7 +1,8 @@
-part of 'approval_box_page.dart';
+import 'approval_box_dependencies.dart';
 
-class _DocumentMobileList extends StatelessWidget {
-  const _DocumentMobileList({
+class ApprovalDocumentMobileList extends StatelessWidget {
+  const ApprovalDocumentMobileList({
+    super.key,
     required this.kind,
     required this.documents,
     required this.canCancelForCurrentUser,

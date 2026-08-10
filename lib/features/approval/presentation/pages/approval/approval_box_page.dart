@@ -10,11 +10,9 @@ import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_empty_state.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_mobile_document_card.dart';
 
-part 'approval_box_mobile.dart';
-part 'approval_box_table_cells.dart';
+import 'approval_box_mobile.dart';
+import 'approval_box_table_cells.dart';
 
 class ApprovalBoxPage extends ConsumerWidget {
   const ApprovalBoxPage({super.key, required this.kind, this.formId});
@@ -326,7 +324,7 @@ class _DocumentTable extends ConsumerWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         if (constraints.maxWidth < 640) {
-          return _DocumentMobileList(
+          return ApprovalDocumentMobileList(
             kind: kind,
             documents: documents,
             canCancelForCurrentUser: (document) =>
@@ -373,23 +371,23 @@ class _DocumentTable extends ConsumerWidget {
                   (appState?.isAdminMode == true ||
                       document.drafter == currentUser.name);
               return <Widget>[
-                _DocumentTableText(document.draftedAt),
-                _DocumentTableText(_completedAt(document)),
-                _DocumentTableText(document.form),
+                ApprovalDocumentTableText(document.draftedAt),
+                ApprovalDocumentTableText(_completedAt(document)),
+                ApprovalDocumentTableText(document.form),
                 document.urgent
-                    ? const _UrgentChip()
-                    : const _DocumentTableText('-'),
-                _DocumentTableText(
+                    ? const ApprovalUrgentChip()
+                    : const ApprovalDocumentTableText('-'),
+                ApprovalDocumentTableText(
                   document.title.trim().isEmpty ? '-' : document.title,
                 ),
-                _DocumentTableText(
+                ApprovalDocumentTableText(
                   document.linkedDocuments.isEmpty
                       ? '-'
                       : '${document.linkedDocuments.length}',
                 ),
-                _DocumentTableText(document.department),
-                _DocumentTableText(document.documentNo),
-                _DocumentStatusChip(document.status),
+                ApprovalDocumentTableText(document.department),
+                ApprovalDocumentTableText(document.documentNo),
+                ApprovalDocumentStatusChip(document.status),
                 Wrap(
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,

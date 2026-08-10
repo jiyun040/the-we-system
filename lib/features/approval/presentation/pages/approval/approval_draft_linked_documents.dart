@@ -1,15 +1,16 @@
-part of 'approval_draft_page.dart';
+import 'approval_draft_dependencies.dart';
 
-class _LinkedDocumentDialog extends StatefulWidget {
-  const _LinkedDocumentDialog({required this.documents});
+class ApprovalLinkedDocumentDialog extends StatefulWidget {
+  const ApprovalLinkedDocumentDialog({super.key, required this.documents});
 
   final List<ApprovalDocument> documents;
 
   @override
-  State<_LinkedDocumentDialog> createState() => _LinkedDocumentDialogState();
+  State<ApprovalLinkedDocumentDialog> createState() =>
+      _LinkedDocumentDialogState();
 }
 
-class _LinkedDocumentDialogState extends State<_LinkedDocumentDialog> {
+class _LinkedDocumentDialogState extends State<ApprovalLinkedDocumentDialog> {
   String? selectedId;
 
   @override
@@ -109,8 +110,12 @@ class _LinkedDocumentDialogState extends State<_LinkedDocumentDialog> {
   }
 }
 
-class _DraftInfoRow extends StatelessWidget {
-  const _DraftInfoRow({required this.label, required this.value});
+class ApprovalDraftInfoRow extends StatelessWidget {
+  const ApprovalDraftInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;
@@ -147,8 +152,12 @@ class _DraftInfoRow extends StatelessWidget {
   }
 }
 
-class _DraftInputRow extends StatelessWidget {
-  const _DraftInputRow({required this.label, required this.controller});
+class ApprovalDraftInputRow extends StatelessWidget {
+  const ApprovalDraftInputRow({
+    super.key,
+    required this.label,
+    required this.controller,
+  });
 
   final String label;
   final TextEditingController controller;
