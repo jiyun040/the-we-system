@@ -225,7 +225,7 @@ class _AdminAccessGate extends ConsumerWidget {
                     if (verified == null) return;
                     otp = verified;
                   }
-                  final success = ref
+                  final success = await ref
                       .read(approvalDashboardControllerProvider.notifier)
                       .enterAdminMode(otp);
                   if (success) {

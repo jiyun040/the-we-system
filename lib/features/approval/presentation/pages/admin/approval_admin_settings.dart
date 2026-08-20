@@ -52,8 +52,8 @@ class _SettingsPasswordGateState
       ),
     ),
   );
-  void _verify() {
-    if (ref
+  Future<void> _verify() async {
+    if (await ref
         .read(approvalDashboardControllerProvider.notifier)
         .verifyCurrentPassword(controller.text)) {
       widget.onUnlocked();

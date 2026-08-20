@@ -168,7 +168,9 @@ class SideBarBrand extends ConsumerWidget {
                           if (verified == null || !context.mounted) return;
                           otp = verified;
                         }
-                        if (notifier.enterAdminMode(otp)) {
+                        final entered = await notifier.enterAdminMode(otp);
+                        if (!context.mounted) return;
+                        if (entered) {
                           context.goNamed(AppRouteName.admin);
                           return;
                         }

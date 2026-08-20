@@ -1,18 +1,32 @@
-import 'dart:typed_data';
+import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardAdminActions on ApprovalDashboardController {
+  void syncRemote(Future<void> Function() operation) {
+    if (!usesRemoteApi) return;
+    unawaited(
+      operation().then((_) => reloadRemoteState()).catchError((Object error) {
+        debugPrint('서버 동기화 실패: $error');
+      }),
+    );
+  }
+
   bool verifyAdminOtp(String otp) => otp.trim() == '123456';
 
-  bool enterAdminMode(String otp) {
+  Future<bool> enterAdminMode(String otp) async {
     final current = currentDashboardState;
     if (current == null ||
         current.currentUser?.id != 'edu_manager' ||
         current.currentUser?.isAdmin != true ||
-        (current.adminOtpEnabled && !verifyAdminOtp(otp))) {
+        (current.adminOtpEnabled &&
+            (usesRemoteApi
+                ? !await api.verifyAdminOtp(otp)
+                : !verifyAdminOtp(otp)))) {
       return false;
     }
     setApprovalDashboardState(this, (value) => value.copyWith(adminMode: true));
@@ -26,7 +40,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     );
   }
 
-  bool verifyCurrentPassword(String password) {
+  Future<bool> verifyCurrentPassword(String password) async {
+    if (usesRemoteApi) return api.verifyPassword(password);
     return currentDashboardState?.currentUser?.password == password;
   }
 
@@ -54,6 +69,14 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           : value.currentUser;
       return value.copyWith(accounts: accounts, currentUser: currentUser);
     });
+    syncRemote(
+      () => api.updateEmployee(userId, {
+        'department': department.trim(),
+        'position': position.trim(),
+        'hireDate': hireDate.trim(),
+        if (password?.trim().isNotEmpty == true) 'password': password!.trim(),
+      }),
+    );
   }
 
   String? addEmployee({
@@ -104,6 +127,17 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       this,
       (value) => value.copyWith(accounts: [...value.accounts, account]),
     );
+    syncRemote(
+      () => api.createEmployee({
+        'id': normalizedId,
+        'password': password.trim(),
+        'name': name.trim(),
+        'department': department.trim(),
+        'position': position.trim(),
+        'email': normalizedEmail,
+        'hireDate': hireDate.trim(),
+      }),
+    );
     return null;
   }
 
@@ -117,6 +151,15 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       }
       return value.copyWith(enabledAppIds: enabledIds);
     });
+    final enabledIds = {...?currentDashboardState?.enabledAppIds};
+    if (enabled) {
+      enabledIds.add(appId);
+    } else {
+      enabledIds.remove(appId);
+    }
+    syncRemote(
+      () => api.updateSettings({'enabledAppIds': enabledIds.toList()}),
+    );
   }
 
   void toggleFormTemplate(String templateId, bool enabled) {
@@ -129,6 +172,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       }
       return value.copyWith(disabledFormTemplateIds: disabledIds);
     });
+    syncRemote(() => api.setFormEnabled(templateId, enabled));
   }
 
   String? saveFormTemplate({
@@ -191,6 +235,28 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       this,
       (value) => value.copyWith(formTemplates: templates),
     );
+    final saved = currentDashboardState?.formTemplates
+        .where(
+          (item) =>
+              item.id == templateId ||
+              (templateId == null && item.name == name.trim()),
+        )
+        .lastOrNull;
+    syncRemote(
+      () => api.saveForm(
+        id: templateId,
+        data: {
+          if (saved != null && templateId == null) 'id': saved.id,
+          'category': category.trim(),
+          'name': name.trim(),
+          'description': description.trim(),
+          'defaultTitle': defaultTitle.trim(),
+          'defaultContent': defaultContent.trim(),
+          'documentLayout': documentLayout,
+          'lineItemRows': lineItemRows,
+        },
+      ),
+    );
     return null;
   }
 
@@ -208,6 +274,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         disabledFormTemplateIds: disabledIds,
       );
     });
+    syncRemote(() => api.deleteForm(templateId));
   }
 
   void updatePortalName(String name) {
@@ -217,6 +284,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       this,
       (value) => value.copyWith(portalName: normalized),
     );
+    syncRemote(() => api.updateSettings({'portalName': normalized}));
   }
 
   String? updatePortalLogo(Uint8List bytes, String fileName) {
@@ -229,6 +297,12 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       (value) =>
           value.copyWith(customLogoBytes: bytes, customLogoFileName: fileName),
     );
+    syncRemote(
+      () => api.updateSettings({
+        'customLogoBase64': base64Encode(bytes),
+        'customLogoFileName': fileName,
+      }),
+    );
     return null;
   }
 
@@ -236,6 +310,12 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     setApprovalDashboardState(
       this,
       (value) => value.copyWith(clearCustomLogo: true),
+    );
+    syncRemote(
+      () => api.updateSettings({
+        'customLogoBase64': '',
+        'customLogoFileName': '',
+      }),
     );
   }
 
@@ -251,6 +331,13 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         settingsPasswordEnabled: settingsPasswordEnabled,
         adminDocumentAccessEnabled: adminDocumentAccessEnabled,
       ),
+    );
+    syncRemote(
+      () => api.updateSettings({
+        'adminOtpEnabled': ?adminOtpEnabled,
+        'settingsPasswordEnabled': ?settingsPasswordEnabled,
+        'adminDocumentAccessEnabled': ?adminDocumentAccessEnabled,
+      }),
     );
   }
 
@@ -281,6 +368,19 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         },
       );
     });
+    final latest = currentDashboardState;
+    final viewerIds =
+        latest?.documentCategoryViewerIds ?? const <String, Set<String>>{};
+    syncRemote(
+      () => api.updateSettings({
+        'organizationWideDocumentCategories':
+            latest?.organizationWideDocumentCategories.toList() ?? const [],
+        'documentCategoryViewerIds': {
+          for (final entry in viewerIds.entries)
+            entry.key: entry.value.toList(),
+        },
+      }),
+    );
   }
 
   String? setAdminPermission(String userId, bool enabled) {
@@ -320,6 +420,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
             : value.selectedOrgDepartment,
       ),
     );
+    syncRemote(() => api.renameDepartment(currentName, normalized));
     return null;
   }
 
@@ -329,6 +430,15 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       (value) => value.copyWith(
         annualLeaveByYear: {...value.annualLeaveByYear, year: days},
       ),
+    );
+    final policy =
+        currentDashboardState?.annualLeaveByYear ?? const <int, int>{};
+    syncRemote(
+      () => api.updateSettings({
+        'annualLeaveByYear': {
+          for (final entry in policy.entries) '${entry.key}': entry.value,
+        },
+      }),
     );
   }
 
@@ -350,6 +460,14 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         annualLeaveByYear: {...policies},
         monthlyLeavePerMonth: monthlyLeavePerMonth,
       ),
+    );
+    syncRemote(
+      () => api.updateSettings({
+        'annualLeaveByYear': {
+          for (final entry in policies.entries) '${entry.key}': entry.value,
+        },
+        'monthlyLeavePerMonth': ?monthlyLeavePerMonth,
+      }),
     );
     return null;
   }
@@ -404,6 +522,17 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           ...value.acknowledgedLeaveRequestIds,
           request.id,
         },
+      ),
+    );
+    syncRemote(
+      () => api.createLeave(
+        userId: userId,
+        type: type,
+        startDate: startDate,
+        endDate: endDate,
+        days: days,
+        reason: reason.trim(),
+        directEntry: true,
       ),
     );
     return null;
@@ -487,6 +616,15 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         documents: [document, ...value.documents],
       ),
     );
+    syncRemote(
+      () => api.createLeave(
+        type: type,
+        startDate: startDate,
+        endDate: endDate,
+        days: days,
+        reason: reason,
+      ),
+    );
   }
 
   void updateLeaveStatus(String requestId, String status) {
@@ -512,6 +650,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
             .toList(),
       ),
     );
+    if (status == '승인완료' || status == '반려') {
+      syncRemote(() => api.actOnLeave(requestId, approve: status == '승인완료'));
+    }
   }
 
   bool actOnLeave(String requestId, {required bool approve}) {
@@ -549,10 +690,17 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
             .toList(),
       ),
     );
+    syncRemote(() => api.actOnLeave(requestId, approve: approve));
     return true;
   }
 
   void acknowledgeApprovedLeaves([Iterable<String>? requestIds]) {
+    final targets =
+        requestIds?.toSet() ??
+        currentDashboardState?.unacknowledgedApprovedLeaveRequests
+            .map((request) => request.id)
+            .toSet() ??
+        const <String>{};
     setApprovalDashboardState(this, (value) {
       final targets =
           requestIds?.toSet() ??
@@ -566,6 +714,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         },
       );
     });
+    for (final id in targets) {
+      syncRemote(() => api.acknowledgeLeave(id));
+    }
   }
 }
 
