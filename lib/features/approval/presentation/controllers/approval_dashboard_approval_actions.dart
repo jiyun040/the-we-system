@@ -9,10 +9,27 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
     required String opinion,
   }) async {
     if (documentId.startsWith('LEAVE-DOC-')) {
+      if (usesRemoteApi) {
+        await api.actOnLeave(
+          documentId.substring('LEAVE-DOC-'.length),
+          approve: action != '반려',
+        );
+        await reloadRemoteState();
+        return;
+      }
       actOnLeave(
         documentId.substring('LEAVE-DOC-'.length),
         approve: action != '반려',
       );
+      return;
+    }
+    if (usesRemoteApi) {
+      final document = await api.actOnDocument(
+        documentId,
+        approve: action != '반려',
+        opinion: opinion,
+      );
+      replaceApprovalDocument(this, document);
       return;
     }
     final current = currentDashboardState;
@@ -109,6 +126,11 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
   }
 
   Future<void> cancelSubmission(String documentId) async {
+    if (usesRemoteApi) {
+      final document = await api.cancelDocument(documentId);
+      replaceApprovalDocument(this, document);
+      return;
+    }
     final current = currentDashboardState;
     final user = current?.currentUser;
     if (current == null || user == null) {

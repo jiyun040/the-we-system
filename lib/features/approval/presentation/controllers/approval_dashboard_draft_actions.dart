@@ -72,6 +72,41 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       return null;
     }
 
+    if (usesRemoteApi) {
+      final currentDocument = documentId == null
+          ? null
+          : current.documents
+                .where((item) => item.id == documentId)
+                .firstOrNull;
+      final request = ApprovalRequestDraft(
+        formId: formId,
+        title: title,
+        content: content,
+        urgent: currentDocument?.urgent ?? false,
+        linkedDocuments: linkedDocuments,
+        attachments: attachments,
+        departmentVisible: departmentVisible,
+        documentLayout: template.documentLayout,
+        formFields: formFields,
+        lineItems: lineItems,
+      );
+      final steps = _remoteSteps(
+        buildApprovalStepsFor(user, current.accounts),
+        current.accounts,
+      );
+      final saved =
+          currentDocument?.status == '작성중' &&
+              currentDocument?.documentNo == '임시저장'
+          ? await api.updateDraft(
+              currentDocument!.id,
+              draft: request,
+              steps: steps,
+            )
+          : await api.createDraft(draft: request, steps: steps);
+      _replaceRemoteDocument(this, documentId, saved, departmentVisible);
+      return saved.id;
+    }
+
     final currentDocument = documentId == null
         ? null
         : current.documents.where((item) => item.id == documentId).firstOrNull;
@@ -156,6 +191,37 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       return null;
     }
 
+    if (usesRemoteApi) {
+      final sourceDocument = documentId == null
+          ? null
+          : current.documents
+                .where((item) => item.id == documentId)
+                .firstOrNull;
+      final steps = _remoteSteps(
+        buildApprovalStepsFor(user, current.accounts),
+        current.accounts,
+      );
+      ApprovalDocument saved;
+      if (sourceDocument?.status == '작성중' &&
+          sourceDocument?.documentNo == '임시저장') {
+        saved = await api.updateDraft(
+          sourceDocument!.id,
+          draft: draft,
+          steps: steps,
+        );
+      } else {
+        saved = await api.createDraft(draft: draft, steps: steps);
+      }
+      final submitted = await api.submitDocument(saved.id);
+      _replaceRemoteDocument(
+        this,
+        documentId ?? saved.id,
+        submitted,
+        draft.departmentVisible,
+      );
+      return submitted.id;
+    }
+
     final sourceDocument = documentId == null
         ? null
         : current.documents.where((item) => item.id == documentId).firstOrNull;
@@ -230,4 +296,48 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
 
     return id;
   }
+}
+
+List<Map<String, dynamic>> _remoteSteps(
+  List<ApprovalStep> steps,
+  List<EmployeeAccount> accounts,
+) => steps.map((step) {
+  final approver = accounts
+      .where((account) => account.name == step.name)
+      .firstOrNull;
+  return <String, dynamic>{
+    if (approver != null) 'approverId': approver.id,
+    'name': step.name,
+    'department': step.department,
+    'type': step.type,
+    'role': step.role,
+    'status': step.status,
+    'approvedAt': step.approvedAt,
+    'delegatedBy': step.delegatedBy,
+    'requiresOriginalApproval': step.requiresOriginalApproval,
+  };
+}).toList();
+
+void _replaceRemoteDocument(
+  ApprovalDashboardController controller,
+  String? previousId,
+  ApprovalDocument document,
+  bool departmentVisible,
+) {
+  setApprovalDashboardState(controller, (current) {
+    final documents = [
+      ...current.documents.where(
+        (item) => item.id != previousId && item.id != document.id,
+      ),
+      document,
+    ]..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
+    final restricted = {...current.restrictedDocumentIds}
+      ..remove(previousId)
+      ..remove(document.id);
+    if (!departmentVisible) restricted.add(document.id);
+    return current.copyWith(
+      documents: documents,
+      restrictedDocumentIds: restricted,
+    );
+  });
 }

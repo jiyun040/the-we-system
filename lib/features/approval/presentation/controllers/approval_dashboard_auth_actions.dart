@@ -1,4 +1,5 @@
 import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
+import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
@@ -11,10 +12,28 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   Future<void> refresh() async {
+    if (usesRemoteApi) {
+      await reloadRemoteState();
+      return;
+    }
     setApprovalDashboardState(this, (current) => current);
   }
 
   Future<bool> login(String id, String password) async {
+    if (usesRemoteApi) {
+      try {
+        await api.login(id.trim(), password);
+        sessionPassword = password;
+        await reloadRemoteState();
+        return true;
+      } on ApiException catch (error) {
+        setApprovalDashboardState(
+          this,
+          (value) => value.copyWith(loginError: error.message),
+        );
+        return false;
+      }
+    }
     final current = currentDashboardState;
     if (current == null) {
       return false;
@@ -46,6 +65,12 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   bool hasValidAdminCredentials(String id, String password) {
+    if (usesRemoteApi) {
+      final user = currentDashboardState?.currentUser;
+      return user?.id == id &&
+          user?.isAdmin == true &&
+          sessionPassword == password;
+    }
     final current = currentDashboardState;
     if (current == null) return false;
     return current.accounts.any(
@@ -63,6 +88,21 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
     required String email,
     required bool isAdmin,
   }) async {
+    if (usesRemoteApi) {
+      try {
+        await api.register(
+          id: id.trim(),
+          password: password,
+          name: name.trim(),
+          department: department.trim(),
+          position: position.trim(),
+          email: email.trim().toLowerCase(),
+        );
+        return null;
+      } on ApiException catch (error) {
+        return error.message;
+      }
+    }
     final current = currentDashboardState;
     if (current == null) {
       return '회원가입 상태를 불러오지 못했습니다.';
@@ -106,7 +146,11 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
     return null;
   }
 
-  void logout() {
+  Future<void> logout() async {
+    if (usesRemoteApi) {
+      await api.logout();
+      sessionPassword = null;
+    }
     setApprovalDashboardState(
       this,
       (current) => current.copyWith(
