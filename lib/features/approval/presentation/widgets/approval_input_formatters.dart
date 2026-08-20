@@ -90,3 +90,17 @@ String calculateApprovalLineItemTotal({
   }
   return (parsedQuantity * parsedAmount).toString();
 }
+
+/// 각 행의 합계금액을 더한다.
+///
+/// 수량이 없는 양식은 [amount]만 사용하므로, [total]이 비어 있으면 금액을
+/// 합산한다. 사용자가 합계금액을 직접 입력한 경우에는 해당 값을 우선한다.
+String calculateApprovalLineItemsTotal(List<Map<String, String>> items) {
+  final sum = items.fold<BigInt>(BigInt.zero, (total, item) {
+    final enteredTotal = item['total']?.trim() ?? '';
+    final value = enteredTotal.isNotEmpty ? enteredTotal : item['amount'] ?? '';
+    final digits = value.replaceAll(RegExp(r'[^0-9]'), '');
+    return total + (BigInt.tryParse(digits) ?? BigInt.zero);
+  });
+  return sum == BigInt.zero ? '' : sum.toString();
+}

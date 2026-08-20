@@ -437,10 +437,7 @@ class _PdfLayoutEditor extends StatelessWidget {
   };
 
   String _totalAmount(List<Map<String, String>> items) {
-    final sum = items.fold<int>(0, (total, item) {
-      final raw = (item['total'] ?? item['amount'] ?? '').replaceAll(',', '');
-      return total + (int.tryParse(raw) ?? 0);
-    });
-    return sum == 0 ? '' : '${formatApprovalAmount(sum.toString())}원';
+    final total = calculateApprovalLineItemsTotal(items);
+    return total.isEmpty ? '' : '${formatApprovalAmount(total)}원';
   }
 }

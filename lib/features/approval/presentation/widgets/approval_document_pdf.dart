@@ -40,29 +40,37 @@ Future<void> exportApprovalDocumentPdf(
 }
 
 Future<Uint8List> buildApprovalDocumentPdf(ApprovalDocument document) async {
-  final fontData = await rootBundle.load('assets/fonts/SUIT-Variable.ttf');
+  final fontData = await _loadPdfFont('assets/fonts/SUIT-Medium.ttf');
+  final boldFontData = await _loadPdfFont('assets/fonts/SUIT-Bold.ttf');
   final font = pw.Font.ttf(fontData);
+  final boldFont = pw.Font.ttf(boldFontData);
   final pdf = pw.Document();
-  final baseTheme = pw.ThemeData.withFont(base: font, bold: font);
-  const strongText = pw.TextStyle(
-    color: PdfColors.black,
-    renderingMode: PdfTextRenderingMode.fillAndStroke,
-  );
+  final baseTheme = pw.ThemeData.withFont(base: font, bold: boldFont);
+  const baseText = pw.TextStyle(color: PdfColors.black);
 
   pdf.addPage(
     pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.all(28),
       theme: baseTheme.copyWith(
-        defaultTextStyle: strongText,
-        paragraphStyle: strongText,
-        tableHeader: strongText,
-        tableCell: strongText,
+        defaultTextStyle: baseText,
+        paragraphStyle: baseText,
+        tableHeader: baseText,
+        tableCell: baseText,
       ),
       build: (_) => _buildDocument(document),
     ),
   );
   return pdf.save();
+}
+
+Future<ByteData> _loadPdfFont(String assetPath) async {
+  try {
+    return await rootBundle.load(assetPath);
+  } catch (error, stackTrace) {
+    debugPrint('approval-pdf-font-fallback: $error\n$stackTrace');
+    return rootBundle.load('assets/fonts/SUIT-Variable.ttf');
+  }
 }
 
 List<pw.Widget> _buildDocument(ApprovalDocument document) {
@@ -247,6 +255,7 @@ pw.Widget _infoTable(List<(String, String)> rows) =>
 
 pw.Widget _wideRow(String label, String value) => pw.Table(
   border: pw.TableBorder.all(color: PdfColors.black, width: .8),
+  defaultVerticalAlignment: pw.TableCellVerticalAlignment.full,
   columnWidths: const {0: pw.FixedColumnWidth(70), 1: pw.FlexColumnWidth()},
   children: [
     pw.TableRow(
@@ -283,6 +292,7 @@ pw.Widget _flexWideRow(
   required int valueFlex,
 }) => pw.Table(
   border: pw.TableBorder.all(color: PdfColors.black, width: .8),
+  defaultVerticalAlignment: pw.TableCellVerticalAlignment.full,
   columnWidths: {
     0: pw.FlexColumnWidth(labelFlex.toDouble()),
     1: pw.FlexColumnWidth(valueFlex.toDouble()),
@@ -370,11 +380,8 @@ String _displayCell(String key, String value) {
 }
 
 String _totalAmount(ApprovalDocument document) {
-  final sum = document.lineItems.fold<int>(0, (total, item) {
-    final raw = (item['total'] ?? item['amount'] ?? '').replaceAll(',', '');
-    return total + (int.tryParse(raw) ?? 0);
-  });
-  return sum == 0 ? '-' : '${formatApprovalAmount(sum.toString())}원';
+  final total = calculateApprovalLineItemsTotal(document.lineItems);
+  return total.isEmpty ? '-' : '${formatApprovalAmount(total)}원';
 }
 
 String _sheetTitle(ApprovalDocument document) =>

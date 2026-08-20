@@ -35,6 +35,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/images/
+    - assets/fonts/SUIT-Medium.ttf
+    - assets/fonts/SUIT-Bold.ttf
   fonts:
     - family: SUIT-Variable
       fonts:

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_pdf.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_input_formatters.dart';
@@ -59,6 +60,54 @@ void main() {
       ),
       isNotEmpty,
     );
+  });
+
+  test('행 합계금액이 비어 있으면 결재 금액을 전체 합계에 반영한다', () {
+    expect(
+      calculateApprovalLineItemsTotal(const [
+        {'amount': '1,250,000', 'total': ''},
+        {'amount': '750,000'},
+      ]),
+      '2000000',
+    );
+    expect(
+      calculateApprovalLineItemsTotal(const [
+        {'amount': '1,250,000', 'total': '2,500,000'},
+      ]),
+      '2500000',
+    );
+  });
+
+  testWidgets('기안의견 입력 글자를 읽기 쉬운 크기로 표시한다', (tester) async {
+    const document = ApprovalDocument(
+      id: 'APP-DIALOG',
+      title: '결재 요청 테스트',
+      drafter: '홍길동',
+      department: '지원팀',
+      form: '업무기안',
+      status: '작성중',
+      draftedAt: '2026-08-19',
+      dueDate: '2026-08-20',
+      progress: 0,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () =>
+                showRequestApprovalDialog(context, document: document),
+            child: const Text('결재요청 열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('결재요청 열기'));
+    await tester.pumpAndSettle();
+
+    final opinionField = tester.widget<EditableText>(find.byType(EditableText));
+    expect(opinionField.style.fontSize, 16);
+    expect(opinionField.style.height, 1.5);
   });
 
   testWidgets('상신 문서는 추가 결재 정보 없이 빈 표 행까지 유지한다', (tester) async {
@@ -150,7 +199,11 @@ void main() {
       documentNo: 'APP-TEST',
       content: '결재 문서 출력 내용',
       documentLayout: 'purchase',
-      formFields: const {'note': ''},
+      formFields: const {
+        'note':
+            '구매 후 A/S와 보증기간을 확인해 주세요. 비고가 여러 줄로 길어지는 '
+            '경우에도 라벨 배경과 테두리가 내용 높이에 맞게 출력되어야 합니다.',
+      },
       lineItems: List.generate(
         16,
         (_) => const {

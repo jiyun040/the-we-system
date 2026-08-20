@@ -269,6 +269,10 @@ Future<bool?> showRequestApprovalDialog(
                           controller: controller,
                           minLines: 5,
                           maxLines: 5,
+                          style: TheWeTextStyle.body.copyWith(
+                            fontSize: 16,
+                            height: 1.5,
+                          ),
                           decoration: const InputDecoration(
                             hintText: '의견을 작성해 주세요.',
                           ),
