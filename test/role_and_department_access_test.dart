@@ -22,8 +22,8 @@ void main() {
           .adminMode,
       isFalse,
     );
-    expect(notifier.enterAdminMode('000000'), isFalse);
-    expect(notifier.enterAdminMode('123456'), isTrue);
+    expect(await notifier.enterAdminMode('000000'), isFalse);
+    expect(await notifier.enterAdminMode('123456'), isTrue);
     expect(
       container
           .read(approvalDashboardControllerProvider)
@@ -334,7 +334,7 @@ void main() {
       approvalDashboardControllerProvider.notifier,
     );
     expect(await notifier.login('edu_manager', '1234'), isTrue);
-    expect(notifier.enterAdminMode('123456'), isTrue);
+    expect(await notifier.enterAdminMode('123456'), isTrue);
 
     final before = container
         .read(approvalDashboardControllerProvider)
@@ -474,7 +474,7 @@ void main() {
 
     notifier.logout();
     await notifier.login('edu_manager', '1234');
-    expect(notifier.enterAdminMode('123456'), isTrue);
+    expect(await notifier.enterAdminMode('123456'), isTrue);
     notifier.acknowledgeApprovedLeaves([requestId]);
     state = container.read(approvalDashboardControllerProvider).requireValue;
     expect(state.unacknowledgedApprovedLeaveRequests, isEmpty);
@@ -516,10 +516,10 @@ void main() {
     );
 
     expect(await notifier.login('edu_teacher', '1234'), isTrue);
-    expect(notifier.enterAdminMode('123456'), isFalse);
+    expect(await notifier.enterAdminMode('123456'), isFalse);
     notifier.logout();
     expect(await notifier.login('edu_manager', '1234'), isTrue);
-    expect(notifier.enterAdminMode('123456'), isTrue);
+    expect(await notifier.enterAdminMode('123456'), isTrue);
     var state = container
         .read(approvalDashboardControllerProvider)
         .requireValue;

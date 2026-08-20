@@ -20,7 +20,7 @@ void main() {
       adminDocumentAccessEnabled: true,
     );
     expect(await notifier.login('edu_manager', '1234'), isTrue);
-    expect(notifier.enterAdminMode(''), isTrue);
+    expect(await notifier.enterAdminMode(''), isTrue);
 
     var state = container
         .read(approvalDashboardControllerProvider)
