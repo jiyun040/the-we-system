@@ -3,4 +3,6 @@ abstract final class AppEnv {
     'API_BASE_URL',
     defaultValue: '',
   );
+
+  static bool get usesRemoteApi => baseUrl.trim().isNotEmpty;
 }
