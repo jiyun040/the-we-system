@@ -72,7 +72,8 @@ class ApprovalDraftToolbar extends StatelessWidget {
               _DraftAction(
                 icon: Icons.info_outline,
                 label: '결재 정보',
-                onPressed: () => showApprovalInfoDialog(context),
+                onPressed: () =>
+                    showApprovalInfoDialog(context, document: document),
               ),
             ],
           ),

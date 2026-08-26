@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
-import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -17,41 +16,24 @@ class ApprovalSignupPage extends ConsumerStatefulWidget {
 }
 
 class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
-  static const List<String> _departments = [
-    '개발팀',
-    '교육팀',
-    '영업팀',
-    '회계팀',
-    '세무팀',
-    '인사팀',
-    '경영관리팀',
-  ];
-
-  static const List<String> _employeePositions = [
-    '사원',
-    '주임',
-    '대리',
-    '과장',
-    '차장',
-    '부장',
-  ];
-
   final nameController = TextEditingController();
   final idController = TextEditingController();
   final emailController = TextEditingController();
+  final departmentController = TextEditingController();
+  final positionController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   bool showPassword = false;
   bool showConfirmPassword = false;
   String errorMessage = '';
-  String selectedDepartment = _departments.first;
-  String selectedPosition = _employeePositions.first;
 
   @override
   void dispose() {
     nameController.dispose();
     idController.dispose();
     emailController.dispose();
+    departmentController.dispose();
+    positionController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
@@ -115,28 +97,10 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   CustomTextFormField(controller: emailController),
                   const SizedBox(height: 14),
                   _FieldLabel('부서'),
-                  _SelectionDropdown(
-                    value: selectedDepartment,
-                    items: _departments,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() => selectedDepartment = value);
-                    },
-                  ),
+                  CustomTextFormField(controller: departmentController),
                   const SizedBox(height: 14),
                   _FieldLabel('직책'),
-                  _SelectionDropdown(
-                    value: selectedPosition,
-                    items: _employeePositions,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() => selectedPosition = value);
-                    },
-                  ),
+                  CustomTextFormField(controller: positionController),
                   const SizedBox(height: 14),
                   _FieldLabel('비밀번호'),
                   CustomTextFormField(
@@ -216,8 +180,8 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
     final name = nameController.text.trim();
     final id = idController.text.trim();
     final email = emailController.text.trim();
-    final department = selectedDepartment;
-    final position = selectedPosition;
+    final department = departmentController.text.trim();
+    final position = positionController.text.trim();
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
 
@@ -263,27 +227,6 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
     showTheWeSnackBar(context, message: '회원가입이 완료되었습니다. 로그인해 주세요.');
     context.goNamed(AppRouteName.home);
   }
-}
-
-class _SelectionDropdown extends StatelessWidget {
-  const _SelectionDropdown({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  final String value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) => TheWeDropdown<String>(
-    value: value,
-    width: double.infinity,
-    items: items,
-    labelBuilder: (item) => item,
-    onChanged: onChanged,
-  );
 }
 
 class _FieldLabel extends StatelessWidget {

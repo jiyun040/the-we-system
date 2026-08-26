@@ -272,7 +272,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
           position: position.text,
           hireDate: hireDate.text,
           password: password.text,
-          isAdmin: account.id == 'edu_manager',
+          isAdmin: account.isAdmin,
         );
   }
 }

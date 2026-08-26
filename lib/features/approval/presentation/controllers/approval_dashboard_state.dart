@@ -150,7 +150,7 @@ class ApprovalDashboardState {
 
   bool get isAdminMode => isAdmin && adminMode;
 
-  bool get hasAdminDocumentAccess => false;
+  bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
 
   bool isAppEnabled(String appId) => enabledAppIds.contains(appId);
 
@@ -313,7 +313,16 @@ class ApprovalDashboardState {
 
   List<String> get departments {
     final values =
-        accounts.map((account) => account.department).toSet().toList()..sort();
+        accounts
+            .where(
+              (account) =>
+                  !account.isSystemAdministrator &&
+                  account.department.trim().isNotEmpty,
+            )
+            .map((account) => account.department.trim())
+            .toSet()
+            .toList()
+          ..sort();
     return values;
   }
 
@@ -323,7 +332,11 @@ class ApprovalDashboardState {
     }
 
     return accounts
-        .where((account) => account.department == selectedOrgDepartment)
+        .where(
+          (account) =>
+              !account.isSystemAdministrator &&
+              account.department.trim() == selectedOrgDepartment,
+        )
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
   }

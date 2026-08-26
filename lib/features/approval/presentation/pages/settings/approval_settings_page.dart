@@ -286,11 +286,9 @@ class _DelegationSettings extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 14),
-        _DelegationTile(
-          period: '2026-06-28 ~ 2026-07-03',
-          reason: '오지 출장',
-          substitute: '이재오 차장',
-          status: '대결 승인 후 원결재자 확인 필요',
+        Text(
+          '서버에 등록된 부재/위임 설정이 없습니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
         ),
       ],
     );
@@ -334,89 +332,6 @@ class _SettingRow extends StatelessWidget {
                 ),
         );
       },
-    );
-  }
-}
-
-class _SettingValue extends StatelessWidget {
-  const _SettingValue({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TheWeTextStyle.caption),
-        const SizedBox(height: 4),
-        Text(value, style: TheWeTextStyle.body),
-      ],
-    );
-  }
-}
-
-class _DelegationTile extends StatelessWidget {
-  const _DelegationTile({
-    required this.period,
-    required this.reason,
-    required this.substitute,
-    required this.status,
-  });
-
-  final String period;
-  final String reason;
-  final String substitute;
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: TheWeColor.black300.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 720) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SettingValue(label: '기간', value: period),
-                const SizedBox(height: 12),
-                _SettingValue(label: '사유', value: reason),
-                const SizedBox(height: 12),
-                _SettingValue(label: '대결자', value: substitute),
-                const SizedBox(height: 12),
-                Text(
-                  status,
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: TheWeColor.pink,
-                  ),
-                ),
-              ],
-            );
-          }
-
-          return Row(
-            children: [
-              Expanded(child: Text(period, style: TheWeTextStyle.body)),
-              Expanded(child: Text(reason, style: TheWeTextStyle.body)),
-              Expanded(child: Text(substitute, style: TheWeTextStyle.body)),
-              Expanded(
-                child: Text(
-                  status,
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: TheWeColor.pink,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
     );
   }
 }

@@ -21,6 +21,8 @@ class EmployeeAccount {
   final String hireDate;
   final bool isAdmin;
 
+  bool get isSystemAdministrator => isAdmin && id == 'admin';
+
   EmployeeAccount copyWith({
     String? id,
     String? password,

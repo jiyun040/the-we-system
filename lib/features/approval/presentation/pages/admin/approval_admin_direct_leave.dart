@@ -386,11 +386,6 @@ Future<String?> requestAdminOtp(BuildContext context) async {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('관리자 OTP 앱에 표시된 6자리 번호를 입력하세요.'),
-            const SizedBox(height: 6),
-            Text(
-              '프로토타입 인증번호: 123456',
-              style: TheWeTextStyle.caption.copyWith(color: TheWeColor.blue300),
-            ),
             const SizedBox(height: 16),
             TextField(
               controller: controller,

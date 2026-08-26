@@ -288,7 +288,8 @@ class _DocumentToolbar extends ConsumerWidget {
                 ApprovalToolbarButton(
                   icon: Icons.info_outline,
                   label: '결재 정보',
-                  onPressed: () => showApprovalInfoDialog(context),
+                  onPressed: () =>
+                      showApprovalInfoDialog(context, document: document),
                 ),
                 if (document.status != '작성중')
                   ApprovalToolbarButton(

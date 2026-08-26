@@ -215,11 +215,6 @@ Future<String?> _showAdminOtpDialog(BuildContext context) {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('관리자 OTP 번호 6자리를 입력하세요.'),
-            const SizedBox(height: 6),
-            Text(
-              '프로토타입 인증번호: 123456',
-              style: TheWeTextStyle.caption.copyWith(color: TheWeColor.blue300),
-            ),
             const SizedBox(height: 14),
             TextField(
               controller: controller,

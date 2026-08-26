@@ -1,8 +1,10 @@
 import 'approval_dialog_dependencies.dart';
-import 'approval_line_dialog.dart';
+import 'approval_dialog_layout.dart';
 
 class ApprovalInfoDialog extends StatefulWidget {
-  const ApprovalInfoDialog({super.key});
+  const ApprovalInfoDialog({super.key, required this.document});
+
+  final ApprovalDocument document;
 
   @override
   State<ApprovalInfoDialog> createState() => _ApprovalInfoDialogState();
@@ -43,21 +45,7 @@ class _ApprovalInfoDialogState extends State<ApprovalInfoDialog> {
               ],
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: switch (selectedIndex) {
-                0 => ApprovalLineSetup(),
-                1 => const ApprovalPeopleSetup(
-                  caption: '결재 진행 내용을 함께 확인할 사람을 선택하세요.',
-                ),
-                2 => const ApprovalPeopleSetup(
-                  caption: '수신자는 접수 대기 문서함에서 확인합니다.',
-                ),
-                3 => const ApprovalPeopleSetup(
-                  caption: '결재가 완료된 문서를 공유할 사람을 선택하세요.',
-                ),
-                _ => ApprovalPublicReceiverSetup(),
-              },
-            ),
+            Expanded(child: _ApprovalInfoValues(values: _values())),
             const SizedBox(height: 16),
             TheWeModalActions(
               primaryLabel: '확인',
@@ -68,6 +56,46 @@ class _ApprovalInfoDialogState extends State<ApprovalInfoDialog> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  List<String> _values() => switch (selectedIndex) {
+    0 =>
+      widget.document.steps
+          .map(
+            (step) =>
+                '${step.type} · ${step.name} · ${step.department} · ${step.status}',
+          )
+          .toList(),
+    1 => widget.document.references,
+    2 => widget.document.receivers,
+    3 => widget.document.viewers,
+    _ => widget.document.publicReceivers,
+  };
+}
+
+class _ApprovalInfoValues extends StatelessWidget {
+  const _ApprovalInfoValues({required this.values});
+
+  final List<String> values;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) {
+      return Center(
+        child: Text(
+          '서버에 등록된 정보가 없습니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+      );
+    }
+    return ListView.separated(
+      itemCount: values.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) => ListTile(
+        leading: const Icon(Icons.person_outline),
+        title: Text(values[index], style: TheWeTextStyle.body),
       ),
     );
   }

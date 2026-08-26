@@ -383,6 +383,7 @@ class ApprovalLeaveContent extends ConsumerWidget {
     BuildContext context,
     LeaveRequest request,
   ) {
+    final approver = state.accounts.where((item) => item.isAdmin).firstOrNull;
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -405,8 +406,8 @@ class ApprovalLeaveContent extends ConsumerWidget {
               ),
               const SizedBox(height: 20),
               ApprovalLeaveProgressRow(
-                role: '대표',
-                name: '조상훈',
+                role: approver?.position ?? '결재자',
+                name: approver?.name ?? '-',
                 status: request.ceoStatus,
               ),
               const SizedBox(height: 14),

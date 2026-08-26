@@ -8,7 +8,6 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 
 extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   void syncRemote(Future<void> Function() operation) {
-    if (!usesRemoteApi) return;
     unawaited(
       operation().then((_) => reloadRemoteState()).catchError((Object error) {
         debugPrint('서버 동기화 실패: $error');
@@ -16,17 +15,11 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     );
   }
 
-  bool verifyAdminOtp(String otp) => otp.trim() == '123456';
-
   Future<bool> enterAdminMode(String otp) async {
     final current = currentDashboardState;
     if (current == null ||
-        current.currentUser?.id != 'edu_manager' ||
         current.currentUser?.isAdmin != true ||
-        (current.adminOtpEnabled &&
-            (usesRemoteApi
-                ? !await api.verifyAdminOtp(otp)
-                : !verifyAdminOtp(otp)))) {
+        (current.adminOtpEnabled && !await api.verifyAdminOtp(otp))) {
       return false;
     }
     setApprovalDashboardState(this, (value) => value.copyWith(adminMode: true));
@@ -41,8 +34,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   Future<bool> verifyCurrentPassword(String password) async {
-    if (usesRemoteApi) return api.verifyPassword(password);
-    return currentDashboardState?.currentUser?.password == password;
+    return api.verifyPassword(password);
   }
 
   void updateEmployee({
@@ -61,7 +53,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           position: position.trim(),
           hireDate: hireDate.trim(),
           password: password?.trim().isEmpty == true ? null : password?.trim(),
-          isAdmin: account.id == 'edu_manager',
+          isAdmin: account.isAdmin,
         );
       }).toList();
       final currentUser = value.currentUser?.id == userId
@@ -384,9 +376,12 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   String? setAdminPermission(String userId, bool enabled) {
-    return userId == 'edu_manager' && enabled
+    final account = currentDashboardState?.accounts
+        .where((item) => item.id == userId)
+        .firstOrNull;
+    return account?.isAdmin == true && enabled
         ? null
-        : '관리자 권한은 전용 관리자 계정에서만 사용할 수 있습니다.';
+        : '관리자 권한은 서버의 사용자 권한 설정에서 관리해 주세요.';
   }
 
   String? renameDepartment(String currentName, String nextName) {
@@ -501,29 +496,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (days > remaining) {
       return '잔여 휴가 ${remaining.toStringAsFixed(remaining == remaining.roundToDouble() ? 0 : 1)}일을 초과했습니다.';
     }
-    final request = LeaveRequest(
-      id: 'LEAVE-${DateTime.now().microsecondsSinceEpoch}',
-      userId: userId,
-      type: type,
-      startDate: startDate,
-      endDate: endDate,
-      days: days,
-      reason: reason.trim(),
-      status: '승인완료',
-      ceoStatus: '완료',
-      directEntry: true,
-      registeredBy: current.currentUser!.name,
-    );
-    setApprovalDashboardState(
-      this,
-      (value) => value.copyWith(
-        leaveRequests: [request, ...value.leaveRequests],
-        acknowledgedLeaveRequestIds: {
-          ...value.acknowledgedLeaveRequestIds,
-          request.id,
-        },
-      ),
-    );
     syncRemote(
       () => api.createLeave(
         userId: userId,
@@ -545,77 +517,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required double days,
     required String reason,
   }) {
-    final current = currentDashboardState;
-    final user = current?.currentUser;
-    if (current == null || user == null) return;
-    final request = LeaveRequest(
-      id: 'LEAVE-${current.leaveRequests.length + 1}',
-      userId: user.id,
-      type: type,
-      startDate: startDate,
-      endDate: endDate,
-      days: days,
-      reason: reason,
-    );
-    final ceo = current.accounts
-        .where((account) => account.id == 'ceo')
-        .firstOrNull;
-    final document = ApprovalDocument(
-      id: 'LEAVE-DOC-${request.id}',
-      title: '${user.name} $type 신청',
-      drafter: user.name,
-      department: user.department,
-      form: '휴가 신청서',
-      status: '결재대기',
-      draftedAt: approvalToday(),
-      dueDate: startDate,
-      progress: 50,
-      documentNo:
-          'LEAVE-${approvalToday().replaceAll('-', '')}-${current.leaveRequests.length + 1}',
-      effectiveDate: startDate,
-      content:
-          '휴가 종류: $type\n기간: $startDate ~ $endDate\n사용 일수: $days일\n신청 사유: $reason',
-      receivedRequest: true,
-      canCancel: false,
-      canReuse: false,
-      canEdit: false,
-      receivers: const ['대표'],
-      references: const ['경영관리팀'],
-      steps: [
-        ApprovalStep(
-          name: user.name,
-          department: user.department,
-          type: '신청',
-          role: user.position,
-          status: '완료',
-          approvedAt: '${approvalToday()} 09:00',
-        ),
-        ApprovalStep(
-          name: ceo?.name ?? '조상훈',
-          department: ceo?.department ?? '경영관리팀',
-          type: '승인',
-          role: ceo?.position ?? '대표',
-          status: '진행중',
-        ),
-      ],
-      histories: [
-        ApprovalHistory(
-          id: 'HIS-${request.id}',
-          category: '휴가 신청',
-          date: '${approvalToday()} 09:00',
-          user: '${user.name} ${user.position}',
-          description: '휴가 신청 결재 요청',
-          snapshot: '$type · $startDate ~ $endDate',
-        ),
-      ],
-    );
-    setApprovalDashboardState(
-      this,
-      (value) => value.copyWith(
-        leaveRequests: [request, ...value.leaveRequests],
-        documents: [document, ...value.documents],
-      ),
-    );
     syncRemote(
       () => api.createLeave(
         type: type,
@@ -628,28 +529,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   void updateLeaveStatus(String requestId, String status) {
-    setApprovalDashboardState(
-      this,
-      (value) => value.copyWith(
-        leaveRequests: value.leaveRequests
-            .map(
-              (request) => request.id == requestId
-                  ? request.copyWith(
-                      status: status,
-                      ceoStatus: status == '승인완료' ? '완료' : request.ceoStatus,
-                    )
-                  : request,
-            )
-            .toList(),
-        documents: value.documents
-            .map(
-              (document) => document.id == 'LEAVE-DOC-$requestId'
-                  ? _resolvedLeaveDocument(document, status)
-                  : document,
-            )
-            .toList(),
-      ),
-    );
     if (status == '승인완료' || status == '반려') {
       syncRemote(() => api.actOnLeave(requestId, approve: status == '승인완료'));
     }
@@ -657,39 +536,12 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
 
   bool actOnLeave(String requestId, {required bool approve}) {
     final current = currentDashboardState;
-    final user = current?.currentUser;
-    if (current == null || user == null) return false;
+    if (current == null || current.currentUser == null) return false;
     final request = current.leaveRequests
         .where((item) => item.id == requestId)
         .firstOrNull;
     if (request == null || !current.canActOnLeave(request)) return false;
 
-    late LeaveRequest updated;
-    if (!approve) {
-      updated = request.copyWith(
-        status: '반려',
-        ceoStatus: request.ceoStatus == '진행중' ? '반려' : request.ceoStatus,
-        rejectedBy: user.name,
-      );
-    } else {
-      updated = request.copyWith(status: '승인완료', ceoStatus: '완료');
-    }
-
-    setApprovalDashboardState(
-      this,
-      (value) => value.copyWith(
-        leaveRequests: value.leaveRequests
-            .map((item) => item.id == requestId ? updated : item)
-            .toList(),
-        documents: value.documents
-            .map(
-              (document) => document.id == 'LEAVE-DOC-$requestId'
-                  ? _resolvedLeaveDocument(document, approve ? '승인완료' : '반려')
-                  : document,
-            )
-            .toList(),
-      ),
-    );
     syncRemote(() => api.actOnLeave(requestId, approve: approve));
     return true;
   }
@@ -718,28 +570,4 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       syncRemote(() => api.acknowledgeLeave(id));
     }
   }
-}
-
-ApprovalDocument _resolvedLeaveDocument(
-  ApprovalDocument document,
-  String leaveStatus,
-) {
-  final approved = leaveStatus == '승인완료';
-  final rejected = leaveStatus == '반려';
-  if (!approved && !rejected) return document;
-  final steps = document.steps
-      .map(
-        (step) => step.status == '진행중'
-            ? step.copyWith(
-                status: approved ? '완료' : '반려',
-                approvedAt: '${approvalToday()} 09:30',
-              )
-            : step,
-      )
-      .toList();
-  return document.copyWith(
-    status: approved ? '완료' : '반려',
-    progress: approved ? 100 : approvalProgressFor(steps),
-    steps: steps,
-  );
 }

@@ -12,10 +12,13 @@ class ApprovalHomeOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final accountCount = state.accounts.length;
-    final joinerCount = state.accounts
-        .where((item) => item.id.toLowerCase() != 'admin')
-        .length
-        .clamp(0, 3);
+    final now = DateTime.now();
+    final joinerCount = state.accounts.where((item) {
+      final hiredAt = DateTime.tryParse(item.hireDate);
+      return hiredAt != null &&
+          hiredAt.year == now.year &&
+          hiredAt.month == now.month;
+    }).length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -38,7 +41,6 @@ class ApprovalHomeOverview extends StatelessWidget {
                     label: '입사자',
                     color: TheWeColor.blue300,
                   ),
-                  ApprovalHeadcountLegend(label: '퇴사자', color: TheWeColor.pink),
                 ],
               ),
               const SizedBox(height: 18),

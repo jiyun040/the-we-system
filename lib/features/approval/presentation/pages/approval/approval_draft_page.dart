@@ -65,10 +65,18 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
       body: SafeArea(
         child: state.when(
           data: (appState) {
+            if (appState.formTemplates.isEmpty) {
+              return Center(
+                child: Text(
+                  '서버에 사용 가능한 결재 양식이 없습니다.',
+                  style: TheWeTextStyle.subtitle,
+                ),
+              );
+            }
             final sourceDocument = widget.reuseDocumentId == null
                 ? null
                 : ref.watch(approvalDocumentProvider(widget.reuseDocumentId!));
-            final seedDocument = _seedDocument(appState, sourceDocument);
+            final initialDocument = _initialDocument(appState, sourceDocument);
             final currentFormId =
                 selectedFormId ??
                 widget.selectedFormId ??
@@ -79,21 +87,21 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
 
             if (!initialized) {
               selectedFormId = currentFormId;
-              titleController.text = seedDocument.title;
-              contentController.text = seedDocument.content;
-              linkedDocuments = [...seedDocument.linkedDocuments];
-              attachments = [...seedDocument.attachments];
-              formFields = {...seedDocument.formFields};
+              titleController.text = initialDocument.title;
+              contentController.text = initialDocument.content;
+              linkedDocuments = [...initialDocument.linkedDocuments];
+              attachments = [...initialDocument.attachments];
+              formFields = {...initialDocument.formFields};
               if (currentTemplate?.documentLayout ==
                       ApprovalDocumentLayout.hospitality &&
                   (formFields['draftedAt']?.isEmpty ?? true)) {
-                formFields['draftedAt'] = seedDocument.draftedAt;
+                formFields['draftedAt'] = initialDocument.draftedAt;
               }
-              lineItems = seedDocument.lineItems
+              lineItems = initialDocument.lineItems
                   .map((item) => {...item})
                   .toList();
               departmentVisible = !appState.restrictedDocumentIds.contains(
-                seedDocument.id,
+                initialDocument.id,
               );
               editingDocumentId = sourceDocument?.status == '작성중'
                   ? sourceDocument?.id
@@ -101,20 +109,20 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
               initialized = true;
             }
 
-            final draftDocument = seedDocument.copyWith(
+            final draftDocument = initialDocument.copyWith(
               title: titleController.text,
               content: contentController.text,
-              form: currentTemplate?.name ?? seedDocument.form,
+              form: currentTemplate?.name ?? initialDocument.form,
               linkedDocuments: linkedDocuments,
               attachments: attachments,
               draftedAt:
                   currentTemplate?.documentLayout ==
                       ApprovalDocumentLayout.hospitality
-                  ? (formFields['draftedAt'] ?? seedDocument.draftedAt)
-                  : seedDocument.draftedAt,
+                  ? (formFields['draftedAt'] ?? initialDocument.draftedAt)
+                  : initialDocument.draftedAt,
               documentLayout:
                   currentTemplate?.documentLayout ??
-                  seedDocument.documentLayout,
+                  initialDocument.documentLayout,
               formFields: formFields,
               lineItems: lineItems,
             );
@@ -293,7 +301,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
     );
   }
 
-  ApprovalDocument _seedDocument(
+  ApprovalDocument _initialDocument(
     ApprovalDashboardState state,
     ApprovalDocument? sourceDocument,
   ) {

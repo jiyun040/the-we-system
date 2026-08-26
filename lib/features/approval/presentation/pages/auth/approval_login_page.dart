@@ -15,8 +15,8 @@ class ApprovalLoginPage extends ConsumerStatefulWidget {
 }
 
 class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
-  final idController = TextEditingController(text: 'edu_manager');
-  final passwordController = TextEditingController(text: '1234');
+  final idController = TextEditingController();
+  final passwordController = TextEditingController();
   bool showPassword = false;
 
   @override
@@ -55,21 +55,6 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text('로그인', style: TheWeTextStyle.pageTitle),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: TheWeColor.blueSurface,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '모든 계정은 일반 화면으로 로그인됩니다. 관리자 화면은 로그인 후 필요할 때 OTP 인증으로 전환합니다.',
-                      style: TheWeTextStyle.caption.copyWith(
-                        color: TheWeColor.black500,
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 24),
                   Text('아이디', style: TheWeTextStyle.body),
                   const SizedBox(height: 8),

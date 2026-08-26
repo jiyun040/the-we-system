@@ -531,9 +531,7 @@ class _AdminPermissionSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final account = state.accounts
-        .where((item) => item.id == 'edu_manager')
-        .firstOrNull;
+    final account = state.accounts.where((item) => item.isAdmin).firstOrNull;
     return Container(
       decoration: adminSurface(),
       child: ListTile(
@@ -542,7 +540,7 @@ class _AdminPermissionSettings extends StatelessWidget {
           backgroundColor: TheWeColor.blueSurface,
           child: Icon(Icons.admin_panel_settings_outlined),
         ),
-        title: Text(account?.name ?? '교육관리자', style: TheWeTextStyle.subtitle),
+        title: Text(account?.name ?? '관리자 없음', style: TheWeTextStyle.subtitle),
         subtitle: Text(
           account == null
               ? '전용 관리자 계정을 찾을 수 없습니다.'

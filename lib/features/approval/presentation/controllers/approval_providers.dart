@@ -1,12 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:the_we_system/core/config/app_env.dart';
 import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/data/datasources/the_we_api_service.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_dashboard_state.dart';
-import 'package:the_we_system/features/approval/presentation/controllers/approval_mock_documents.dart';
-import 'package:the_we_system/features/approval/presentation/controllers/approval_mock_forms.dart';
 
 export 'approval_dashboard_admin_actions.dart';
 export 'approval_dashboard_approval_actions.dart';
@@ -55,11 +52,7 @@ final approvalTemplateProvider = Provider.family<ApprovalFormTemplate?, String>(
 
 class ApprovalDashboardController
     extends AsyncNotifier<ApprovalDashboardState> {
-  String? sessionPassword;
-
   ApprovalDashboardState? get currentDashboardState => state.asData?.value;
-
-  bool get usesRemoteApi => AppEnv.usesRemoteApi;
 
   TheWeApiService get api => ref.read(theWeApiServiceProvider);
 
@@ -68,7 +61,6 @@ class ApprovalDashboardController
   }
 
   Future<void> reloadRemoteState({bool? adminMode}) async {
-    if (!usesRemoteApi) return;
     final remote = await api.fetchBootstrap();
     state = AsyncData(
       _remoteState(
@@ -80,73 +72,31 @@ class ApprovalDashboardController
 
   @override
   Future<ApprovalDashboardState> build() async {
-    if (usesRemoteApi) {
-      if (!await api.hasStoredToken()) return _localState();
-      try {
-        return _remoteState(await api.fetchBootstrap());
-      } on ApiException catch (error) {
-        if (error.statusCode == 401) return _localState();
-        rethrow;
-      }
+    if (!await api.hasStoredToken()) return signedOutApprovalState;
+    try {
+      return _remoteState(await api.fetchBootstrap());
+    } on ApiException catch (error) {
+      if (error.statusCode == 401) return signedOutApprovalState;
+      rethrow;
     }
-    return _localState();
   }
 }
 
-ApprovalDashboardState _localState() {
-  final accounts = [...approvalAccounts];
-  return ApprovalDashboardState(
-    accounts: accounts,
-    frequentForms: approvalFrequentForms,
-    formTemplates: [...approvalFormTemplates],
-    documents: [...approvalSeedDocuments],
-    leaveRequests: const [
-      LeaveRequest(
-        id: 'LEAVE-SEED-1',
-        userId: 'edu_teacher',
-        type: '연차',
-        startDate: '2026-05-04',
-        endDate: '2026-05-04',
-        days: 1,
-        reason: '개인 일정',
-        status: '승인완료',
-        ceoStatus: '완료',
-      ),
-      LeaveRequest(
-        id: 'LEAVE-SEED-2',
-        userId: 'edu_teacher',
-        type: '연차',
-        startDate: '2026-06-12',
-        endDate: '2026-06-13',
-        days: 2,
-        reason: '가족 행사',
-        status: '승인완료',
-        ceoStatus: '완료',
-      ),
-    ],
-    acknowledgedLeaveRequestIds: const {'LEAVE-SEED-1', 'LEAVE-SEED-2'},
-    annualLeaveByYear: const {
-      1: 15,
-      2: 15,
-      3: 16,
-      4: 16,
-      5: 17,
-      6: 17,
-      7: 18,
-      8: 18,
-      9: 19,
-      10: 19,
-    },
-    selectedOrgDepartment: accounts.first.department,
-    selectedOrgUserId: accounts.first.id,
-  );
-}
+const signedOutApprovalState = ApprovalDashboardState(
+  accounts: [],
+  frequentForms: [],
+  formTemplates: [],
+  documents: [],
+  annualLeaveByYear: {},
+);
 
 ApprovalDashboardState _remoteState(
   RemoteBootstrapData remote, {
   bool adminMode = false,
 }) => ApprovalDashboardState(
-  accounts: remote.accounts,
+  accounts: remote.accounts
+      .where((account) => !account.isSystemAdministrator)
+      .toList(),
   frequentForms: remote.frequentForms,
   formTemplates: remote.formTemplates,
   documents: remote.documents,

@@ -1,5 +1,30 @@
 import 'approval_dialog_dependencies.dart';
 
+class ApprovalDialogInfoRow extends StatelessWidget {
+  const ApprovalDialogInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(width: 100, child: Text(label, style: TheWeTextStyle.body)),
+      Expanded(
+        child: Text(
+          value.isEmpty ? '-' : value,
+          style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+    ],
+  );
+}
+
 class ApprovalLargeDialog extends StatelessWidget {
   const ApprovalLargeDialog({
     super.key,
@@ -176,69 +201,6 @@ class ApprovalDetailBox extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class ApprovalDocumentPickerTable extends StatelessWidget {
-  const ApprovalDocumentPickerTable({
-    super.key,
-    required this.title,
-    required this.documents,
-  });
-
-  final String title;
-  final List<String> documents;
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController();
-
-    return Container(
-      height: 460,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(border: Border.all(color: TheWeColor.black300)),
-      child: Column(
-        children: [
-          CustomTextFormField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: '검색',
-              prefixIcon: Icon(Icons.search),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: ['결재양식', '제목', '기안자', '결재일']
-                .map(
-                  (header) => Expanded(
-                    child: Text(
-                      header,
-                      style: TheWeTextStyle.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-          const Divider(),
-          ...documents.map(
-            (document) => CheckboxListTile(
-              value: false,
-              onChanged: (_) {},
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(document, style: TheWeTextStyle.body),
-              subtitle: Text(
-                '업무기안 · study100 · 2026-06-20',
-                style: TheWeTextStyle.caption,
-              ),
-            ),
-          ),
-          const Spacer(),
-          Text(title, style: TheWeTextStyle.title),
         ],
       ),
     );
