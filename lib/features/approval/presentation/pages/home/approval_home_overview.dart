@@ -1,17 +1,24 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
+import 'approval_home_calendar_panel.dart';
+import 'approval_home_notice.dart';
+import 'approval_home_processing.dart';
+import 'approval_home_trend.dart';
 
-class _PortalOverview extends StatelessWidget {
-  const _PortalOverview({required this.state});
+class ApprovalHomeOverview extends StatelessWidget {
+  const ApprovalHomeOverview({super.key, required this.state});
 
   final ApprovalDashboardState state;
 
   @override
   Widget build(BuildContext context) {
     final accountCount = state.accounts.length;
-    final joinerCount = state.accounts
-        .where((item) => item.id.toLowerCase() != 'admin')
-        .length
-        .clamp(0, 3);
+    final now = DateTime.now();
+    final joinerCount = state.accounts.where((item) {
+      final hiredAt = DateTime.tryParse(item.hireDate);
+      return hiredAt != null &&
+          hiredAt.year == now.year &&
+          hiredAt.month == now.month;
+    }).length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -26,13 +33,18 @@ class _PortalOverview extends StatelessWidget {
                 spacing: 14,
                 runSpacing: 8,
                 children: [
-                  _HeadcountLegend(label: '총 인원', color: TheWeColor.green),
-                  _HeadcountLegend(label: '입사자', color: TheWeColor.blue300),
-                  _HeadcountLegend(label: '퇴사자', color: TheWeColor.pink),
+                  ApprovalHeadcountLegend(
+                    label: '총 인원',
+                    color: TheWeColor.green,
+                  ),
+                  ApprovalHeadcountLegend(
+                    label: '입사자',
+                    color: TheWeColor.blue300,
+                  ),
                 ],
               ),
               const SizedBox(height: 18),
-              _PortalTrendChart(
+              ApprovalHomeTrendChart(
                 totalCount: accountCount,
                 joinerCount: joinerCount,
               ),
@@ -43,11 +55,16 @@ class _PortalOverview extends StatelessWidget {
           children: [
             LayoutBuilder(
               builder: (context, innerConstraints) {
+                if (!state.isAdminMode) {
+                  return const _PortalSurface(
+                    child: ApprovalHomeCalendarPanel(),
+                  );
+                }
                 final compact = innerConstraints.maxWidth < 720;
                 if (compact) {
                   return Column(
                     children: [
-                      const _PortalSurface(child: _PortalCalendarPanel()),
+                      const _PortalSurface(child: ApprovalHomeCalendarPanel()),
                       const SizedBox(height: 24),
                       headcountChild,
                     ],
@@ -59,7 +76,7 @@ class _PortalOverview extends StatelessWidget {
                   children: [
                     const Expanded(
                       flex: 5,
-                      child: _PortalSurface(child: _PortalCalendarPanel()),
+                      child: _PortalSurface(child: ApprovalHomeCalendarPanel()),
                     ),
                     const SizedBox(width: 24),
                     Expanded(flex: 6, child: headcountChild),
@@ -67,77 +84,24 @@ class _PortalOverview extends StatelessWidget {
                 );
               },
             ),
-            const SizedBox(height: 18),
-            _PortalSurface(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('전자결재 진행현황', style: TheWeTextStyle.title),
-                  const SizedBox(height: 18),
-                  if (state.dashboard.processingDocuments.isEmpty)
-                    SizedBox(
-                      height: 120,
-                      child: Center(
-                        child: Text(
-                          '목록이 없습니다.',
-                          style: TheWeTextStyle.body.copyWith(
-                            color: TheWeColor.black500,
-                          ),
-                        ),
-                      ),
-                    )
-                  else
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final documents = state.dashboard.processingDocuments;
-                        if (constraints.maxWidth < 520) {
-                          return Column(
-                            children: documents
-                                .take(3)
-                                .map(
-                                  (document) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 10),
-                                    child: ApprovalMobileDocumentCard(
-                                      document: document,
-                                      onTap: () => context.goNamed(
-                                        AppRouteName.detail,
-                                        pathParameters: {'id': document.id},
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                          );
-                        }
-
-                        return SizedBox(
-                          height: 292,
-                          child: ListView.separated(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: documents.length.clamp(0, 4),
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(width: 12),
-                            itemBuilder: (context, index) {
-                              final document = documents[index];
-                              return ProcessingCard(
-                                title: document.title,
-                                drafter: document.drafter,
-                                date: document.draftedAt,
-                                form: document.form,
-                                status: document.status,
-                                progress: document.progress,
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                ],
-              ),
-            ),
           ],
         );
-        const rightChild = _PortalSurface(child: _PortalNoticePanel());
+        final processingDocuments = state.dashboard.processingDocuments;
+        final rightChild = Column(
+          children: [
+            const _PortalSurface(child: ApprovalHomeNoticePanel()),
+            if (state.isAppEnabled(PortalAppId.approval) &&
+                processingDocuments.isNotEmpty) ...[
+              const SizedBox(height: 18),
+              _PortalSurface(
+                child: ApprovalDraftProgressSection(
+                  documents: processingDocuments.take(5).toList(),
+                  totalCount: processingDocuments.length,
+                ),
+              ),
+            ],
+          ],
+        );
 
         if (stacked) {
           return Column(

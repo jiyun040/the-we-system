@@ -1,7 +1,8 @@
-part of 'side_bar.dart';
+import 'side_bar_dependencies.dart';
 
-class _MenuSection extends StatelessWidget {
-  const _MenuSection({
+class SideBarMenuSection extends StatelessWidget {
+  const SideBarMenuSection({
+    super.key,
     required this.title,
     required this.children,
     required this.isCompact,
@@ -35,8 +36,9 @@ class _MenuSection extends StatelessWidget {
   }
 }
 
-class _SideMenuItem extends StatelessWidget {
-  const _SideMenuItem({
+class SideBarMenuItem extends StatelessWidget {
+  const SideBarMenuItem({
+    super.key,
     required this.icon,
     required this.label,
     required this.isCompact,

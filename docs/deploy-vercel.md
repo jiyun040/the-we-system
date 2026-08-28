@@ -26,10 +26,14 @@ Vercel 빌드 설정은 `vercel.json`에 포함되어 있으므로 Vercel 화면
 
 ## 4. API URL 설정
 
-현재 mock 데이터로도 실행되며, 실제 API를 연결할 때는 Vercel 환경변수에 아래 값을 추가합니다.
+배포 전에 Vercel 환경변수에 실제 Django API 주소를 반드시 추가합니다.
 
 - Name: `API_BASE_URL`
-- Value 예시: `https://api.example.com`
+- Production: `https://the-we-system.vercel.app/api/v1`
+- Preview(`develop`): `https://the-we-system.vercel.app/api/v1`
+- Development: `http://127.0.0.1:8000/api/v1`
+
+`API_BASE_URL`이 없으면 빌드는 실패합니다. 운영 웹에서는 Vercel의 `/api/v1` 경로가 EC2 Django 서버로 프록시되므로 브라우저의 HTTPS 혼합 콘텐츠 오류 없이 API를 호출합니다.
 
 환경변수 추가 후에는 다시 Deploy 해야 적용됩니다.
 

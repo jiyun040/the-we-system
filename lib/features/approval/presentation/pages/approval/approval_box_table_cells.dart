@@ -1,72 +1,64 @@
-part of 'approval_box_page.dart';
+import 'approval_box_dependencies.dart';
 
-class _HeaderCell extends StatelessWidget {
-  const _HeaderCell(this.text, {required this.flex});
+class ApprovalDocumentTableText extends StatelessWidget {
+  const ApprovalDocumentTableText(this.text, {super.key});
 
   final String text;
-  final int flex;
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        text,
-        style: TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Text(
+    text,
+    maxLines: 2,
+    overflow: TextOverflow.ellipsis,
+    textAlign: TextAlign.center,
+    style: TheWeTextStyle.body,
+  );
 }
 
-class _BodyCell extends StatelessWidget {
-  const _BodyCell(this.text, {required this.flex});
-
-  final String text;
-  final int flex;
+class ApprovalUrgentChip extends StatelessWidget {
+  const ApprovalUrgentChip({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      flex: flex,
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TheWeTextStyle.body,
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: TheWeColor.dangerSurface,
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      '긴급',
+      textAlign: TextAlign.center,
+      style: TheWeTextStyle.caption.copyWith(color: TheWeColor.danger),
+    ),
+  );
 }
 
-class _StatusCell extends StatelessWidget {
-  const _StatusCell(this.text, {required this.flex});
+class ApprovalDocumentStatusChip extends StatelessWidget {
+  const ApprovalDocumentStatusChip(this.text, {super.key});
 
   final String text;
-  final int flex;
 
   @override
   Widget build(BuildContext context) {
     final color = switch (text) {
       '완료' => TheWeColor.green,
       '반려' => TheWeColor.pink,
-      '작성중' => TheWeColor.black500,
+      '작성중' || '임시저장' => TheWeColor.black500,
       _ => TheWeColor.blue300,
     };
 
-    return Expanded(
-      flex: flex,
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            text,
-            style: TheWeTextStyle.caption.copyWith(color: color),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: TheWeTextStyle.caption.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );

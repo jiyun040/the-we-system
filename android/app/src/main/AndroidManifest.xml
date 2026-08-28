@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="The We 전자결재"
+        android:label="더우리기술 전자결재"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

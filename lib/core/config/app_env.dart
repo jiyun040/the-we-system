@@ -1,6 +1,6 @@
 abstract final class AppEnv {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: '',
+    defaultValue: 'http://127.0.0.1:8000/api/v1',
   );
 }

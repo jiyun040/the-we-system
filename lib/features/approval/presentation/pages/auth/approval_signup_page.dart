@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
@@ -15,44 +16,24 @@ class ApprovalSignupPage extends ConsumerStatefulWidget {
 }
 
 class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
-  static const List<String> _departments = [
-    '개발팀',
-    '교육팀',
-    '영업팀',
-    '회계팀',
-    '세무팀',
-    '인사팀',
-    '경영관리팀',
-  ];
-
-  static const List<String> _employeePositions = [
-    '사원',
-    '주임',
-    '대리',
-    '과장',
-    '차장',
-    '부장',
-  ];
-
-  static const List<String> _adminPositions = ['관리자', '팀장', '본부장'];
-
   final nameController = TextEditingController();
   final idController = TextEditingController();
   final emailController = TextEditingController();
+  final departmentController = TextEditingController();
+  final positionController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
-  bool isAdmin = false;
   bool showPassword = false;
   bool showConfirmPassword = false;
   String errorMessage = '';
-  String selectedDepartment = _departments.first;
-  String selectedPosition = _employeePositions.first;
 
   @override
   void dispose() {
     nameController.dispose();
     idController.dispose();
     emailController.dispose();
+    departmentController.dispose();
+    positionController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
@@ -89,7 +70,13 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                         child: Text('회원가입', style: TheWeTextStyle.pageTitle),
                       ),
                       TextButton(
-                        onPressed: () => context.goNamed(AppRouteName.home),
+                        onPressed: () {
+                          if (context.canPop()) {
+                            context.pop();
+                            return;
+                          }
+                          context.goNamed(AppRouteName.home);
+                        },
                         child: Text(
                           '로그인으로 돌아가기',
                           style: TheWeTextStyle.body.copyWith(
@@ -100,41 +87,6 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Text('역할', style: TheWeTextStyle.body),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _RoleChip(
-                        label: '기본직원',
-                        selected: !isAdmin,
-                        onTap: () {
-                          setState(() {
-                            isAdmin = false;
-                            if (!_employeePositions.contains(
-                              selectedPosition,
-                            )) {
-                              selectedPosition = _employeePositions.first;
-                            }
-                          });
-                        },
-                      ),
-                      _RoleChip(
-                        label: '관리자',
-                        selected: isAdmin,
-                        onTap: () {
-                          setState(() {
-                            isAdmin = true;
-                            if (!_adminPositions.contains(selectedPosition)) {
-                              selectedPosition = _adminPositions.first;
-                            }
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 18),
                   _FieldLabel('이름'),
                   CustomTextFormField(controller: nameController),
                   const SizedBox(height: 14),
@@ -145,28 +97,10 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   CustomTextFormField(controller: emailController),
                   const SizedBox(height: 14),
                   _FieldLabel('부서'),
-                  _SelectionDropdown(
-                    value: selectedDepartment,
-                    items: _departments,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() => selectedDepartment = value);
-                    },
-                  ),
+                  CustomTextFormField(controller: departmentController),
                   const SizedBox(height: 14),
                   _FieldLabel('직책'),
-                  _SelectionDropdown(
-                    value: selectedPosition,
-                    items: isAdmin ? _adminPositions : _employeePositions,
-                    onChanged: (value) {
-                      if (value == null) {
-                        return;
-                      }
-                      setState(() => selectedPosition = value);
-                    },
-                  ),
+                  CustomTextFormField(controller: positionController),
                   const SizedBox(height: 14),
                   _FieldLabel('비밀번호'),
                   CustomTextFormField(
@@ -246,8 +180,8 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
     final name = nameController.text.trim();
     final id = idController.text.trim();
     final email = emailController.text.trim();
-    final department = selectedDepartment;
-    final position = selectedPosition;
+    final department = departmentController.text.trim();
+    final position = positionController.text.trim();
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
 
@@ -278,7 +212,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
           department: department,
           position: position,
           email: email,
-          isAdmin: isAdmin,
+          isAdmin: false,
         );
 
     if (error != null) {
@@ -290,52 +224,8 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
       return;
     }
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('회원가입이 완료되었습니다. 로그인해 주세요.')));
+    showTheWeSnackBar(context, message: '회원가입이 완료되었습니다. 로그인해 주세요.');
     context.goNamed(AppRouteName.home);
-  }
-}
-
-class _SelectionDropdown extends StatelessWidget {
-  const _SelectionDropdown({
-    required this.value,
-    required this.items,
-    required this.onChanged,
-  });
-
-  final String value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      onChanged: onChanged,
-      icon: const Icon(Icons.keyboard_arrow_down_rounded),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: TheWeColor.white,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 14,
-          vertical: 14,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: TheWeColor.black900),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: TheWeColor.blue300),
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      style: TheWeTextStyle.hintText,
-      dropdownColor: TheWeColor.white,
-      items: items
-          .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-          .toList(),
-    );
   }
 }
 
@@ -349,31 +239,6 @@ class _FieldLabel extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text(label, style: TheWeTextStyle.body),
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  const _RoleChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label, style: TheWeTextStyle.body),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      selectedColor: TheWeColor.blue100.withValues(alpha: 0.5),
-      side: BorderSide(
-        color: selected ? TheWeColor.blue300 : TheWeColor.black300,
-      ),
     );
   }
 }

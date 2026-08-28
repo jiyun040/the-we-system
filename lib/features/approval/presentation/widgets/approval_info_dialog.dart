@@ -1,13 +1,16 @@
-part of 'approval_dialogs.dart';
+import 'approval_dialog_dependencies.dart';
+import 'approval_dialog_layout.dart';
 
-class _ApprovalInfoDialog extends StatefulWidget {
-  const _ApprovalInfoDialog();
+class ApprovalInfoDialog extends StatefulWidget {
+  const ApprovalInfoDialog({super.key, required this.document});
+
+  final ApprovalDocument document;
 
   @override
-  State<_ApprovalInfoDialog> createState() => _ApprovalInfoDialogState();
+  State<ApprovalInfoDialog> createState() => _ApprovalInfoDialogState();
 }
 
-class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
+class _ApprovalInfoDialogState extends State<ApprovalInfoDialog> {
   int selectedIndex = 0;
 
   static const categories = ['* 결재선', '* 참조자', '* 수신자', '열람자', '* 공문서 수신처'];
@@ -16,97 +19,100 @@ class _ApprovalInfoDialogState extends State<_ApprovalInfoDialog> {
   Widget build(BuildContext context) {
     final screen = MediaQuery.sizeOf(context);
 
-    return Dialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 1100,
-          maxHeight: screen.height * 0.86,
+    return TheWeModalSurface(
+      maxWidth: 1120,
+      maxHeightFactor: 0.86,
+      child: SizedBox(
+        height: screen.height * 0.78,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: '결재 정보',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 26),
+            Wrap(
+              spacing: 26,
+              runSpacing: 8,
+              children: [
+                for (var index = 0; index < categories.length; index++)
+                  _ApprovalInfoCategory(
+                    label: categories[index],
+                    selected: selectedIndex == index,
+                    onTap: () => setState(() => selectedIndex = index),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Expanded(child: _ApprovalInfoValues(values: _values())),
+            const SizedBox(height: 16),
+            TheWeModalActions(
+              primaryLabel: '확인',
+              secondaryLabel: '취소',
+              primaryColor: TheWeColor.blue300,
+              onPrimaryPressed: () => Navigator.of(context).pop(),
+              onSecondaryPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('결재 정보', style: TheWeTextStyle.title),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 28),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 26),
-              Wrap(
-                spacing: 26,
-                runSpacing: 8,
-                children: [
-                  for (var index = 0; index < categories.length; index++)
-                    _ApprovalInfoCategory(
-                      label: categories[index],
-                      selected: selectedIndex == index,
-                      onTap: () => setState(() => selectedIndex = index),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(
-                child: switch (selectedIndex) {
-                  0 => _ApprovalLineSetup(),
-                  1 => const _PeopleSetup(
-                    caption: '참조자는 결재 중에도 문서를 열람할 수 있습니다.',
-                  ),
-                  2 => const _PeopleSetup(caption: '수신자는 접수 대기 문서함에서 확인합니다.'),
-                  3 => const _PeopleSetup(
-                    caption: '열람자는 결재 완료 후 문서를 열람할 수 있습니다.',
-                  ),
-                  _ => _PublicReceiverSetup(),
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FilledButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: TheWeColor.blue300,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    child: const Text('확인'),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('취소'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+      ),
+    );
+  }
+
+  List<String> _values() => switch (selectedIndex) {
+    0 =>
+      widget.document.steps
+          .map(
+            (step) =>
+                '${step.type} · ${step.name} · ${step.department} · ${step.status}',
+          )
+          .toList(),
+    1 => widget.document.references,
+    2 => widget.document.receivers,
+    3 => widget.document.viewers,
+    _ => widget.document.publicReceivers,
+  };
+}
+
+class _ApprovalInfoValues extends StatelessWidget {
+  const _ApprovalInfoValues({required this.values});
+
+  final List<String> values;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) {
+      return Center(
+        child: Text(
+          '서버에 등록된 정보가 없습니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
         ),
+      );
+    }
+    return ListView.separated(
+      itemCount: values.length,
+      separatorBuilder: (context, index) => const Divider(height: 1),
+      itemBuilder: (context, index) => ListTile(
+        leading: const Icon(Icons.person_outline),
+        title: Text(values[index], style: TheWeTextStyle.body),
       ),
     );
   }
 }
 
-class _DraftFormSelectionDialog extends StatefulWidget {
-  const _DraftFormSelectionDialog({required this.templates});
+class ApprovalDraftFormSelectionDialog extends StatefulWidget {
+  const ApprovalDraftFormSelectionDialog({super.key, required this.templates});
 
   final List<ApprovalFormTemplate> templates;
 
   @override
-  State<_DraftFormSelectionDialog> createState() =>
+  State<ApprovalDraftFormSelectionDialog> createState() =>
       _DraftFormSelectionDialogState();
 }
 
-class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
+class _DraftFormSelectionDialogState
+    extends State<ApprovalDraftFormSelectionDialog> {
   late ApprovalFormTemplate selectedTemplate;
 
   @override
@@ -124,70 +130,51 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
       grouped.putIfAbsent(template.category, () => []).add(template);
     }
 
-    return Dialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return TheWeModalSurface(
+      width: isPhone ? screen.width - 36 : null,
+      maxWidth: 920,
+      maxHeightFactor: 0.82,
+      padding: EdgeInsets.symmetric(
+        horizontal: isPhone ? 18 : 24,
+        vertical: isPhone ? 18 : 22,
+      ),
       child: SizedBox(
-        width: isPhone ? screen.width - 64 : 920,
-        height: isPhone ? screen.height * 0.8 : 560,
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: isPhone ? 18 : 24,
-            vertical: isPhone ? 18 : 22,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text('기안 항목선택', style: TheWeTextStyle.title),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Expanded(
-                child: isPhone
-                    ? ListView(
-                        children: [
-                          SizedBox(height: 280, child: _templateList(grouped)),
-                          const SizedBox(height: 12),
-                          _templateDetail(expandBody: false),
-                        ],
-                      )
-                    : Row(
-                        children: [
-                          Expanded(flex: 4, child: _templateList(grouped)),
-                          const SizedBox(width: 16),
-                          Expanded(flex: 5, child: _templateDetail()),
-                        ],
-                      ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  FilledButton(
-                    onPressed: () =>
-                        Navigator.of(context).pop(selectedTemplate),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: TheWeColor.blue300,
+        height: isPhone ? screen.height * 0.76 : 560,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: '기안 항목선택',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 12),
+            Expanded(
+              child: isPhone
+                  ? ListView(
+                      children: [
+                        SizedBox(height: 280, child: _templateList(grouped)),
+                        const SizedBox(height: 12),
+                        _templateDetail(expandBody: false),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Expanded(flex: 4, child: _templateList(grouped)),
+                        const SizedBox(width: 16),
+                        Expanded(flex: 5, child: _templateDetail()),
+                      ],
                     ),
-                    child: const Text('확인'),
-                  ),
-                  const SizedBox(width: 8),
-                  OutlinedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('취소'),
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 18),
+            TheWeModalActions(
+              primaryLabel: '확인',
+              secondaryLabel: '취소',
+              primaryColor: TheWeColor.blue300,
+              onPrimaryPressed: () =>
+                  Navigator.of(context).pop(selectedTemplate),
+              onSecondaryPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
@@ -204,6 +191,8 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
         children: grouped.entries.map((entry) {
           return ExpansionTile(
             initiallyExpanded: true,
+            shape: const Border(),
+            collapsedShape: const Border(),
             tilePadding: EdgeInsets.zero,
             leading: const Icon(Icons.folder_outlined),
             title: Text(
@@ -259,16 +248,22 @@ class _DraftFormSelectionDialogState extends State<_DraftFormSelectionDialog> {
         children: [
           Text('상세정보', style: TheWeTextStyle.subtitle),
           const SizedBox(height: 16),
-          _DialogInfoRow(label: '양식명', value: selectedTemplate.name),
+          ApprovalDialogInfoRow(label: '양식명', value: selectedTemplate.name),
           const SizedBox(height: 12),
-          _DialogInfoRow(label: '카테고리', value: selectedTemplate.category),
+          ApprovalDialogInfoRow(
+            label: '카테고리',
+            value: selectedTemplate.category,
+          ),
           const SizedBox(height: 12),
-          _DialogInfoRow(
+          ApprovalDialogInfoRow(
             label: '기안부서',
             value: selectedTemplate.cooperationDepartment,
           ),
           const SizedBox(height: 12),
-          _DialogInfoRow(label: '설명', value: selectedTemplate.description),
+          ApprovalDialogInfoRow(
+            label: '설명',
+            value: selectedTemplate.description,
+          ),
           const SizedBox(height: 18),
           Text('기본 제목', style: TheWeTextStyle.body),
           const SizedBox(height: 8),

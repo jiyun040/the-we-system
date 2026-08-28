@@ -127,7 +127,7 @@ class CustomTextFormField extends StatelessWidget {
       counterText: decoration?.counterText,
       counterStyle: decoration?.counterStyle,
       filled: decoration?.filled ?? true,
-      fillColor: decoration?.fillColor ?? TheWeColor.white,
+      fillColor: decoration?.fillColor ?? TheWeColor.surfaceAlt,
       focusColor: decoration?.focusColor,
       hoverColor: decoration?.hoverColor,
       disabledBorder: decoration?.disabledBorder,
@@ -140,7 +140,10 @@ class CustomTextFormField extends StatelessWidget {
       enabledBorder:
           decoration?.enabledBorder ??
           OutlineInputBorder(
-            borderSide: BorderSide(color: TheWeColor.black900, width: 1),
+            borderSide: BorderSide(
+              color: TheWeColor.black300.withValues(alpha: 0.55),
+              width: 1,
+            ),
             borderRadius: BorderRadius.circular(8),
           ),
 

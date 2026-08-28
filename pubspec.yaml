@@ -18,6 +18,11 @@ dependencies:
   json_annotation: ^4.12.0
   table_calendar: ^3.2.0
   intl: ^0.20.3
+  file_selector: ^1.1.0
+  file_saver: ^0.4.0
+  pdfrx: ^2.4.7
+  pdf: ^3.11.3
+  flutter_secure_storage: ^11.0.0
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +34,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/fonts/SUIT-Medium.ttf
+    - assets/fonts/SUIT-Bold.ttf
   fonts:
     - family: SUIT-Variable
       fonts:

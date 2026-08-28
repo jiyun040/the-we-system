@@ -1,4 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_history.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 
@@ -32,6 +33,10 @@ abstract class ApprovalDocument with _$ApprovalDocument {
     @Default(<String>[]) List<String> viewers,
     @Default(<String>[]) List<String> publicReceivers,
     @Default(<String>[]) List<String> linkedDocuments,
+    @Default(<ApprovalAttachment>[]) List<ApprovalAttachment> attachments,
+    @Default('basic') String documentLayout,
+    @Default(<String, String>{}) Map<String, String> formFields,
+    @Default(<Map<String, String>>[]) List<Map<String, String>> lineItems,
     @Default(<ApprovalStep>[]) List<ApprovalStep> steps,
     @Default(<ApprovalHistory>[]) List<ApprovalHistory> histories,
   }) = _ApprovalDocument;

@@ -1,42 +1,31 @@
-part of 'approval_providers.dart';
+import 'package:the_we_system/core/network/api_exception.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   void updateKeyword(String keyword) {
-    _setDashboardState(this, (current) => current.copyWith(keyword: keyword));
+    setApprovalDashboardState(
+      this,
+      (current) => current.copyWith(keyword: keyword),
+    );
   }
 
   Future<void> refresh() async {
-    _setDashboardState(this, (current) => current);
+    await reloadRemoteState();
   }
 
   Future<bool> login(String id, String password) async {
-    final current = _currentState;
-    if (current == null) {
-      return false;
-    }
-
-    final account = current.accounts
-        .where((item) => item.id == id && item.password == password)
-        .firstOrNull;
-    if (account == null) {
-      _setDashboardState(
+    try {
+      await api.login(id.trim(), password);
+      await reloadRemoteState();
+      return true;
+    } on ApiException catch (error) {
+      setApprovalDashboardState(
         this,
-        (value) => value.copyWith(loginError: '아이디 또는 비밀번호를 확인해 주세요.'),
+        (value) => value.copyWith(loginError: error.message),
       );
       return false;
     }
-
-    _setDashboardState(
-      this,
-      (value) => value.copyWith(
-        currentUser: account,
-        loginError: '',
-        keyword: '',
-        selectedOrgDepartment: account.department,
-        selectedOrgUserId: account.id,
-      ),
-    );
-    return true;
   }
 
   Future<String?> registerAccount({
@@ -48,75 +37,42 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
     required String email,
     required bool isAdmin,
   }) async {
-    final current = _currentState;
-    if (current == null) {
-      return '회원가입 상태를 불러오지 못했습니다.';
+    try {
+      await api.register(
+        id: id.trim(),
+        password: password,
+        name: name.trim(),
+        department: department.trim(),
+        position: position.trim(),
+        email: email.trim().toLowerCase(),
+      );
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
     }
-
-    final normalizedId = id.trim();
-    final normalizedEmail = email.trim().toLowerCase();
-    if (current.accounts.any((item) => item.id == normalizedId)) {
-      return '이미 사용 중인 아이디입니다.';
-    }
-    if (current.accounts.any(
-      (item) => item.email.toLowerCase() == normalizedEmail,
-    )) {
-      return '이미 사용 중인 이메일입니다.';
-    }
-
-    final newAccount = EmployeeAccount(
-      id: normalizedId,
-      password: password,
-      name: name.trim(),
-      department: department.trim(),
-      position: position.trim(),
-      email: normalizedEmail,
-      isAdmin: isAdmin,
-    );
-
-    final accounts = [...current.accounts, newAccount]
-      ..sort((a, b) => a.name.compareTo(b.name));
-
-    _setDashboardState(
-      this,
-      (value) => value.copyWith(
-        accounts: accounts,
-        loginError: '',
-        selectedOrgDepartment: value.selectedOrgDepartment.isEmpty
-            ? newAccount.department
-            : value.selectedOrgDepartment,
-        selectedOrgUserId: value.selectedOrgUserId ?? newAccount.id,
-      ),
-    );
-    return null;
   }
 
-  void logout() {
-    _setDashboardState(
-      this,
-      (current) => current.copyWith(
-        clearCurrentUser: true,
-        loginError: '',
-        keyword: '',
-        selectedOrgDepartment: current.accounts.first.department,
-        selectedOrgUserId: current.accounts.first.id,
-      ),
-    );
+  Future<void> logout() async {
+    await api.logout();
+    emitDashboardState(signedOutApprovalState);
   }
 
   void clearLoginError() {
-    _setDashboardState(this, (current) => current.copyWith(loginError: ''));
+    setApprovalDashboardState(
+      this,
+      (current) => current.copyWith(loginError: ''),
+    );
   }
 
   void adjustZoom(double delta) {
-    _setDashboardState(this, (current) {
+    setApprovalDashboardState(this, (current) {
       final next = (current.zoom + delta).clamp(0.85, 1.55);
       return current.copyWith(zoom: next);
     });
   }
 
   void setDepartment(String department) {
-    _setDashboardState(this, (current) {
+    setApprovalDashboardState(this, (current) {
       final members =
           current.accounts
               .where((account) => account.department == department)
@@ -130,7 +86,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   void setOrgMember(String userId) {
-    _setDashboardState(
+    setApprovalDashboardState(
       this,
       (current) => current.copyWith(selectedOrgUserId: userId),
     );

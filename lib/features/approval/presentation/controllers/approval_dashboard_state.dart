@@ -1,4 +1,6 @@
-part of 'approval_providers.dart';
+import 'dart:typed_data';
+
+import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 
 class ApprovalDashboardState {
   const ApprovalDashboardState({
@@ -6,30 +8,73 @@ class ApprovalDashboardState {
     required this.frequentForms,
     required this.formTemplates,
     required this.documents,
+    required this.annualLeaveByYear,
+    this.monthlyLeavePerMonth = 1,
     this.currentUser,
     this.keyword = '',
     this.zoom = 1.0,
     this.loginError = '',
     this.selectedOrgDepartment = '',
     this.selectedOrgUserId,
+    this.adminMode = false,
+    this.restrictedDocumentIds = const <String>{},
+    this.leaveRequests = const <LeaveRequest>[],
+    this.acknowledgedLeaveRequestIds = const <String>{},
+    this.portalName = '더우리기술 전자결재',
+    this.customLogoBytes,
+    this.customLogoFileName,
+    this.adminOtpEnabled = true,
+    this.settingsPasswordEnabled = true,
+    this.adminDocumentAccessEnabled = true,
+    this.enabledAppIds = const <String>{
+      PortalAppId.approval,
+      PortalAppId.attendance,
+      PortalAppId.leave,
+    },
+    this.disabledFormTemplateIds = const <String>{},
+    this.organizationWideDocumentCategories = const <String>{
+      '지원',
+      '회계',
+      '근태',
+      '협조',
+    },
+    this.documentCategoryViewerIds = const <String, Set<String>>{},
   });
 
   final List<EmployeeAccount> accounts;
   final List<ApprovalForm> frequentForms;
   final List<ApprovalFormTemplate> formTemplates;
   final List<ApprovalDocument> documents;
+  final Map<int, int> annualLeaveByYear;
+  final int monthlyLeavePerMonth;
   final EmployeeAccount? currentUser;
   final String keyword;
   final double zoom;
   final String loginError;
   final String selectedOrgDepartment;
   final String? selectedOrgUserId;
+  final bool adminMode;
+  final Set<String> restrictedDocumentIds;
+  final List<LeaveRequest> leaveRequests;
+  final Set<String> acknowledgedLeaveRequestIds;
+  final String portalName;
+  final Uint8List? customLogoBytes;
+  final String? customLogoFileName;
+  final bool adminOtpEnabled;
+  final bool settingsPasswordEnabled;
+  final bool adminDocumentAccessEnabled;
+  final Set<String> enabledAppIds;
+  final Set<String> disabledFormTemplateIds;
+  final Set<String> organizationWideDocumentCategories;
+  final Map<String, Set<String>> documentCategoryViewerIds;
 
   ApprovalDashboardState copyWith({
     List<EmployeeAccount>? accounts,
     List<ApprovalForm>? frequentForms,
     List<ApprovalFormTemplate>? formTemplates,
     List<ApprovalDocument>? documents,
+    Map<int, int>? annualLeaveByYear,
+    int? monthlyLeavePerMonth,
     EmployeeAccount? currentUser,
     bool clearCurrentUser = false,
     String? keyword,
@@ -38,12 +83,29 @@ class ApprovalDashboardState {
     String? selectedOrgDepartment,
     String? selectedOrgUserId,
     bool clearSelectedOrgUser = false,
+    bool? adminMode,
+    Set<String>? restrictedDocumentIds,
+    List<LeaveRequest>? leaveRequests,
+    Set<String>? acknowledgedLeaveRequestIds,
+    String? portalName,
+    Uint8List? customLogoBytes,
+    String? customLogoFileName,
+    bool clearCustomLogo = false,
+    bool? adminOtpEnabled,
+    bool? settingsPasswordEnabled,
+    bool? adminDocumentAccessEnabled,
+    Set<String>? enabledAppIds,
+    Set<String>? disabledFormTemplateIds,
+    Set<String>? organizationWideDocumentCategories,
+    Map<String, Set<String>>? documentCategoryViewerIds,
   }) {
     return ApprovalDashboardState(
       accounts: accounts ?? this.accounts,
       frequentForms: frequentForms ?? this.frequentForms,
       formTemplates: formTemplates ?? this.formTemplates,
       documents: documents ?? this.documents,
+      annualLeaveByYear: annualLeaveByYear ?? this.annualLeaveByYear,
+      monthlyLeavePerMonth: monthlyLeavePerMonth ?? this.monthlyLeavePerMonth,
       currentUser: clearCurrentUser ? null : (currentUser ?? this.currentUser),
       keyword: keyword ?? this.keyword,
       zoom: zoom ?? this.zoom,
@@ -53,6 +115,32 @@ class ApprovalDashboardState {
       selectedOrgUserId: clearSelectedOrgUser
           ? null
           : (selectedOrgUserId ?? this.selectedOrgUserId),
+      adminMode: adminMode ?? this.adminMode,
+      restrictedDocumentIds:
+          restrictedDocumentIds ?? this.restrictedDocumentIds,
+      leaveRequests: leaveRequests ?? this.leaveRequests,
+      acknowledgedLeaveRequestIds:
+          acknowledgedLeaveRequestIds ?? this.acknowledgedLeaveRequestIds,
+      portalName: portalName ?? this.portalName,
+      customLogoBytes: clearCustomLogo
+          ? null
+          : (customLogoBytes ?? this.customLogoBytes),
+      customLogoFileName: clearCustomLogo
+          ? null
+          : (customLogoFileName ?? this.customLogoFileName),
+      adminOtpEnabled: adminOtpEnabled ?? this.adminOtpEnabled,
+      settingsPasswordEnabled:
+          settingsPasswordEnabled ?? this.settingsPasswordEnabled,
+      adminDocumentAccessEnabled:
+          adminDocumentAccessEnabled ?? this.adminDocumentAccessEnabled,
+      enabledAppIds: enabledAppIds ?? this.enabledAppIds,
+      disabledFormTemplateIds:
+          disabledFormTemplateIds ?? this.disabledFormTemplateIds,
+      organizationWideDocumentCategories:
+          organizationWideDocumentCategories ??
+          this.organizationWideDocumentCategories,
+      documentCategoryViewerIds:
+          documentCategoryViewerIds ?? this.documentCategoryViewerIds,
     );
   }
 
@@ -60,25 +148,67 @@ class ApprovalDashboardState {
 
   bool get isAdmin => currentUser?.isAdmin ?? false;
 
+  bool get isAdminMode => isAdmin && adminMode;
+
+  bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
+
+  bool isAppEnabled(String appId) => enabledAppIds.contains(appId);
+
+  List<ApprovalFormTemplate> get activeFormTemplates => formTemplates
+      .where((template) => !disabledFormTemplateIds.contains(template.id))
+      .toList();
+
+  List<ApprovalForm> get activeFrequentForms {
+    if (!isAppEnabled(PortalAppId.approval)) return const [];
+    final activeIds = activeFormTemplates
+        .map((template) => template.id)
+        .toSet();
+    return frequentForms.where((form) => activeIds.contains(form.id)).toList();
+  }
+
   List<ApprovalDocument> get visibleDocuments {
     final user = currentUser;
     if (user == null) {
       return const [];
     }
 
-    if (user.isAdmin) {
-      return documents;
-    }
-
     return documents.where((document) {
       final isDrafter = document.drafter == user.name;
       final isApprover = document.steps.any((step) => step.name == user.name);
-      final isReader =
-          document.references.contains(user.name) ||
-          document.viewers.contains(user.name);
-      return isDrafter || isApprover || isReader;
+      if (document.status == '작성중') {
+        return isDrafter;
+      }
+      final category = documentCategory(document);
+      final hasCategoryAccess =
+          isDocumentCategoryOrganizationWide(category) ||
+          (documentCategoryViewerIds[category]?.contains(user.id) ?? false);
+      final isRestricted = restrictedDocumentIds.contains(document.id);
+      if (isRestricted) {
+        return isDrafter || isApprover;
+      }
+      return isDrafter || isApprover || hasCategoryAccess;
     }).toList();
   }
+
+  String documentCategory(ApprovalDocument document) {
+    final template = formTemplates
+        .where((item) => item.name == document.form)
+        .firstOrNull;
+    final category = template?.category ?? '';
+    if (category.isNotEmpty) return category;
+    if (document.documentLayout == ApprovalDocumentLayout.payroll ||
+        document.documentLayout == ApprovalDocumentLayout.expense ||
+        document.documentLayout == ApprovalDocumentLayout.hospitality) {
+      return '회계';
+    }
+    if (document.form.contains('휴가')) return '근태';
+    if (document.form.contains('협조')) return '협조';
+    return '지원';
+  }
+
+  bool isDocumentCategoryOrganizationWide(String category) =>
+      organizationWideDocumentCategories.contains(category) ||
+      !documentCategoryViewerIds.containsKey(category);
 
   List<ApprovalDocument> get authoredDocuments {
     final user = currentUser;
@@ -86,7 +216,7 @@ class ApprovalDashboardState {
       return const [];
     }
 
-    if (user.isAdmin) {
+    if (hasAdminDocumentAccess) {
       return documents;
     }
 
@@ -96,7 +226,18 @@ class ApprovalDashboardState {
   }
 
   List<ApprovalDocument> get sharedDraftDocuments {
-    return [...documents]..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
+    return [...visibleDocuments]
+      ..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
+  }
+
+  List<ApprovalDocument> get departmentDocuments {
+    final user = currentUser;
+    if (user == null) return const [];
+    final result = visibleDocuments.where((document) {
+      if (document.department != user.department) return false;
+      return true;
+    }).toList()..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
+    return result;
   }
 
   List<ApprovalDocument> get waitingDocuments {
@@ -113,7 +254,7 @@ class ApprovalDashboardState {
         return false;
       }
 
-      return user.isAdmin ? true : activeStep.name == user.name;
+      return hasAdminDocumentAccess ? true : activeStep.name == user.name;
     }).toList()..sort((a, b) {
       if (a.urgent != b.urgent) {
         return a.urgent ? -1 : 1;
@@ -132,7 +273,7 @@ class ApprovalDashboardState {
       final scheduled = document.steps.any(
         (step) => step.name == user.name && step.status == '결재 예정',
       );
-      return user.isAdmin ? document.status == '결재대기' : scheduled;
+      return hasAdminDocumentAccess ? document.status == '결재대기' : scheduled;
     }).toList();
   }
 
@@ -142,11 +283,7 @@ class ApprovalDashboardState {
       return const [];
     }
 
-    if (user.isAdmin) {
-      return documents;
-    }
-
-    return documents
+    return visibleDocuments
         .where(
           (document) =>
               document.references.contains(user.name) ||
@@ -167,7 +304,7 @@ class ApprovalDashboardState {
     receivedCount: receivedDocuments.length,
     referenceCount: referenceDocuments.length,
     scheduledCount: scheduledDocuments.length,
-    frequentForms: frequentForms,
+    frequentForms: activeFrequentForms,
     processingDocuments:
         authoredDocuments.where((document) => document.status != '작성중').toList()
           ..sort((a, b) => b.draftedAt.compareTo(a.draftedAt)),
@@ -176,7 +313,16 @@ class ApprovalDashboardState {
 
   List<String> get departments {
     final values =
-        accounts.map((account) => account.department).toSet().toList()..sort();
+        accounts
+            .where(
+              (account) =>
+                  !account.isSystemAdministrator &&
+                  account.department.trim().isNotEmpty,
+            )
+            .map((account) => account.department.trim())
+            .toSet()
+            .toList()
+          ..sort();
     return values;
   }
 
@@ -186,7 +332,11 @@ class ApprovalDashboardState {
     }
 
     return accounts
-        .where((account) => account.department == selectedOrgDepartment)
+        .where(
+          (account) =>
+              !account.isSystemAdministrator &&
+              account.department.trim() == selectedOrgDepartment,
+        )
         .toList()
       ..sort((a, b) => a.name.compareTo(b.name));
   }
@@ -201,5 +351,127 @@ class ApprovalDashboardState {
             .where((account) => account.id == selectedOrgUserId)
             .firstOrNull ??
         members.first;
+  }
+
+  List<LeaveRequest> get currentUserLeaveRequests {
+    final id = currentUser?.id;
+    if (id == null) return const [];
+    return leaveRequests.where((request) => request.userId == id).toList();
+  }
+
+  List<LeaveRequest> get pendingLeaveRequests =>
+      leaveRequests.where((request) => request.status == '승인대기').toList();
+
+  List<LeaveRequest> get unacknowledgedApprovedLeaveRequests => leaveRequests
+      .where(
+        (request) =>
+            request.status == '승인완료' &&
+            !request.directEntry &&
+            !acknowledgedLeaveRequestIds.contains(request.id),
+      )
+      .toList();
+
+  List<LeaveRequest> get actionableLeaveRequests =>
+      leaveRequests.where(canActOnLeave).toList();
+
+  List<LeaveRequest> leaveRequestsFor(String userId) =>
+      leaveRequests.where((request) => request.userId == userId).toList();
+
+  int serviceYearFor(EmployeeAccount? account) {
+    final hireDate = DateTime.tryParse(account?.hireDate ?? '');
+    if (hireDate == null) return 1;
+    final now = DateTime.now();
+    var years = now.year - hireDate.year;
+    if (now.month < hireDate.month ||
+        (now.month == hireDate.month && now.day < hireDate.day)) {
+      years--;
+    }
+    return (years + 1).clamp(1, 99);
+  }
+
+  int get currentServiceYear => serviceYearFor(currentUser);
+
+  bool isUnderOneYear(EmployeeAccount? account) {
+    final hireDate = DateTime.tryParse(account?.hireDate ?? '');
+    if (hireDate == null) return false;
+    final now = DateTime.now();
+    final firstAnniversary = DateTime(
+      hireDate.year + 1,
+      hireDate.month,
+      hireDate.day,
+    );
+    return now.isBefore(firstAnniversary);
+  }
+
+  int completedServiceMonthsFor(EmployeeAccount? account) {
+    final hireDate = DateTime.tryParse(account?.hireDate ?? '');
+    if (hireDate == null) return 0;
+    final now = DateTime.now();
+    var months = (now.year - hireDate.year) * 12 + now.month - hireDate.month;
+    if (now.day < hireDate.day) months--;
+    return months.clamp(0, 11);
+  }
+
+  int accruedMonthlyLeaveFor(EmployeeAccount? account) =>
+      completedServiceMonthsFor(account) * monthlyLeavePerMonth;
+
+  int totalAnnualLeaveFor(EmployeeAccount? account) {
+    if (isUnderOneYear(account)) return accruedMonthlyLeaveFor(account);
+    return annualLeaveByYear[serviceYearFor(account).clamp(1, 10)] ??
+        annualLeaveByYear[10] ??
+        19;
+  }
+
+  String leaveEntitlementLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account) ? '발생 월차' : '총 연차';
+
+  String leaveUsedLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account) ? '사용 월차' : '사용 연차';
+
+  String leaveRemainingLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account) ? '잔여 월차' : '잔여 연차';
+
+  String servicePeriodLabelFor(EmployeeAccount? account) =>
+      isUnderOneYear(account)
+      ? '${completedServiceMonthsFor(account)}개월차'
+      : '${serviceYearFor(account)}년차';
+
+  int get totalAnnualLeave => totalAnnualLeaveFor(currentUser);
+
+  double usedAnnualLeaveFor(String userId) => leaveRequestsFor(userId)
+      .where((request) => request.status == '승인완료')
+      .fold(0, (sum, request) => sum + request.days);
+
+  double pendingAnnualLeaveFor(String userId) => leaveRequestsFor(userId)
+      .where((request) => request.status == '승인대기')
+      .fold(0, (sum, request) => sum + request.days);
+
+  double remainingAnnualLeaveFor(EmployeeAccount account) =>
+      (totalAnnualLeaveFor(account) -
+              usedAnnualLeaveFor(account.id) -
+              pendingAnnualLeaveFor(account.id))
+          .clamp(0, totalAnnualLeaveFor(account))
+          .toDouble();
+
+  double get usedAnnualLeave => currentUserLeaveRequests
+      .where((request) => request.status == '승인완료')
+      .fold(0, (sum, request) => sum + request.days);
+
+  double get pendingAnnualLeave => currentUserLeaveRequests
+      .where((request) => request.status == '승인대기')
+      .fold(0, (sum, request) => sum + request.days);
+
+  double get remainingAnnualLeave =>
+      (totalAnnualLeave - usedAnnualLeave - pendingAnnualLeave)
+          .clamp(0, totalAnnualLeave)
+          .toDouble();
+
+  bool canActOnLeave(LeaveRequest request) {
+    final user = currentUser;
+    if (user == null || request.status != '승인대기') return false;
+    if (request.ceoStatus == '진행중') {
+      return user.id == 'ceo' || user.position.contains('대표');
+    }
+    return false;
   }
 }

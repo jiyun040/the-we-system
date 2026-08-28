@@ -1,7 +1,8 @@
-part of 'approval_box_page.dart';
+import 'approval_box_dependencies.dart';
 
-class _DocumentMobileList extends StatelessWidget {
-  const _DocumentMobileList({
+class ApprovalDocumentMobileList extends StatelessWidget {
+  const ApprovalDocumentMobileList({
+    super.key,
     required this.kind,
     required this.documents,
     required this.canCancelForCurrentUser,
@@ -26,7 +27,7 @@ class _DocumentMobileList extends StatelessWidget {
         final document = documents[index];
         return ApprovalMobileDocumentCard(
           document: document,
-          onTap: () => context.goNamed(
+          onTap: () => context.pushNamed(
             AppRouteName.detail,
             pathParameters: {'id': document.id},
           ),
@@ -45,7 +46,7 @@ class _DocumentMobileList extends StatelessWidget {
                 ),
               ),
             OutlinedButton(
-              onPressed: () => context.goNamed(
+              onPressed: () => context.pushNamed(
                 AppRouteName.draft,
                 queryParameters: {'reuse': document.id},
               ),

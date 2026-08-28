@@ -1,4 +1,10 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'approval_document.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
 
 _ApprovalDocument _$ApprovalDocumentFromJson(
   Map<String, dynamic> json,
@@ -43,6 +49,22 @@ _ApprovalDocument _$ApprovalDocumentFromJson(
           ?.map((e) => e as String)
           .toList() ??
       const <String>[],
+  attachments:
+      (json['attachments'] as List<dynamic>?)
+          ?.map((e) => ApprovalAttachment.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const <ApprovalAttachment>[],
+  documentLayout: json['documentLayout'] as String? ?? 'basic',
+  formFields:
+      (json['formFields'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ) ??
+      const <String, String>{},
+  lineItems:
+      (json['lineItems'] as List<dynamic>?)
+          ?.map((e) => Map<String, String>.from(e as Map))
+          .toList() ??
+      const <Map<String, String>>[],
   steps:
       (json['steps'] as List<dynamic>?)
           ?.map((e) => ApprovalStep.fromJson(e as Map<String, dynamic>))
@@ -81,6 +103,10 @@ Map<String, dynamic> _$ApprovalDocumentToJson(_ApprovalDocument instance) =>
       'viewers': instance.viewers,
       'publicReceivers': instance.publicReceivers,
       'linkedDocuments': instance.linkedDocuments,
+      'attachments': instance.attachments,
+      'documentLayout': instance.documentLayout,
+      'formFields': instance.formFields,
+      'lineItems': instance.lineItems,
       'steps': instance.steps,
       'histories': instance.histories,
     };

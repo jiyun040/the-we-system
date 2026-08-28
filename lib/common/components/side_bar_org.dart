@@ -1,7 +1,7 @@
-part of 'side_bar.dart';
+import 'side_bar_dependencies.dart';
 
-class _OrgButton extends ConsumerWidget {
-  const _OrgButton({required this.isCompact});
+class SideBarOrgButton extends ConsumerWidget {
+  const SideBarOrgButton({super.key, required this.isCompact});
 
   final bool isCompact;
 
@@ -70,54 +70,68 @@ class _OrganizationDialog extends ConsumerWidget {
                     ),
                     TheWeGaps.verticalXl,
                     Expanded(
-                      child: ListView.separated(
-                        itemCount: departments.length,
-                        separatorBuilder: (context, index) =>
-                            TheWeGaps.verticalSm,
-                        itemBuilder: (context, index) {
-                          final department = departments[index];
-                          final selected =
-                              department == state?.selectedOrgDepartment;
-                          return InkWell(
-                            onTap: () => ref
-                                .read(
-                                  approvalDashboardControllerProvider.notifier,
-                                )
-                                .setDepartment(department),
-                            borderRadius: BorderRadius.circular(TheWeRadius.lg),
-                            child: Container(
-                              padding: TheWeInsets.card,
-                              decoration: BoxDecoration(
-                                color: selected
-                                    ? TheWeColor.blue100.withValues(alpha: 0.4)
-                                    : const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(
-                                  TheWeRadius.lg,
+                      child: departments.isEmpty
+                          ? Center(
+                              child: Text(
+                                '등록된 부서가 없습니다.',
+                                style: TheWeTextStyle.body.copyWith(
+                                  color: TheWeColor.black500,
                                 ),
                               ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.apartment_outlined,
-                                    size: 18,
+                            )
+                          : ListView.separated(
+                              itemCount: departments.length,
+                              separatorBuilder: (context, index) =>
+                                  TheWeGaps.verticalSm,
+                              itemBuilder: (context, index) {
+                                final department = departments[index];
+                                final selected =
+                                    department == state?.selectedOrgDepartment;
+                                return InkWell(
+                                  onTap: () => ref
+                                      .read(
+                                        approvalDashboardControllerProvider
+                                            .notifier,
+                                      )
+                                      .setDepartment(department),
+                                  borderRadius: BorderRadius.circular(
+                                    TheWeRadius.lg,
                                   ),
-                                  TheWeGaps.horizontalMd,
-                                  Expanded(
-                                    child: Text(
-                                      department,
-                                      style: TheWeTextStyle.body.copyWith(
-                                        fontWeight: selected
-                                            ? FontWeight.w700
-                                            : FontWeight.w500,
+                                  child: Container(
+                                    padding: TheWeInsets.card,
+                                    decoration: BoxDecoration(
+                                      color: selected
+                                          ? TheWeColor.blue100.withValues(
+                                              alpha: 0.4,
+                                            )
+                                          : const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(
+                                        TheWeRadius.lg,
                                       ),
                                     ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.apartment_outlined,
+                                          size: 18,
+                                        ),
+                                        TheWeGaps.horizontalMd,
+                                        Expanded(
+                                          child: Text(
+                                            department,
+                                            style: TheWeTextStyle.body.copyWith(
+                                              fontWeight: selected
+                                                  ? FontWeight.w700
+                                                  : FontWeight.w500,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
                     ),
                   ],
                 ),

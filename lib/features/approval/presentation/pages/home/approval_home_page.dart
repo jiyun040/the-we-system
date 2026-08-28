@@ -1,30 +1,17 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
-import 'package:the_we_system/common/components/processing_card.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
 import 'package:the_we_system/common/constants/color.dart';
-import 'package:the_we_system/common/constants/layout.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_empty_state.dart';
-import 'package:the_we_system/features/approval/presentation/widgets/approval_mobile_document_card.dart';
-
-part 'approval_home_overview.dart';
-part 'approval_home_calendar_panel.dart';
-part 'approval_home_notice.dart';
-part 'approval_home_calendar_models.dart';
-part 'approval_home_calendar_day.dart';
-part 'approval_home_calendar_dialog.dart';
-part 'approval_home_trend.dart';
-part 'approval_home_processing.dart';
+import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
+import 'approval_home_overview.dart';
+import 'approval_home_processing.dart';
 
 class ApprovalHomePage extends ConsumerStatefulWidget {
   const ApprovalHomePage({super.key});
@@ -101,6 +88,12 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                         child: _Header(
                           userName: approvalState.currentUser?.name ?? '사용자',
                           controller: searchController,
+                          showAdminAction:
+                              isPhone &&
+                              approvalState.currentUser?.isAdmin == true &&
+                              !approvalState.isAdminMode,
+                          onAdminPressed: () =>
+                              context.goNamed(AppRouteName.admin),
                           onChanged: ref
                               .read(
                                 approvalDashboardControllerProvider.notifier,
@@ -117,41 +110,29 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                         0,
                       ),
                       sliver: SliverToBoxAdapter(
-                        child: _PortalOverview(state: approvalState),
+                        child: ApprovalHomeOverview(state: approvalState),
                       ),
                     ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        0,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: _ProcessingSection(
-                          title: '결재 대기 문서',
-                          documents: waitingDocuments,
-                          controller: waitingScrollController,
-                          onScrollLeft: () => _scrollWaitingDocuments(-300),
-                          onScrollRight: () => _scrollWaitingDocuments(300),
+                    if (approvalState.isAppEnabled(PortalAppId.approval))
+                      SliverPadding(
+                        padding: EdgeInsets.fromLTRB(
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          isPhone ? 18 : 28,
+                          0,
+                        ),
+                        sliver: SliverToBoxAdapter(
+                          child: ApprovalProcessingSection(
+                            title: '결재 대기 문서',
+                            documents: waitingDocuments,
+                            controller: waitingScrollController,
+                            onScrollLeft: () => _scrollWaitingDocuments(-300),
+                            onScrollRight: () => _scrollWaitingDocuments(300),
+                          ),
                         ),
                       ),
-                    ),
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                        isPhone ? 18 : 28,
-                      ),
-                      sliver: SliverToBoxAdapter(
-                        child: _DraftProgressSection(
-                          documents: dashboard.processingDocuments
-                              .take(10)
-                              .toList(),
-                          totalCount: dashboard.processingDocuments.length,
-                        ),
-                      ),
+                    SliverToBoxAdapter(
+                      child: SizedBox(height: isPhone ? 18 : 28),
                     ),
                   ],
                 ),
@@ -180,7 +161,7 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
             ],
           );
         },
-        error: (error, stackTrace) => _LoadFailed(
+        error: (error, stackTrace) => ApprovalHomeLoadFailed(
           onRetry: () =>
               ref.read(approvalDashboardControllerProvider.notifier).refresh(),
         ),
@@ -212,11 +193,15 @@ class _Header extends StatelessWidget {
     required this.userName,
     required this.controller,
     required this.onChanged,
+    required this.showAdminAction,
+    required this.onAdminPressed,
   });
 
   final String userName;
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final bool showAdminAction;
+  final VoidCallback onAdminPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -251,6 +236,14 @@ class _Header extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (showAdminAction) ...[
+                    const Spacer(),
+                    IconButton(
+                      onPressed: onAdminPressed,
+                      tooltip: '관리자 계정 전환',
+                      icon: const Icon(Icons.admin_panel_settings_outlined),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -278,16 +271,16 @@ class _Header extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  _IconAction(
+                  ApprovalHomeIconAction(
                     icon: Icons.settings_outlined,
                     message: '설정',
-                    onPressed: () => context.goNamed(AppRouteName.settings),
+                    onPressed: () => context.pushNamed(AppRouteName.settings),
                   ),
                   const SizedBox(width: 6),
-                  _IconAction(
+                  ApprovalHomeIconAction(
                     icon: Icons.help_outline,
                     message: '도움말',
-                    onPressed: () => context.goNamed(AppRouteName.help),
+                    onPressed: () => context.pushNamed(AppRouteName.help),
                   ),
                 ],
               ),

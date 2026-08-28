@@ -1,7 +1,8 @@
-part of 'approval_draft_page.dart';
+import 'approval_draft_dependencies.dart';
 
-class _DraftToolbar extends StatelessWidget {
-  const _DraftToolbar({
+class ApprovalDraftToolbar extends StatelessWidget {
+  const ApprovalDraftToolbar({
+    super.key,
     required this.document,
     required this.onPreview,
     required this.onRequest,
@@ -60,12 +61,19 @@ class _DraftToolbar extends StatelessWidget {
               _DraftAction(
                 icon: Icons.close,
                 label: '취소',
-                onPressed: () => context.goNamed(AppRouteName.home),
+                onPressed: () {
+                  if (context.canPop()) {
+                    context.pop();
+                    return;
+                  }
+                  context.goNamed(AppRouteName.home);
+                },
               ),
               _DraftAction(
                 icon: Icons.info_outline,
                 label: '결재 정보',
-                onPressed: () => showApprovalInfoDialog(context),
+                onPressed: () =>
+                    showApprovalInfoDialog(context, document: document),
               ),
             ],
           ),
@@ -97,8 +105,59 @@ class _DraftAction extends StatelessWidget {
   }
 }
 
-class _FormCatalog extends StatelessWidget {
-  const _FormCatalog({
+class ApprovalCompactFormSelector extends StatelessWidget {
+  const ApprovalCompactFormSelector({
+    super.key,
+    required this.templates,
+    required this.selectedFormId,
+    required this.onFormSelected,
+  });
+
+  final List<ApprovalFormTemplate> templates;
+  final String selectedFormId;
+  final ValueChanged<String> onFormSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = templates
+        .where((template) => template.id == selectedFormId)
+        .first;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('기안 양식', style: TheWeTextStyle.section),
+          const SizedBox(height: 8),
+          TheWeDropdown<String>(
+            value: selectedFormId,
+            width: double.infinity,
+            items: templates.map((template) => template.id).toList(),
+            labelBuilder: (id) =>
+                templates.where((template) => template.id == id).first.name,
+            onChanged: (id) {
+              if (id != null) {
+                onFormSelected(id);
+              }
+            },
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${selected.category} · ${selected.description}',
+            maxLines: 1,
+            overflow: TextOverflow.fade,
+            style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ApprovalFormCatalog extends StatelessWidget {
+  const ApprovalFormCatalog({
+    super.key,
     required this.templates,
     required this.selectedFormId,
     required this.onFormSelected,
@@ -130,6 +189,8 @@ class _FormCatalog extends StatelessWidget {
           ...grouped.entries.map(
             (entry) => ExpansionTile(
               initiallyExpanded: true,
+              shape: const Border(),
+              collapsedShape: const Border(),
               leading: Icon(Icons.folder_outlined, color: TheWeColor.black500),
               title: Text(entry.key, style: TheWeTextStyle.body),
               children: entry.value

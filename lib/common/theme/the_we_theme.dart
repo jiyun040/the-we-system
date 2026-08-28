@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:the_we_system/common/constants/color.dart';
+import 'package:the_we_system/common/constants/layout.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 
 abstract final class TheWeTheme {
@@ -62,25 +63,76 @@ abstract final class TheWeTheme {
       labelStyle: TheWeTextStyle.caption,
       secondaryLabelStyle: TheWeTextStyle.caption,
       selectedColor: TheWeColor.blue100.withValues(alpha: 0.45),
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: TheWeColor.surface,
       side: BorderSide(color: TheWeColor.black300.withValues(alpha: 0.3)),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
     ),
     dialogTheme: DialogThemeData(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
+      backgroundColor: Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(TheWeRadius.dialog + 4),
+      ),
       titleTextStyle: TheWeTextStyle.title,
       contentTextStyle: TheWeTextStyle.body,
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: const Color(0xFF4D5357),
+      elevation: 10,
+      contentTextStyle: TheWeTextStyle.body.copyWith(
+        color: Colors.white,
+        fontWeight: FontWeight.w700,
+      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     inputDecorationTheme: InputDecorationTheme(
       hintStyle: TheWeTextStyle.body.copyWith(color: TheWeColor.black300),
       labelStyle: TheWeTextStyle.body,
+      filled: true,
+      fillColor: TheWeColor.surfaceAlt,
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(
+          color: TheWeColor.black300.withValues(alpha: 0.55),
+        ),
+        borderRadius: BorderRadius.circular(TheWeRadius.lg),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: TheWeColor.blue300),
+        borderRadius: BorderRadius.circular(TheWeRadius.lg),
+      ),
     ),
     dropdownMenuTheme: DropdownMenuThemeData(
       textStyle: TheWeTextStyle.body,
       inputDecorationTheme: InputDecorationTheme(
         hintStyle: TheWeTextStyle.body.copyWith(color: TheWeColor.black300),
+        filled: true,
+        fillColor: TheWeColor.white,
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(
+            color: TheWeColor.blue200.withValues(alpha: .8),
+          ),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderSide: const BorderSide(color: TheWeColor.blue300),
+          borderRadius: BorderRadius.circular(14),
+        ),
       ),
+      menuStyle: MenuStyle(
+        backgroundColor: const WidgetStatePropertyAll(TheWeColor.white),
+        elevation: const WidgetStatePropertyAll(10),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        ),
+      ),
+    ),
+    popupMenuTheme: PopupMenuThemeData(
+      color: TheWeColor.white,
+      surfaceTintColor: TheWeColor.white,
+      elevation: 10,
+      textStyle: TheWeTextStyle.body,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
   );
 }

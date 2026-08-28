@@ -2,12 +2,51 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/common/components/the_we_dropdown.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 
-class ApprovalSettingsPage extends StatelessWidget {
+class _ApprovalSettingsData {
+  const _ApprovalSettingsData({
+    required this.draftMode,
+    required this.attachmentImageMode,
+  });
+
+  final String draftMode;
+  final String attachmentImageMode;
+}
+
+_ApprovalSettingsData _savedSettings = const _ApprovalSettingsData(
+  draftMode: '일반 작성',
+  attachmentImageMode: '기본 사이즈로 표시',
+);
+
+class ApprovalSettingsPage extends StatefulWidget {
   const ApprovalSettingsPage({super.key});
+
+  @override
+  State<ApprovalSettingsPage> createState() => _ApprovalSettingsPageState();
+}
+
+class _ApprovalSettingsPageState extends State<ApprovalSettingsPage> {
+  late String _draftMode;
+  late String _attachmentImageMode;
+
+  @override
+  void initState() {
+    super.initState();
+    _draftMode = _savedSettings.draftMode;
+    _attachmentImageMode = _savedSettings.attachmentImageMode;
+  }
+
+  void _save() {
+    _savedSettings = _ApprovalSettingsData(
+      draftMode: _draftMode,
+      attachmentImageMode: _attachmentImageMode,
+    );
+    showTheWeSnackBar(context, message: '결재환경설정이 저장되었습니다. ($_draftMode)');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,9 +89,19 @@ class ApprovalSettingsPage extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 22),
-                    const Expanded(
+                    Expanded(
                       child: TabBarView(
-                        children: [_BasicSettings(), _DelegationSettings()],
+                        children: [
+                          _BasicSettings(
+                            draftMode: _draftMode,
+                            attachmentImageMode: _attachmentImageMode,
+                            onDraftModeChanged: (value) =>
+                                setState(() => _draftMode = value),
+                            onAttachmentImageModeChanged: (value) =>
+                                setState(() => _attachmentImageMode = value),
+                          ),
+                          const _DelegationSettings(),
+                        ],
                       ),
                     ),
                     Wrap(
@@ -61,7 +110,7 @@ class ApprovalSettingsPage extends StatelessWidget {
                       runSpacing: 8,
                       children: [
                         FilledButton(
-                          onPressed: () {},
+                          onPressed: _save,
                           style: FilledButton.styleFrom(
                             backgroundColor: TheWeColor.blue300,
                           ),
@@ -85,7 +134,17 @@ class ApprovalSettingsPage extends StatelessWidget {
 }
 
 class _BasicSettings extends StatelessWidget {
-  const _BasicSettings();
+  const _BasicSettings({
+    required this.draftMode,
+    required this.attachmentImageMode,
+    required this.onDraftModeChanged,
+    required this.onAttachmentImageModeChanged,
+  });
+
+  final String draftMode;
+  final String attachmentImageMode;
+  final ValueChanged<String> onDraftModeChanged;
+  final ValueChanged<String> onAttachmentImageModeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -150,24 +209,37 @@ class _BasicSettings extends StatelessWidget {
         _SettingRow(
           label: '결재 작성 방식',
           child: TheWeDropdown<String>(
-            value: '일반 작성',
+            value: draftMode,
             width: 180,
             items: const ['일반 작성', '간편 작성'],
             labelBuilder: (value) => value,
-            onChanged: (_) {},
+            onChanged: (value) {
+              if (value != null) {
+                onDraftModeChanged(value);
+              }
+            },
           ),
         ),
         _SettingRow(
           label: '첨부 이미지 설정',
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               _RadioText(
                 label: '기본 사이즈로 표시 (썸네일로 표시합니다. 100 x 100 pixel)',
-                selected: true,
+                selected: attachmentImageMode == '기본 사이즈로 표시',
+                onTap: () => onAttachmentImageModeChanged('기본 사이즈로 표시'),
               ),
-              _RadioText(label: '원본 사이즈로 표시 (파일이 여러 개인 경우, 속도저하가 발생할 수 있습니다.)'),
-              _RadioText(label: '파일명으로 표시 (파일 이름만 표시합니다.)'),
+              _RadioText(
+                label: '원본 사이즈로 표시 (파일이 여러 개인 경우, 속도저하가 발생할 수 있습니다.)',
+                selected: attachmentImageMode == '원본 사이즈로 표시',
+                onTap: () => onAttachmentImageModeChanged('원본 사이즈로 표시'),
+              ),
+              _RadioText(
+                label: '파일명으로 표시 (파일 이름만 표시합니다.)',
+                selected: attachmentImageMode == '파일명으로 표시',
+                onTap: () => onAttachmentImageModeChanged('파일명으로 표시'),
+              ),
             ],
           ),
         ),
@@ -208,16 +280,15 @@ class _DelegationSettings extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
-            '대결자가 결재를 승인해도 완전 승인으로 처리되지 않습니다. 원결재자가 복귀 후 재승인해야 결재가 완료됩니다.',
+            '휴가·출장처럼 결재자가 업무를 처리할 수 없는 기간에도 결재가 지연되지 않도록 대결자를 지정합니다. '
+            '대결자가 승인해도 완전 승인으로 처리되지 않으며, 원결재자가 복귀 후 재승인해야 결재가 완료됩니다.',
             style: TheWeTextStyle.body,
           ),
         ),
         const SizedBox(height: 14),
-        _DelegationTile(
-          period: '2026-06-28 ~ 2026-07-03',
-          reason: '오지 출장',
-          substitute: '이재오 차장',
-          status: '대결 승인 후 원결재자 확인 필요',
+        Text(
+          '서버에 등록된 부재/위임 설정이 없습니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
         ),
       ],
     );
@@ -265,89 +336,6 @@ class _SettingRow extends StatelessWidget {
   }
 }
 
-class _SettingValue extends StatelessWidget {
-  const _SettingValue({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: TheWeTextStyle.caption),
-        const SizedBox(height: 4),
-        Text(value, style: TheWeTextStyle.body),
-      ],
-    );
-  }
-}
-
-class _DelegationTile extends StatelessWidget {
-  const _DelegationTile({
-    required this.period,
-    required this.reason,
-    required this.substitute,
-    required this.status,
-  });
-
-  final String period;
-  final String reason;
-  final String substitute;
-  final String status;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: TheWeColor.black300.withValues(alpha: 0.35)),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 720) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _SettingValue(label: '기간', value: period),
-                const SizedBox(height: 12),
-                _SettingValue(label: '사유', value: reason),
-                const SizedBox(height: 12),
-                _SettingValue(label: '대결자', value: substitute),
-                const SizedBox(height: 12),
-                Text(
-                  status,
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: TheWeColor.pink,
-                  ),
-                ),
-              ],
-            );
-          }
-
-          return Row(
-            children: [
-              Expanded(child: Text(period, style: TheWeTextStyle.body)),
-              Expanded(child: Text(reason, style: TheWeTextStyle.body)),
-              Expanded(child: Text(substitute, style: TheWeTextStyle.body)),
-              Expanded(
-                child: Text(
-                  status,
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: TheWeColor.pink,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
 class _StampCell extends StatelessWidget {
   const _StampCell({required this.text});
 
@@ -367,27 +355,36 @@ class _StampCell extends StatelessWidget {
 }
 
 class _RadioText extends StatelessWidget {
-  const _RadioText({required this.label, this.selected = false});
+  const _RadioText({
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
 
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        children: [
-          Icon(
-            selected
-                ? Icons.radio_button_checked
-                : Icons.radio_button_unchecked,
-            color: selected ? TheWeColor.blue300 : TheWeColor.black300,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: Text(label, style: TheWeTextStyle.body)),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        child: Row(
+          children: [
+            Icon(
+              selected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+              color: selected ? TheWeColor.blue300 : TheWeColor.black300,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(label, style: TheWeTextStyle.body)),
+          ],
+        ),
       ),
     );
   }

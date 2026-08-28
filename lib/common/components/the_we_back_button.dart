@@ -29,7 +29,7 @@ class TheWeBackButton extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(10),
           child: Icon(
-            Icons.arrow_back_ios,
+            Icons.arrow_back_ios_new,
             size: 18,
             color: TheWeColor.black900,
           ),

@@ -5,6 +5,10 @@
   "outputDirectory": "build/web",
   "rewrites": [
     {
+      "source": "/api/v1/:path*",
+      "destination": "http://3.39.38.178/api/v1/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

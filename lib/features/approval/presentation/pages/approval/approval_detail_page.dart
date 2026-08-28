@@ -6,13 +6,12 @@ import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
-import 'package:the_we_system/features/approval/domain/entities/document/approval_history.dart';
-import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_document_pdf.dart';
 
-part 'approval_detail_panels.dart';
+import 'approval_detail_panels.dart';
 
 class ApprovalDetailPage extends ConsumerWidget {
   const ApprovalDetailPage({super.key, required this.documentId});
@@ -44,15 +43,20 @@ class ApprovalDetailPage extends ConsumerWidget {
         .firstOrNull;
     final canApprove =
         currentUser != null &&
-        (currentUser.isAdmin || activeStep?.name == currentUser.name);
+        (appState.hasAdminDocumentAccess ||
+            activeStep?.name == currentUser.name);
     final canCancel =
         currentUser != null &&
-        (currentUser.isAdmin || document.drafter == currentUser.name) &&
+        (appState.hasAdminDocumentAccess ||
+            document.drafter == currentUser.name) &&
         document.canCancel &&
         !document.steps.skip(1).any((step) => step.status == '완료');
     final canEdit =
         currentUser != null &&
-        (currentUser.isAdmin || document.drafter == currentUser.name);
+        (appState.hasAdminDocumentAccess ||
+            document.drafter == currentUser.name) &&
+        document.canEdit &&
+        (document.status == '작성중' || document.status == '반려');
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
@@ -117,7 +121,7 @@ class _DetailContent extends StatelessWidget {
                         : BorderSide.none,
                   ),
                 ),
-                child: _RightPanel(document: document),
+                child: ApprovalRightPanel(document: document),
               );
 
               if (isNarrow) {
@@ -181,21 +185,42 @@ class _DocumentToolbar extends ConsumerWidget {
               const TheWeBackButton(),
               const SizedBox(width: 8),
               Expanded(
-                child: RichText(
-                  overflow: TextOverflow.ellipsis,
-                  text: TextSpan(
-                    style: TheWeTextStyle.pageTitle,
-                    children: [
-                      TextSpan(text: document.title),
-                      TextSpan(
-                        text: '  in ${document.form}',
-                        style: TheWeTextStyle.caption.copyWith(
-                          color: TheWeColor.black500,
+                child: compact
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            document.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.fade,
+                            style: TheWeTextStyle.title,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            document.form,
+                            maxLines: 1,
+                            overflow: TextOverflow.fade,
+                            style: TheWeTextStyle.caption.copyWith(
+                              color: TheWeColor.black500,
+                            ),
+                          ),
+                        ],
+                      )
+                    : RichText(
+                        overflow: TextOverflow.ellipsis,
+                        text: TextSpan(
+                          style: TheWeTextStyle.pageTitle,
+                          children: [
+                            TextSpan(text: document.title),
+                            TextSpan(
+                              text: '  in ${document.form}',
+                              style: TheWeTextStyle.caption.copyWith(
+                                color: TheWeColor.black500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),
@@ -205,7 +230,7 @@ class _DocumentToolbar extends ConsumerWidget {
             child: Row(
               children: [
                 if (canApprove)
-                  _ToolbarButton(
+                  ApprovalToolbarButton(
                     icon: Icons.edit_note,
                     label: '승인',
                     highlighted: true,
@@ -223,7 +248,7 @@ class _DocumentToolbar extends ConsumerWidget {
                     ),
                   ),
                 if (canApprove)
-                  _ToolbarButton(
+                  ApprovalToolbarButton(
                     icon: Icons.keyboard_return,
                     label: '반려',
                     onPressed: () => showApprovalDecisionDialog(
@@ -240,35 +265,39 @@ class _DocumentToolbar extends ConsumerWidget {
                     ),
                   ),
                 if (canCancel)
-                  _ToolbarButton(
+                  ApprovalToolbarButton(
                     icon: Icons.undo,
                     label: '상신취소',
                     onPressed: () async {
                       await ref
                           .read(approvalDashboardControllerProvider.notifier)
                           .cancelSubmission(document.id);
-                      if (context.mounted) {
-                        context.goNamed(
-                          AppRouteName.box,
-                          pathParameters: {'kind': 'drafts'},
-                        );
-                      }
                     },
                   ),
                 if (canEdit)
-                  _ToolbarButton(
-                    icon: Icons.edit_square,
-                    label: '문서 수정',
-                    onPressed: () => context.goNamed(
+                  ApprovalToolbarButton(
+                    icon: document.status == '반려'
+                        ? Icons.restart_alt
+                        : Icons.edit_square,
+                    label: document.status == '반려' ? '재기안' : '작성 계속',
+                    onPressed: () => context.pushNamed(
                       AppRouteName.draft,
                       queryParameters: {'reuse': document.id},
                     ),
                   ),
-                _ToolbarButton(
+                ApprovalToolbarButton(
                   icon: Icons.info_outline,
                   label: '결재 정보',
-                  onPressed: () => showApprovalInfoDialog(context),
+                  onPressed: () =>
+                      showApprovalInfoDialog(context, document: document),
                 ),
+                if (document.status != '작성중')
+                  ApprovalToolbarButton(
+                    icon: Icons.picture_as_pdf_outlined,
+                    label: 'PDF 출력',
+                    onPressed: () =>
+                        exportApprovalDocumentPdf(context, document),
+                  ),
               ],
             ),
           ),

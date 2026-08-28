@@ -1,7 +1,33 @@
-part of 'approval_dialogs.dart';
+import 'approval_dialog_dependencies.dart';
 
-class _LargeDialog extends StatelessWidget {
-  const _LargeDialog({
+class ApprovalDialogInfoRow extends StatelessWidget {
+  const ApprovalDialogInfoRow({
+    super.key,
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      SizedBox(width: 100, child: Text(label, style: TheWeTextStyle.body)),
+      Expanded(
+        child: Text(
+          value.isEmpty ? '-' : value,
+          style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+    ],
+  );
+}
+
+class ApprovalLargeDialog extends StatelessWidget {
+  const ApprovalLargeDialog({
+    super.key,
     required this.title,
     required this.child,
     required this.actions,
@@ -13,73 +39,41 @@ class _LargeDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(TheWeRadius.sm),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: TheWeSpacing.section,
-          vertical: TheWeSpacing.page,
-        ),
-        child: SizedBox(
-          width: 860,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(title, style: TheWeTextStyle.title),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, size: 28),
-                  ),
-                ],
+    return TheWeModalSurface(
+      maxWidth: 920,
+      child: SizedBox(
+        width: 860,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: title,
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            TheWeGaps.verticalSection,
+            child,
+            TheWeGaps.verticalXxl,
+            TheWeModalActions(
+              primaryLabel: actions.firstWhere(
+                (action) => action == '확인',
+                orElse: () => actions.first,
               ),
-              TheWeGaps.verticalSection,
-              child,
-              TheWeGaps.verticalXxl,
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: actions
-                    .map(
-                      (action) => Padding(
-                        padding: const EdgeInsets.only(left: TheWeSpacing.sm),
-                        child: action == '확인'
-                            ? FilledButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: TheWeColor.blue300,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                      TheWeRadius.sm,
-                                    ),
-                                  ),
-                                ),
-                                child: Text(action),
-                              )
-                            : OutlinedButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: Text(action),
-                              ),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
-          ),
+              secondaryLabel: actions.contains('취소') ? '취소' : null,
+              primaryColor: TheWeColor.blue300,
+              onPrimaryPressed: () => Navigator.of(context).pop(),
+              onSecondaryPressed: () => Navigator.of(context).pop(),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class _TreePanel extends StatelessWidget {
-  const _TreePanel({
+class ApprovalTreePanel extends StatelessWidget {
+  const ApprovalTreePanel({
+    super.key,
     required this.searchHint,
     required this.nodes,
     this.selectedIndex = 0,
@@ -156,8 +150,13 @@ class _TreePanel extends StatelessWidget {
   }
 }
 
-class _DetailBox extends StatelessWidget {
-  const _DetailBox({required this.title, required this.rows, this.topAction});
+class ApprovalDetailBox extends StatelessWidget {
+  const ApprovalDetailBox({
+    super.key,
+    required this.title,
+    required this.rows,
+    this.topAction,
+  });
 
   final String title;
   final List<(String, String)> rows;
@@ -202,65 +201,6 @@ class _DetailBox extends StatelessWidget {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DocumentPickerTable extends StatelessWidget {
-  const _DocumentPickerTable({required this.title, required this.documents});
-
-  final String title;
-  final List<String> documents;
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = TextEditingController();
-
-    return Container(
-      height: 460,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(border: Border.all(color: TheWeColor.black300)),
-      child: Column(
-        children: [
-          CustomTextFormField(
-            controller: controller,
-            decoration: const InputDecoration(
-              hintText: '검색',
-              prefixIcon: Icon(Icons.search),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: ['결재양식', '제목', '기안자', '결재일']
-                .map(
-                  (header) => Expanded(
-                    child: Text(
-                      header,
-                      style: TheWeTextStyle.caption.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-          const Divider(),
-          ...documents.map(
-            (document) => CheckboxListTile(
-              value: false,
-              onChanged: (_) {},
-              controlAffinity: ListTileControlAffinity.leading,
-              title: Text(document, style: TheWeTextStyle.body),
-              subtitle: Text(
-                '업무기안 · study100 · 2026-06-20',
-                style: TheWeTextStyle.caption,
-              ),
-            ),
-          ),
-          const Spacer(),
-          Text(title, style: TheWeTextStyle.title),
         ],
       ),
     );

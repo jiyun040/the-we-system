@@ -1,16 +1,22 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
+import 'approval_home_calendar_models.dart';
 
-class _CalendarEventDialog extends StatefulWidget {
-  const _CalendarEventDialog({required this.date, this.initialEvent});
+class ApprovalCalendarEventDialog extends StatefulWidget {
+  const ApprovalCalendarEventDialog({
+    super.key,
+    required this.date,
+    this.initialEvent,
+  });
 
   final DateTime date;
-  final _PortalCalendarEvent? initialEvent;
+  final ApprovalCalendarEvent? initialEvent;
 
   @override
-  State<_CalendarEventDialog> createState() => _CalendarEventDialogState();
+  State<ApprovalCalendarEventDialog> createState() =>
+      _CalendarEventDialogState();
 }
 
-class _CalendarEventDialogState extends State<_CalendarEventDialog> {
+class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
   final titleController = TextEditingController();
   final placeController = TextEditingController();
   String colorKey = 'blue';
@@ -49,89 +55,90 @@ class _CalendarEventDialogState extends State<_CalendarEventDialog> {
     final screen = MediaQuery.sizeOf(context);
     final isPhone = screen.width < 520;
 
-    return AlertDialog(
-      insetPadding: EdgeInsets.symmetric(
-        horizontal: isPhone ? 20 : 40,
-        vertical: 24,
-      ),
-      backgroundColor: TheWeColor.white,
-      surfaceTintColor: TheWeColor.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(TheWeRadius.dialog),
-      ),
-      title: Text(
-        '${_formatKoreanDate(widget.date)} 일정 ${widget.initialEvent == null ? '추가' : '수정'}',
-        style: TheWeTextStyle.title,
-      ),
-      content: SizedBox(
-        width: isPhone ? screen.width - 96 : 420,
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _CalendarTextField(label: '일정 이름', controller: titleController),
-              TheWeGaps.verticalLg,
-              Text('시간', style: TheWeTextStyle.body),
-              TheWeGaps.verticalSm,
-              _CalendarTimeSelector(
-                hour: hour,
-                minute: minute,
-                onChanged: (nextHour, nextMinute) {
-                  setState(() {
-                    hour = nextHour;
-                    minute = nextMinute;
-                  });
-                },
-              ),
-              TheWeGaps.verticalLg,
-              _CalendarTextField(label: '장소', controller: placeController),
-              TheWeGaps.verticalLg,
-              Text('색상', style: TheWeTextStyle.body),
-              TheWeGaps.verticalSm,
-              Wrap(
-                spacing: 12,
-                children: ['blue', 'orange', 'pink']
-                    .map(
-                      (item) => _CalendarColorChoice(
-                        color: _calendarColor(item),
-                        selected: colorKey == item,
-                        onTap: () => setState(() => colorKey = item),
-                      ),
-                    )
-                    .toList(),
-              ),
-            ],
+    return TheWeModalSurface(
+      maxWidth: 480,
+      width: isPhone ? screen.width - 40 : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TheWeModalHeader(
+            title:
+                '${formatApprovalKoreanDate(widget.date)} 일정 ${widget.initialEvent == null ? '추가' : '수정'}',
+            onClose: () => Navigator.of(context).pop(),
           ),
-        ),
-      ),
-      actions: [
-        OutlinedButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('취소'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final title = titleController.text.trim();
-            if (title.isEmpty) {
-              return;
-            }
-            Navigator.of(context).pop(
-              _PortalCalendarEvent(
-                title: title,
-                time:
-                    '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
-                place: placeController.text.trim().isEmpty
-                    ? '장소 미정'
-                    : placeController.text.trim(),
-                colorKey: colorKey,
+          const SizedBox(height: 16),
+          SizedBox(
+            width: isPhone ? screen.width - 96 : 420,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _CalendarTextField(
+                    label: '일정 이름',
+                    controller: titleController,
+                  ),
+                  TheWeGaps.verticalLg,
+                  Text('시간', style: TheWeTextStyle.body),
+                  TheWeGaps.verticalSm,
+                  _CalendarTimeSelector(
+                    hour: hour,
+                    minute: minute,
+                    onChanged: (nextHour, nextMinute) {
+                      setState(() {
+                        hour = nextHour;
+                        minute = nextMinute;
+                      });
+                    },
+                  ),
+                  TheWeGaps.verticalLg,
+                  _CalendarTextField(label: '장소', controller: placeController),
+                  TheWeGaps.verticalLg,
+                  Text('색상', style: TheWeTextStyle.body),
+                  TheWeGaps.verticalSm,
+                  Wrap(
+                    spacing: 12,
+                    children: ['blue', 'orange', 'pink']
+                        .map(
+                          (item) => _CalendarColorChoice(
+                            color: _calendarColor(item),
+                            selected: colorKey == item,
+                            onTap: () => setState(() => colorKey = item),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ],
               ),
-            );
-          },
-          style: FilledButton.styleFrom(backgroundColor: TheWeColor.blue300),
-          child: Text(widget.initialEvent == null ? '추가' : '수정'),
-        ),
-      ],
+            ),
+          ),
+          const SizedBox(height: 22),
+          TheWeModalActions(
+            primaryLabel: widget.initialEvent == null ? '추가' : '수정',
+            secondaryLabel: '취소',
+            primaryColor: TheWeColor.blue300,
+            onSecondaryPressed: () => Navigator.of(context).pop(),
+            onPrimaryPressed: () {
+              final title = titleController.text.trim();
+              if (title.isEmpty) {
+                return;
+              }
+              Navigator.of(context).pop(
+                ApprovalCalendarEvent(
+                  title: title,
+                  time:
+                      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+                  place: placeController.text.trim().isEmpty
+                      ? '장소 미정'
+                      : placeController.text.trim(),
+                  colorKey: colorKey,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }
@@ -339,8 +346,12 @@ class _CalendarTextField extends StatelessWidget {
   }
 }
 
-class _CalendarDetailLine extends StatelessWidget {
-  const _CalendarDetailLine({required this.label, required this.value});
+class ApprovalCalendarDetailLine extends StatelessWidget {
+  const ApprovalCalendarDetailLine({
+    super.key,
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;
@@ -367,8 +378,8 @@ class _CalendarDetailLine extends StatelessWidget {
   }
 }
 
-class _CalendarColorDetailLine extends StatelessWidget {
-  const _CalendarColorDetailLine({required this.color});
+class ApprovalCalendarColorDetailLine extends StatelessWidget {
+  const ApprovalCalendarColorDetailLine({super.key, required this.color});
 
   final Color color;
 
@@ -407,6 +418,6 @@ Color _calendarColor(String colorKey) {
   };
 }
 
-String _formatKoreanDate(DateTime date) {
+String formatApprovalKoreanDate(DateTime date) {
   return '${date.year}년 ${date.month}월 ${date.day}일';
 }

@@ -15,8 +15,8 @@ class ApprovalLoginPage extends ConsumerStatefulWidget {
 }
 
 class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
-  final idController = TextEditingController(text: 'edu_teacher');
-  final passwordController = TextEditingController(text: '1234');
+  final idController = TextEditingController();
+  final passwordController = TextEditingController();
   bool showPassword = false;
 
   @override
@@ -91,12 +91,14 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                     height: 48,
                     child: FilledButton(
                       onPressed: () async {
-                        await ref
-                            .read(approvalDashboardControllerProvider.notifier)
-                            .login(
-                              idController.text.trim(),
-                              passwordController.text.trim(),
-                            );
+                        final notifier = ref.read(
+                          approvalDashboardControllerProvider.notifier,
+                        );
+                        final id = idController.text.trim();
+                        final password = passwordController.text.trim();
+                        final success = await notifier.login(id, password);
+                        if (!success || !context.mounted) return;
+                        context.goNamed(AppRouteName.home);
                       },
                       style: FilledButton.styleFrom(
                         backgroundColor: TheWeColor.black900,
@@ -116,7 +118,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => context.goNamed(AppRouteName.signup),
+                      onPressed: () => context.pushNamed(AppRouteName.signup),
                       child: Text(
                         '회원가입',
                         style: TheWeTextStyle.body.copyWith(

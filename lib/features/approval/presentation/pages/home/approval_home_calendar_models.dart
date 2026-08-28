@@ -1,7 +1,11 @@
-part of 'approval_home_page.dart';
+import 'approval_home_dependencies.dart';
 
-class _CalendarNavButton extends StatelessWidget {
-  const _CalendarNavButton({required this.icon, required this.onPressed});
+class ApprovalCalendarNavButton extends StatelessWidget {
+  const ApprovalCalendarNavButton({
+    super.key,
+    required this.icon,
+    required this.onPressed,
+  });
 
   final IconData icon;
   final VoidCallback onPressed;
@@ -24,8 +28,8 @@ class _CalendarNavButton extends StatelessWidget {
   }
 }
 
-class _PortalCalendarEvent {
-  const _PortalCalendarEvent({
+class ApprovalCalendarEvent {
+  const ApprovalCalendarEvent({
     required this.title,
     required this.time,
     required this.place,
@@ -56,4 +60,4 @@ class _PortalCalendarEvent {
   }
 }
 
-enum _CalendarEventAction { edit, delete }
+enum ApprovalCalendarEventAction { edit, delete }
