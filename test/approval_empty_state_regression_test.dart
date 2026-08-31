@@ -48,4 +48,35 @@ void main() {
     expect(find.text('등록된 일정이 없습니다.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('선택한 날짜에 일정을 추가하고 목록에서 확인한다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1000, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: SizedBox(width: 900, child: ApprovalHomeCalendarPanel()),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('일정 추가'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('일정 추가'), findsWidgets);
+    final fields = find.byType(TextFormField);
+    expect(fields, findsNWidgets(2));
+    await tester.enterText(fields.first, '월간 정기 회의');
+    final addButton = find.widgetWithText(FilledButton, '추가');
+    await tester.ensureVisible(addButton);
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('월간 정기 회의'), findsWidgets);
+    expect(find.text('등록된 일정이 없습니다.'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
 }

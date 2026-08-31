@@ -81,4 +81,34 @@ void main() {
       expect(field.controller?.text ?? '', isEmpty);
     }
   });
+
+  testWidgets('로그인 입력 글자를 읽기 쉽게 표시하고 Enter 동작을 제공한다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            _SignedOutController.new,
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fields = tester
+        .widgetList<EditableText>(find.byType(EditableText))
+        .toList();
+    final idField = fields[0];
+    final passwordField = fields[1];
+
+    expect(idField.style.fontSize, 16);
+    expect(passwordField.style.fontSize, 16);
+    expect(idField.textInputAction, TextInputAction.next);
+    expect(passwordField.textInputAction, TextInputAction.done);
+    expect(passwordField.onSubmitted, isNotNull);
+
+    idField.onSubmitted?.call('employee');
+    await tester.pump();
+    expect(passwordField.focusNode.hasFocus, isTrue);
+  });
 }

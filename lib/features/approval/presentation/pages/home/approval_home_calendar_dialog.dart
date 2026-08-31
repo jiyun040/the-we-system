@@ -58,19 +58,19 @@ class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
     return TheWeModalSurface(
       maxWidth: 480,
       width: isPhone ? screen.width - 40 : null,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TheWeModalHeader(
-            title:
-                '${formatApprovalKoreanDate(widget.date)} 일정 ${widget.initialEvent == null ? '추가' : '수정'}',
-            onClose: () => Navigator.of(context).pop(),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: isPhone ? screen.width - 96 : 420,
-            child: SingleChildScrollView(
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title:
+                  '${formatApprovalKoreanDate(widget.date)} 일정 ${widget.initialEvent == null ? '추가' : '수정'}',
+              onClose: () => Navigator.of(context).pop(),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: isPhone ? screen.width - 96 : 420,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,32 +112,32 @@ class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
                 ],
               ),
             ),
-          ),
-          const SizedBox(height: 22),
-          TheWeModalActions(
-            primaryLabel: widget.initialEvent == null ? '추가' : '수정',
-            secondaryLabel: '취소',
-            primaryColor: TheWeColor.blue300,
-            onSecondaryPressed: () => Navigator.of(context).pop(),
-            onPrimaryPressed: () {
-              final title = titleController.text.trim();
-              if (title.isEmpty) {
-                return;
-              }
-              Navigator.of(context).pop(
-                ApprovalCalendarEvent(
-                  title: title,
-                  time:
-                      '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
-                  place: placeController.text.trim().isEmpty
-                      ? '장소 미정'
-                      : placeController.text.trim(),
-                  colorKey: colorKey,
-                ),
-              );
-            },
-          ),
-        ],
+            const SizedBox(height: 22),
+            TheWeModalActions(
+              primaryLabel: widget.initialEvent == null ? '추가' : '수정',
+              secondaryLabel: '취소',
+              primaryColor: TheWeColor.blue300,
+              onSecondaryPressed: () => Navigator.of(context).pop(),
+              onPrimaryPressed: () {
+                final title = titleController.text.trim();
+                if (title.isEmpty) {
+                  return;
+                }
+                Navigator.of(context).pop(
+                  ApprovalCalendarEvent(
+                    title: title,
+                    time:
+                        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+                    place: placeController.text.trim().isEmpty
+                        ? '장소 미정'
+                        : placeController.text.trim(),
+                    colorKey: colorKey,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

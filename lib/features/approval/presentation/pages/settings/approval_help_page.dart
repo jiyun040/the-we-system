@@ -3,7 +3,7 @@ import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 
-class ApprovalHelpPage extends StatelessWidget {
+class ApprovalHelpPage extends StatefulWidget {
   const ApprovalHelpPage({super.key});
 
   static const _items = [
@@ -39,6 +39,40 @@ class ApprovalHelpPage extends StatelessWidget {
   ];
 
   @override
+  State<ApprovalHelpPage> createState() => _ApprovalHelpPageState();
+}
+
+class _ApprovalHelpPageState extends State<ApprovalHelpPage> {
+  late final List<ExpansibleController> _controllers;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(
+      ApprovalHelpPage._items.length,
+      (_) => ExpansibleController(),
+    );
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  void _handleExpansionChanged(int expandedIndex, bool expanded) {
+    if (!expanded) return;
+
+    for (var index = 0; index < _controllers.length; index++) {
+      if (index != expandedIndex && _controllers[index].isExpanded) {
+        _controllers[index].collapse();
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: TheWeColor.white,
@@ -70,13 +104,16 @@ class ApprovalHelpPage extends StatelessWidget {
               const SizedBox(height: 24),
               Expanded(
                 child: ListView.separated(
-                  itemCount: _items.length,
+                  itemCount: ApprovalHelpPage._items.length,
                   separatorBuilder: (context, index) =>
                       const SizedBox(height: 10),
                   itemBuilder: (context, index) {
-                    final item = _items[index];
+                    final item = ApprovalHelpPage._items[index];
 
                     return ExpansionTile(
+                      controller: _controllers[index],
+                      onExpansionChanged: (expanded) =>
+                          _handleExpansionChanged(index, expanded),
                       tilePadding: const EdgeInsets.symmetric(horizontal: 16),
                       title: Text(item.$1, style: TheWeTextStyle.subtitle),
                       children: [

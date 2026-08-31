@@ -17,13 +17,30 @@ class ApprovalLoginPage extends ConsumerStatefulWidget {
 class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
   final idController = TextEditingController();
   final passwordController = TextEditingController();
+  final passwordFocusNode = FocusNode();
   bool showPassword = false;
+  bool isLoggingIn = false;
 
   @override
   void dispose() {
     idController.dispose();
     passwordController.dispose();
+    passwordFocusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (isLoggingIn) return;
+
+    setState(() => isLoggingIn = true);
+    final notifier = ref.read(approvalDashboardControllerProvider.notifier);
+    final id = idController.text.trim();
+    final password = passwordController.text.trim();
+    final success = await notifier.login(id, password);
+
+    if (!mounted) return;
+    setState(() => isLoggingIn = false);
+    if (success) context.goNamed(AppRouteName.home);
   }
 
   @override
@@ -58,14 +75,32 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                   const SizedBox(height: 24),
                   Text('아이디', style: TheWeTextStyle.body),
                   const SizedBox(height: 8),
-                  CustomTextFormField(controller: idController),
+                  CustomTextFormField(
+                    controller: idController,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                    onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
+                  ),
                   const SizedBox(height: 16),
                   Text('비밀번호', style: TheWeTextStyle.body),
                   const SizedBox(height: 8),
                   CustomTextFormField(
                     controller: passwordController,
+                    focusNode: passwordFocusNode,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
                     obscureText: !showPassword,
+                    textInputAction: TextInputAction.done,
                     decoration: InputDecoration(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       suffixIcon: IconButton(
                         onPressed: () {
                           setState(() => showPassword = !showPassword);
@@ -77,6 +112,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         ),
                       ),
                     ),
+                    onFieldSubmitted: (_) => _login(),
                   ),
                   const SizedBox(height: 10),
                   Text(
@@ -90,16 +126,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                     width: double.infinity,
                     height: 48,
                     child: FilledButton(
-                      onPressed: () async {
-                        final notifier = ref.read(
-                          approvalDashboardControllerProvider.notifier,
-                        );
-                        final id = idController.text.trim();
-                        final password = passwordController.text.trim();
-                        final success = await notifier.login(id, password);
-                        if (!success || !context.mounted) return;
-                        context.goNamed(AppRouteName.home);
-                      },
+                      onPressed: isLoggingIn ? null : _login,
                       style: FilledButton.styleFrom(
                         backgroundColor: TheWeColor.black900,
                         shape: RoundedRectangleBorder(
