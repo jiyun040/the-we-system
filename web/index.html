@@ -34,14 +34,20 @@
 </head>
 <body>
   <script>
-    // Keep Ctrl/Command + wheel available for the app's own zoom control.
-    // Preventing the browser default does not stop the wheel event from
-    // reaching Flutter. Plain wheel scrolling remains unchanged.
+    // Flutter Web may consume Ctrl/Command + wheel before it reaches a Dart
+    // pointer listener. Capture it here and forward only the zoom direction
+    // through a dedicated event. Plain wheel scrolling remains unchanged.
     document.addEventListener('wheel', function (event) {
       if (event.ctrlKey || event.metaKey) {
         event.preventDefault();
+        event.stopImmediatePropagation();
+        if (event.deltaY !== 0) {
+          window.dispatchEvent(new CustomEvent('the-we-app-zoom', {
+            detail: event.deltaY < 0 ? 0.05 : -0.05
+          }));
+        }
       }
-    }, { passive: false });
+    }, { passive: false, capture: true });
   </script>
   <!--
     You can customize the "flutter_bootstrap.js" script.

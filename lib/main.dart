@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/theme/the_we_theme.dart';
+import 'package:the_we_system/core/platform/app_zoom_wheel_bridge.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
@@ -40,7 +41,7 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-class _AppInteractionLayer extends ConsumerWidget {
+class _AppInteractionLayer extends ConsumerStatefulWidget {
   const _AppInteractionLayer({
     required this.zoom,
     required this.mediaQuery,
@@ -52,7 +53,30 @@ class _AppInteractionLayer extends ConsumerWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AppInteractionLayer> createState() =>
+      _AppInteractionLayerState();
+}
+
+class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
+  late final AppZoomWheelDisposer _removeWebZoomWheelHandler;
+
+  @override
+  void initState() {
+    super.initState();
+    _removeWebZoomWheelHandler = registerAppZoomWheelHandler((delta) {
+      if (!mounted) return;
+      ref.read(approvalDashboardControllerProvider.notifier).adjustZoom(delta);
+    });
+  }
+
+  @override
+  void dispose() {
+    _removeWebZoomWheelHandler();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.listen<String?>(approvalOperationErrorProvider, (previous, next) {
       if (next == null || next.isEmpty) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -79,7 +103,11 @@ class _AppInteractionLayer extends ConsumerWidget {
               .adjustZoom(event.scrollDelta.dy > 0 ? -0.05 : 0.05);
         }
       },
-      child: AppZoomViewport(zoom: zoom, mediaQuery: mediaQuery, child: child),
+      child: AppZoomViewport(
+        zoom: widget.zoom,
+        mediaQuery: widget.mediaQuery,
+        child: widget.child,
+      ),
     );
   }
 }
