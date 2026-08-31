@@ -121,18 +121,21 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   CustomTextFormField(
                     key: const Key('signup-name-field'),
                     controller: nameController,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 14),
                   _FieldLabel('아이디'),
                   CustomTextFormField(
                     key: const Key('signup-id-field'),
                     controller: idController,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
                   ),
                   const SizedBox(height: 14),
                   _FieldLabel('이메일'),
                   CustomTextFormField(
                     key: const Key('signup-email-field'),
                     controller: emailController,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 14),
@@ -151,7 +154,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                     key: const Key('signup-position-field'),
                     controller: positionController,
                     readOnly: true,
-                    style: TheWeTextStyle.body,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
                     decoration: const InputDecoration(
                       hintText: '이름과 부서에 따라 자동으로 입력됩니다.',
                       suffixIcon: Icon(Icons.lock_outline_rounded, size: 18),
@@ -162,6 +165,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   CustomTextFormField(
                     key: const Key('signup-password-field'),
                     controller: passwordController,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
                     obscureText: !showPassword,
                     decoration: InputDecoration(
                       suffixIcon: IconButton(
@@ -181,6 +185,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   CustomTextFormField(
                     key: const Key('signup-confirm-password-field'),
                     controller: confirmPasswordController,
+                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
                     obscureText: !showConfirmPassword,
                     decoration: InputDecoration(
                       suffixIcon: IconButton(

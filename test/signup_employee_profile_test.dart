@@ -74,6 +74,18 @@ void main() {
     expect(positionField.controller.text, '부장');
   });
 
+  testWidgets('회원가입 입력 글자를 읽기 쉬운 크기로 표시한다', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: ApprovalSignupPage()));
+
+    final fields = tester
+        .widgetList<CustomTextFormField>(find.byType(CustomTextFormField))
+        .toList();
+    expect(fields, hasLength(6));
+    for (final field in fields) {
+      expect(field.style?.fontSize, 16);
+    }
+  });
+
   testWidgets('이름과 맞지 않는 부서로는 회원가입할 수 없다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(800, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
