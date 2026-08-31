@@ -30,10 +30,11 @@ void main() {
       position: '시스템 관리자',
     );
     final kimHyomin = _account(
-      id: 'account-chosen-by-user',
+      id: 'we061046',
       name: '김효민',
       department: '경리부',
       position: '대리',
+      isAdmin: false,
     );
     final otherAdmin = _account(
       id: 'other-admin',
@@ -42,9 +43,9 @@ void main() {
       position: '대표',
     );
     final wrongProfile = _account(
-      id: 'wrong-profile',
+      id: 'another-account',
       name: '김효민',
-      department: '관리부',
+      department: '경리부',
       position: '대리',
     );
 

@@ -24,7 +24,7 @@ class MyApp extends ConsumerWidget {
         1.0;
 
     return MaterialApp.router(
-      title: '더우리기술 전자결재',
+      title: '우리기술 전자결재',
       debugShowCheckedModeBanner: false,
       routerConfig: appRouter,
       builder: (context, child) {

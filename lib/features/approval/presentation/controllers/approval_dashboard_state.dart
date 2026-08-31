@@ -20,7 +20,7 @@ class ApprovalDashboardState {
     this.restrictedDocumentIds = const <String>{},
     this.leaveRequests = const <LeaveRequest>[],
     this.acknowledgedLeaveRequestIds = const <String>{},
-    this.portalName = '더우리기술 전자결재',
+    this.portalName = '우리기술 전자결재',
     this.customLogoBytes,
     this.customLogoFileName,
     this.adminOtpEnabled = true,

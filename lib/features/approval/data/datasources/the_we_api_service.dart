@@ -165,7 +165,8 @@ class TheWeApiService {
       acknowledgedLeaveRequestIds: _strings(
         data['acknowledgedLeaveRequestIds'],
       ).toSet(),
-      portalName: settings['portalName']?.toString() ?? '더우리기술 전자결재',
+      portalName: (settings['portalName']?.toString() ?? '우리기술 전자결재')
+          .replaceAll('더우리기술', '우리기술'),
       annualLeaveByYear: _intMap(settings['annualLeaveByYear']),
       monthlyLeavePerMonth: _integer(settings['monthlyLeavePerMonth'], 1),
       adminOtpEnabled: settings['adminOtpEnabled'] != false,

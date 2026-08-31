@@ -71,7 +71,7 @@ class SideBarBrand extends ConsumerWidget {
               TheWeGaps.horizontalLg,
               Expanded(
                 child: Text(
-                  state?.portalName ?? '더우리기술 전자결재',
+                  state?.portalName ?? '우리기술 전자결재',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TheWeTextStyle.title,
