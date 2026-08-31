@@ -111,7 +111,8 @@ class SideBar extends ConsumerWidget {
                           title: '전자결재',
                           icon: Icons.approval_outlined,
                           isCompact: isCompact,
-                          initiallyExpanded: !onAttendancePage && !onHomePage,
+                          initiallyExpanded:
+                              !onAttendancePage && !onLeavePage && !onHomePage,
                           children: [
                             SideBarMenuSection(
                               title: '자주 쓰는 양식',

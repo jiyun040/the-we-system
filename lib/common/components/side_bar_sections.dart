@@ -33,6 +33,7 @@ class SideBarCategorySection extends StatelessWidget {
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
+            key: ValueKey('$title:$initiallyExpanded'),
             initiallyExpanded: initiallyExpanded,
             leading: Icon(icon, color: TheWeColor.black900),
             title: Text(title, style: TheWeTextStyle.subtitle),
