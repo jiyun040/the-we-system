@@ -35,8 +35,12 @@ void showTheWeSnackBar(
         elevation: 10,
         backgroundColor: const Color(0xFF4D5357),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: const Duration(seconds: 3),
+        duration: type == TheWeSnackBarType.error
+            ? const Duration(seconds: 6)
+            : const Duration(seconds: 3),
         dismissDirection: DismissDirection.down,
+        showCloseIcon: type == TheWeSnackBarType.error,
+        closeIconColor: Colors.white,
         content: Row(
           children: [
             Container(

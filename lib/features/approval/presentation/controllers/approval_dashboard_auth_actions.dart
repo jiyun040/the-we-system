@@ -11,7 +11,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   Future<void> refresh() async {
-    await reloadRemoteState();
+    await refreshRemoteState();
   }
 
   Future<bool> login(String id, String password) async {
@@ -25,30 +25,12 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
         (value) => value.copyWith(loginError: error.message),
       );
       return false;
-    }
-  }
-
-  Future<String?> registerAccount({
-    required String id,
-    required String password,
-    required String name,
-    required String department,
-    required String position,
-    required String email,
-    required bool isAdmin,
-  }) async {
-    try {
-      await api.register(
-        id: id.trim(),
-        password: password,
-        name: name.trim(),
-        department: department.trim(),
-        position: position.trim(),
-        email: email.trim().toLowerCase(),
+    } catch (error) {
+      setApprovalDashboardState(
+        this,
+        (value) => value.copyWith(loginError: userFacingErrorMessage(error)),
       );
-      return null;
-    } on ApiException catch (error) {
-      return error.message;
+      return false;
     }
   }
 
@@ -61,6 +43,13 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
     setApprovalDashboardState(
       this,
       (current) => current.copyWith(loginError: ''),
+    );
+  }
+
+  void setLoginError(String message) {
+    setApprovalDashboardState(
+      this,
+      (current) => current.copyWith(loginError: message),
     );
   }
 

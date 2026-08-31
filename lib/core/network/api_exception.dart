@@ -16,8 +16,10 @@ class ApiException implements Exception {
       }
     }
     if (error.type == DioExceptionType.connectionError ||
-        error.type == DioExceptionType.connectionTimeout) {
-      return const ApiException('로컬 서버에 연결할 수 없습니다. 서버 실행 상태를 확인해 주세요.');
+        error.type == DioExceptionType.connectionTimeout ||
+        error.type == DioExceptionType.sendTimeout ||
+        error.type == DioExceptionType.receiveTimeout) {
+      return const ApiException('서버에 연결할 수 없습니다. 네트워크와 서버 상태를 확인해 주세요.');
     }
     return ApiException(
       error.message ?? '서버 요청을 처리하지 못했습니다.',
@@ -31,4 +33,14 @@ class ApiException implements Exception {
 
   @override
   String toString() => message;
+}
+
+String userFacingErrorMessage(
+  Object error, {
+  String fallback = '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+}) {
+  if (error is ApiException && error.message.trim().isNotEmpty) {
+    return error.message.trim();
+  }
+  return fallback;
 }

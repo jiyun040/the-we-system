@@ -32,10 +32,15 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
   Future<void> _login() async {
     if (isLoggingIn) return;
 
-    setState(() => isLoggingIn = true);
     final notifier = ref.read(approvalDashboardControllerProvider.notifier);
     final id = idController.text.trim();
     final password = passwordController.text.trim();
+    if (id.isEmpty || password.isEmpty) {
+      notifier.setLoginError('아이디와 비밀번호를 모두 입력해 주세요.');
+      return;
+    }
+
+    setState(() => isLoggingIn = true);
     final success = await notifier.login(id, password);
 
     if (!mounted) return;
@@ -85,6 +90,9 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         vertical: 16,
                       ),
                     ),
+                    onChanged: (_) => ref
+                        .read(approvalDashboardControllerProvider.notifier)
+                        .clearLoginError(),
                     onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
                   ),
                   const SizedBox(height: 16),
@@ -112,15 +120,49 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         ),
                       ),
                     ),
+                    onChanged: (_) => ref
+                        .read(approvalDashboardControllerProvider.notifier)
+                        .clearLoginError(),
                     onFieldSubmitted: (_) => _login(),
                   ),
                   const SizedBox(height: 10),
-                  Text(
-                    state?.loginError ?? '',
-                    style: TheWeTextStyle.caption.copyWith(
-                      color: TheWeColor.pink,
+                  if (state?.loginError.isNotEmpty ?? false)
+                    Container(
+                      key: const Key('login-error-message'),
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: TheWeColor.dangerSurface,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: TheWeColor.danger.withValues(alpha: 0.28),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.error_outline_rounded,
+                            color: TheWeColor.danger,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              state!.loginError,
+                              style: TheWeTextStyle.body.copyWith(
+                                color: TheWeColor.danger,
+                                fontWeight: FontWeight.w700,
+                                height: 1.4,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   const SizedBox(height: 18),
                   SizedBox(
                     width: double.infinity,
@@ -137,20 +179,6 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         '로그인',
                         style: TheWeTextStyle.subtitle.copyWith(
                           color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => context.pushNamed(AppRouteName.signup),
-                      child: Text(
-                        '회원가입',
-                        style: TheWeTextStyle.body.copyWith(
-                          color: TheWeColor.blue300,
-                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),

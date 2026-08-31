@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/core/config/app_env.dart';
+import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/main.dart';
@@ -9,6 +10,13 @@ import 'package:the_we_system/main.dart';
 class _SignedOutController extends ApprovalDashboardController {
   @override
   Future<ApprovalDashboardState> build() async => signedOutApprovalState;
+}
+
+class _FailingController extends ApprovalDashboardController {
+  @override
+  Future<ApprovalDashboardState> build() async {
+    throw const ApiException('테스트 서버 오류입니다.');
+  }
 }
 
 void main() {
@@ -80,6 +88,7 @@ void main() {
     for (final field in fields) {
       expect(field.controller?.text ?? '', isEmpty);
     }
+    expect(find.text('회원가입'), findsNothing);
   });
 
   testWidgets('로그인 입력 글자를 읽기 쉽게 표시하고 Enter 동작을 제공한다', (tester) async {
@@ -110,5 +119,70 @@ void main() {
     idField.onSubmitted?.call('employee');
     await tester.pump();
     expect(passwordField.focusNode.hasFocus, isTrue);
+  });
+
+  testWidgets('로그인 예외 메시지를 눈에 띄게 표시한다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            _SignedOutController.new,
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(FilledButton, '로그인'));
+    await tester.pump();
+
+    expect(find.byKey(const Key('login-error-message')), findsOneWidget);
+    expect(find.text('아이디와 비밀번호를 모두 입력해 주세요.'), findsOneWidget);
+    expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+  });
+
+  testWidgets('초기 서버 오류의 실제 메시지와 재시도 버튼을 표시한다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            _FailingController.new,
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('서버에 연결할 수 없습니다.'), findsOneWidget);
+    expect(find.text('테스트 서버 오류입니다.'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
+  });
+
+  testWidgets('백그라운드 작업 오류를 전역 알림으로 표시한다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            _SignedOutController.new,
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MyApp)),
+    );
+    container
+        .read(approvalOperationErrorProvider.notifier)
+        .show(const ApiException('변경사항 저장에 실패했습니다.'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('변경사항 저장에 실패했습니다.'), findsOneWidget);
+    expect(find.byIcon(Icons.close), findsOneWidget);
   });
 }

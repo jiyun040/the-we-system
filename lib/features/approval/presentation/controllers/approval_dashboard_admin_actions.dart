@@ -11,19 +11,28 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     unawaited(
       operation().then((_) => reloadRemoteState()).catchError((Object error) {
         debugPrint('서버 동기화 실패: $error');
+        reportOperationError(error, fallback: '변경사항을 서버에 저장하지 못했습니다.');
       }),
     );
   }
 
   Future<bool> enterAdminMode(String otp) async {
-    final current = currentDashboardState;
-    if (current == null ||
-        current.currentUser?.isAdmin != true ||
-        (current.adminOtpEnabled && !await api.verifyAdminOtp(otp))) {
+    try {
+      final current = currentDashboardState;
+      if (current == null ||
+          current.currentUser?.isAdmin != true ||
+          (current.adminOtpEnabled && !await api.verifyAdminOtp(otp))) {
+        return false;
+      }
+      setApprovalDashboardState(
+        this,
+        (value) => value.copyWith(adminMode: true),
+      );
+      return true;
+    } catch (error) {
+      reportOperationError(error, fallback: '관리자 인증을 완료하지 못했습니다.');
       return false;
     }
-    setApprovalDashboardState(this, (value) => value.copyWith(adminMode: true));
-    return true;
   }
 
   void leaveAdminMode() {
@@ -34,7 +43,12 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }
 
   Future<bool> verifyCurrentPassword(String password) async {
-    return api.verifyPassword(password);
+    try {
+      return await api.verifyPassword(password);
+    } catch (error) {
+      reportOperationError(error, fallback: '비밀번호 확인을 완료하지 못했습니다.');
+      return false;
+    }
   }
 
   void updateEmployee({

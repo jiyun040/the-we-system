@@ -361,9 +361,15 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
     if (urgent == null) {
       return;
     }
+    if (!mounted) return;
 
     final formId = selectedFormId;
     if (formId == null) {
+      showTheWeSnackBar(
+        context,
+        message: '결재 양식을 먼저 선택해 주세요.',
+        type: TheWeSnackBarType.error,
+      );
       return;
     }
 
@@ -394,6 +400,11 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   Future<void> _saveDraft() async {
     final formId = selectedFormId;
     if (formId == null) {
+      showTheWeSnackBar(
+        context,
+        message: '결재 양식을 먼저 선택해 주세요.',
+        type: TheWeSnackBarType.error,
+      );
       return;
     }
 

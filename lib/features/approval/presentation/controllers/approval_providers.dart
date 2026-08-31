@@ -23,6 +23,25 @@ final theWeApiServiceProvider = Provider<TheWeApiService>((ref) {
   );
 });
 
+final approvalOperationErrorProvider =
+    NotifierProvider<ApprovalOperationErrorController, String?>(
+      ApprovalOperationErrorController.new,
+    );
+
+class ApprovalOperationErrorController extends Notifier<String?> {
+  @override
+  String? build() => null;
+
+  void show(Object error, {String? fallback}) {
+    state = userFacingErrorMessage(
+      error,
+      fallback: fallback ?? '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+    );
+  }
+
+  void clear() => state = null;
+}
+
 final approvalDocumentProvider = Provider.family<ApprovalDocument?, String>((
   ref,
   id,
@@ -56,6 +75,12 @@ class ApprovalDashboardController
 
   TheWeApiService get api => ref.read(theWeApiServiceProvider);
 
+  void reportOperationError(Object error, {String? fallback}) {
+    ref
+        .read(approvalOperationErrorProvider.notifier)
+        .show(error, fallback: fallback);
+  }
+
   void emitDashboardState(ApprovalDashboardState nextState) {
     state = AsyncData(nextState);
   }
@@ -68,6 +93,16 @@ class ApprovalDashboardController
         adminMode: adminMode ?? currentDashboardState?.adminMode ?? false,
       ),
     );
+  }
+
+  Future<void> refreshRemoteState() async {
+    final adminMode = currentDashboardState?.adminMode ?? false;
+    state = const AsyncLoading();
+    try {
+      await reloadRemoteState(adminMode: adminMode);
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+    }
   }
 
   @override

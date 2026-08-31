@@ -56,7 +56,13 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     final template = current?.formTemplates
         .where((item) => item.id == formId)
         .firstOrNull;
-    if (current == null || user == null || template == null) return null;
+    if (current == null || user == null || template == null) {
+      reportOperationError(
+        StateError('draft_state_unavailable'),
+        fallback: '기안 정보를 불러오지 못했습니다. 다시 시도해 주세요.',
+      );
+      return null;
+    }
 
     final currentDocument = documentId == null
         ? null
@@ -77,15 +83,20 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       buildApprovalStepsFor(user, current.accounts),
       current.accounts,
     );
-    final saved = currentDocument?.status == '작성중'
-        ? await api.updateDraft(
-            currentDocument!.id,
-            draft: request,
-            steps: steps,
-          )
-        : await api.createDraft(draft: request, steps: steps);
-    _replaceRemoteDocument(this, documentId, saved, departmentVisible);
-    return saved.id;
+    try {
+      final saved = currentDocument?.status == '작성중'
+          ? await api.updateDraft(
+              currentDocument!.id,
+              draft: request,
+              steps: steps,
+            )
+          : await api.createDraft(draft: request, steps: steps);
+      _replaceRemoteDocument(this, documentId, saved, departmentVisible);
+      return saved.id;
+    } catch (error) {
+      reportOperationError(error, fallback: '임시 저장을 완료하지 못했습니다.');
+      return null;
+    }
   }
 
   Future<String?> requestApproval({
@@ -97,7 +108,13 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     final template = current?.formTemplates
         .where((item) => item.id == draft.formId)
         .firstOrNull;
-    if (current == null || user == null || template == null) return null;
+    if (current == null || user == null || template == null) {
+      reportOperationError(
+        StateError('approval_state_unavailable'),
+        fallback: '결재 요청 정보를 불러오지 못했습니다. 다시 시도해 주세요.',
+      );
+      return null;
+    }
 
     final sourceDocument = documentId == null
         ? null
@@ -106,17 +123,26 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       buildApprovalStepsFor(user, current.accounts),
       current.accounts,
     );
-    final saved = sourceDocument?.status == '작성중'
-        ? await api.updateDraft(sourceDocument!.id, draft: draft, steps: steps)
-        : await api.createDraft(draft: draft, steps: steps);
-    final submitted = await api.submitDocument(saved.id);
-    _replaceRemoteDocument(
-      this,
-      documentId ?? saved.id,
-      submitted,
-      draft.departmentVisible,
-    );
-    return submitted.id;
+    try {
+      final saved = sourceDocument?.status == '작성중'
+          ? await api.updateDraft(
+              sourceDocument!.id,
+              draft: draft,
+              steps: steps,
+            )
+          : await api.createDraft(draft: draft, steps: steps);
+      final submitted = await api.submitDocument(saved.id);
+      _replaceRemoteDocument(
+        this,
+        documentId ?? saved.id,
+        submitted,
+        draft.departmentVisible,
+      );
+      return submitted.id;
+    } catch (error) {
+      reportOperationError(error, fallback: '결재 요청을 완료하지 못했습니다.');
+      return null;
+    }
   }
 }
 
