@@ -233,14 +233,21 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
     final name = nameController.text.trim();
     final id = idController.text.trim();
     final department = selectedDepartment ?? '';
-    final position = positionController.text.trim();
+    final position = department.isEmpty
+        ? ''
+        : signupPositionFor(department: department, name: name);
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
+
+    if (positionController.text != position) {
+      positionController.text = position;
+    }
 
     if ([
       name,
       id,
       department,
+      position,
       password,
       confirmPassword,
     ].any((value) => value.isEmpty)) {

@@ -1,8 +1,35 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
+import 'package:the_we_system/core/network/api_exception.dart';
+import 'package:the_we_system/core/network/auth_token_store.dart';
+import 'package:the_we_system/features/approval/data/datasources/the_we_api_service.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/signup_employee_profile.dart';
 import 'package:the_we_system/features/approval/presentation/pages/auth/approval_signup_page.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class _RecordingApiService extends TheWeApiService {
+  _RecordingApiService() : super(Dio(), AuthTokenStore());
+
+  String? registeredPosition;
+
+  @override
+  Future<bool> hasStoredToken() async => false;
+
+  @override
+  Future<void> register({
+    required String id,
+    required String password,
+    required String name,
+    required String department,
+    required String position,
+  }) async {
+    registeredPosition = position;
+    throw const ApiException('테스트 요청 종료');
+  }
+}
 
 void main() {
   test('회원가입 구성원의 이름·부서·직책 조합을 고정한다', () {
@@ -72,6 +99,49 @@ void main() {
     await tester.enterText(find.byKey(const Key('signup-name-field')), '송형숙');
     await tester.pump();
     expect(positionField.controller.text, '부장');
+  });
+
+  testWidgets('제출 시 자동 선택된 직책을 다시 계산해 서버로 전달한다', (tester) async {
+    final api = _RecordingApiService();
+    await tester.binding.setSurfaceSize(const Size(800, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [theWeApiServiceProvider.overrideWithValue(api)],
+        child: const MaterialApp(home: ApprovalSignupPage()),
+      ),
+    );
+
+    await tester.enterText(find.byKey(const Key('signup-name-field')), '김효민');
+    await tester.enterText(
+      find.byKey(const Key('signup-id-field')),
+      'kim_account',
+    );
+    await tester.enterText(
+      find.byKey(const Key('signup-password-field')),
+      'safe-password-1234',
+    );
+    await tester.enterText(
+      find.byKey(const Key('signup-confirm-password-field')),
+      'safe-password-1234',
+    );
+    await tester.tap(find.byKey(const Key('signup-department-dropdown')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('경리부').last);
+    await tester.pumpAndSettle();
+
+    final positionField = tester.widget<CustomTextFormField>(
+      find.byKey(const Key('signup-position-field')),
+    );
+    expect(positionField.controller.text, '대리');
+
+    // 브라우저 리빌드로 표시 컨트롤러가 비워지는 상황을 재현한다.
+    positionField.controller.clear();
+    await tester.tap(find.widgetWithText(FilledButton, '회원가입 완료'));
+    await tester.pumpAndSettle();
+
+    expect(api.registeredPosition, '대리');
+    expect(find.text('모든 항목을 입력해 주세요.'), findsNothing);
   });
 
   testWidgets('회원가입 입력 글자를 읽기 쉬운 크기로 표시한다', (tester) async {
