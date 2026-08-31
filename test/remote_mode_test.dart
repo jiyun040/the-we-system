@@ -91,6 +91,25 @@ void main() {
     expect(find.text('회원가입'), findsOneWidget);
   });
 
+  testWidgets('로그인 입력 필드는 브라우저 계정 자동완성을 지원한다', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            _SignedOutController.new,
+          ),
+        ],
+        child: const MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final fields = tester.widgetList<EditableText>(find.byType(EditableText));
+    expect(find.byType(AutofillGroup), findsOneWidget);
+    expect(fields.first.autofillHints, const [AutofillHints.username]);
+    expect(fields.last.autofillHints, const [AutofillHints.password]);
+  });
+
   testWidgets('로그인 입력 글자를 읽기 쉽게 표시하고 Enter 동작을 제공한다', (tester) async {
     await tester.pumpWidget(
       ProviderScope(

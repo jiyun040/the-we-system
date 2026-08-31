@@ -15,6 +15,7 @@ class CustomTextFormField extends StatelessWidget {
   final double labelSpacing;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
+  final Iterable<String>? autofillHints;
   final TextDirection? textDirection;
   final TextAlign textAlign;
   final TextAlignVertical? textAlignVertical;
@@ -59,6 +60,7 @@ class CustomTextFormField extends StatelessWidget {
     this.labelSpacing = 8,
     this.keyboardType,
     this.textInputAction,
+    this.autofillHints,
     this.textDirection,
     this.textAlign = TextAlign.start,
     this.textAlignVertical,
@@ -178,6 +180,7 @@ class CustomTextFormField extends StatelessWidget {
           decoration: inputDecoration,
           keyboardType: keyboardType,
           textInputAction: textInputAction,
+          autofillHints: autofillHints,
           style: defaultTextStyle,
           textAlign: textAlign,
           autofocus: autofocus,

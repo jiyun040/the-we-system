@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
@@ -45,7 +46,10 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
 
     if (!mounted) return;
     setState(() => isLoggingIn = false);
-    if (success) context.goNamed(AppRouteName.home);
+    if (success) {
+      TextInput.finishAutofillContext(shouldSave: true);
+      context.goNamed(AppRouteName.home);
+    }
   }
 
   @override
@@ -72,132 +76,138 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                   ),
                 ],
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text('로그인', style: TheWeTextStyle.pageTitle),
-                  const SizedBox(height: 24),
-                  Text('아이디', style: TheWeTextStyle.body),
-                  const SizedBox(height: 8),
-                  CustomTextFormField(
-                    controller: idController,
-                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
-                    textInputAction: TextInputAction.next,
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                    ),
-                    onChanged: (_) => ref
-                        .read(approvalDashboardControllerProvider.notifier)
-                        .clearLoginError(),
-                    onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
-                  ),
-                  const SizedBox(height: 16),
-                  Text('비밀번호', style: TheWeTextStyle.body),
-                  const SizedBox(height: 8),
-                  CustomTextFormField(
-                    controller: passwordController,
-                    focusNode: passwordFocusNode,
-                    style: TheWeTextStyle.body.copyWith(fontSize: 16),
-                    obscureText: !showPassword,
-                    textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 16,
-                      ),
-                      suffixIcon: IconButton(
-                        onPressed: () {
-                          setState(() => showPassword = !showPassword);
-                        },
-                        icon: Icon(
-                          showPassword
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
+              child: AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('로그인', style: TheWeTextStyle.pageTitle),
+                    const SizedBox(height: 24),
+                    Text('아이디', style: TheWeTextStyle.body),
+                    const SizedBox(height: 8),
+                    CustomTextFormField(
+                      controller: idController,
+                      autofillHints: const [AutofillHints.username],
+                      keyboardType: TextInputType.text,
+                      style: TheWeTextStyle.body.copyWith(fontSize: 16),
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
                         ),
                       ),
+                      onChanged: (_) => ref
+                          .read(approvalDashboardControllerProvider.notifier)
+                          .clearLoginError(),
+                      onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
                     ),
-                    onChanged: (_) => ref
-                        .read(approvalDashboardControllerProvider.notifier)
-                        .clearLoginError(),
-                    onFieldSubmitted: (_) => _login(),
-                  ),
-                  const SizedBox(height: 10),
-                  if (state?.loginError.isNotEmpty ?? false)
-                    Container(
-                      key: const Key('login-error-message'),
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: TheWeColor.dangerSurface,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: TheWeColor.danger.withValues(alpha: 0.28),
+                    const SizedBox(height: 16),
+                    Text('비밀번호', style: TheWeTextStyle.body),
+                    const SizedBox(height: 8),
+                    CustomTextFormField(
+                      controller: passwordController,
+                      focusNode: passwordFocusNode,
+                      autofillHints: const [AutofillHints.password],
+                      keyboardType: TextInputType.visiblePassword,
+                      style: TheWeTextStyle.body.copyWith(fontSize: 16),
+                      obscureText: !showPassword,
+                      textInputAction: TextInputAction.done,
+                      decoration: InputDecoration(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
                         ),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(
-                            Icons.error_outline_rounded,
-                            color: TheWeColor.danger,
-                            size: 20,
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            setState(() => showPassword = !showPassword);
+                          },
+                          icon: Icon(
+                            showPassword
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              state!.loginError,
-                              style: TheWeTextStyle.body.copyWith(
-                                color: TheWeColor.danger,
-                                fontWeight: FontWeight.w700,
-                                height: 1.4,
+                        ),
+                      ),
+                      onChanged: (_) => ref
+                          .read(approvalDashboardControllerProvider.notifier)
+                          .clearLoginError(),
+                      onFieldSubmitted: (_) => _login(),
+                    ),
+                    const SizedBox(height: 10),
+                    if (state?.loginError.isNotEmpty ?? false)
+                      Container(
+                        key: const Key('login-error-message'),
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: TheWeColor.dangerSurface,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: TheWeColor.danger.withValues(alpha: 0.28),
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              color: TheWeColor.danger,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                state!.loginError,
+                                style: TheWeTextStyle.body.copyWith(
+                                  color: TheWeColor.danger,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
+                          ],
+                        ),
+                      ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton(
+                        onPressed: isLoggingIn ? null : _login,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: TheWeColor.black900,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 18),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: FilledButton(
-                      onPressed: isLoggingIn ? null : _login,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: TheWeColor.black900,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
                         ),
-                      ),
-                      child: Text(
-                        '로그인',
-                        style: TheWeTextStyle.subtitle.copyWith(
-                          color: Colors.white,
+                        child: Text(
+                          '로그인',
+                          style: TheWeTextStyle.subtitle.copyWith(
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => context.pushNamed(AppRouteName.signup),
-                      child: Text(
-                        '회원가입',
-                        style: TheWeTextStyle.body.copyWith(
-                          color: TheWeColor.blue300,
-                          fontWeight: FontWeight.w700,
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () => context.pushNamed(AppRouteName.signup),
+                        child: Text(
+                          '회원가입',
+                          style: TheWeTextStyle.body.copyWith(
+                            color: TheWeColor.blue300,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

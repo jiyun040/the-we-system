@@ -21,14 +21,11 @@ class EmployeeAccount {
   final String hireDate;
   final bool isAdmin;
 
-  bool get isSystemAdministrator => isAdmin && id == 'admin';
+  bool get isSystemAdministrator =>
+      isAdmin && id.trim().toLowerCase() == 'admin';
 
   bool get canAccessAdminMode =>
-      isSystemAdministrator ||
-      (isAdmin &&
-          name.trim() == '김효민' &&
-          department.trim() == '경리부' &&
-          position.trim() == '대리');
+      isSystemAdministrator || id.trim().toLowerCase() == 'we061046';
 
   EmployeeAccount copyWith({
     String? id,
