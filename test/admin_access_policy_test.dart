@@ -95,6 +95,33 @@ void main() {
     expect(wrongProfile.canAccessAdminMode, isFalse);
   });
 
+  test('조직도 구성원은 이름보다 직급이 높은 순서로 표시한다', () {
+    final director = _account(
+      id: 'jung_hyojung',
+      name: '정효정',
+      department: '관리부',
+      position: '이사',
+      isAdmin: false,
+    );
+    final departmentHead = _account(
+      id: 'song_hyeongsuk',
+      name: '송형숙',
+      department: '관리부',
+      position: '부장',
+      isAdmin: false,
+    );
+    final state = signedOutApprovalState.copyWith(
+      accounts: [departmentHead, director],
+      selectedOrgDepartment: '관리부',
+    );
+
+    expect(state.selectedDepartmentMembers.map((member) => member.name), [
+      '정효정',
+      '송형숙',
+    ]);
+    expect(state.selectedOrgMember?.name, '정효정');
+  });
+
   testWidgets('조직도 및 부서 관리 화면은 가용 너비에 좌측 정렬된다', (tester) async {
     final account = _account(
       id: 'account',
@@ -127,10 +154,7 @@ void main() {
     );
     expect(page.width, 700);
     expect(find.byKey(const ValueKey('add-department-button')), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('department-card-신규부서')),
-      findsOneWidget,
-    );
+    expect(find.byKey(const ValueKey('department-card-신규부서')), findsOneWidget);
     expect(find.byTooltip('신규부서 구성원 추가'), findsOneWidget);
     expect(find.byTooltip('부서명 수정'), findsNWidgets(2));
     expect(find.byTooltip('부서 삭제'), findsNWidgets(2));

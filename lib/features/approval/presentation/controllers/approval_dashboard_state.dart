@@ -340,7 +340,7 @@ class ApprovalDashboardState {
               account.department.trim() == selectedOrgDepartment,
         )
         .toList()
-      ..sort((a, b) => a.name.compareTo(b.name));
+      ..sort(compareEmployeeOrganizationOrder);
   }
 
   EmployeeAccount? get selectedOrgMember {
@@ -494,4 +494,46 @@ int _compareDepartments(String left, String right) {
   if (leftIndex >= 0) return -1;
   if (rightIndex >= 0) return 1;
   return left.compareTo(right);
+}
+
+const _preferredPositionOrder = <String>[
+  '대표',
+  '회장',
+  '부회장',
+  '사장',
+  '부사장',
+  '전무',
+  '상무',
+  '이사',
+  '본부장',
+  '연구소장',
+  '소장',
+  '실장',
+  '부장',
+  '차장',
+  '과장',
+  '팀장',
+  '대리',
+  '주임',
+  '사원',
+  '인턴',
+];
+
+int compareEmployeeOrganizationOrder(
+  EmployeeAccount left,
+  EmployeeAccount right,
+) {
+  final leftRank = _positionRank(left.position);
+  final rightRank = _positionRank(right.position);
+  final positionComparison = leftRank.compareTo(rightRank);
+  if (positionComparison != 0) return positionComparison;
+  return left.name.compareTo(right.name);
+}
+
+int _positionRank(String position) {
+  final normalized = position.replaceAll(' ', '');
+  final index = _preferredPositionOrder.indexWhere(
+    (rank) => normalized == rank || normalized.contains(rank),
+  );
+  return index < 0 ? _preferredPositionOrder.length : index;
 }

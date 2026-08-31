@@ -89,7 +89,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
           current.accounts
               .where((account) => account.department == department)
               .toList()
-            ..sort((a, b) => a.name.compareTo(b.name));
+            ..sort(compareEmployeeOrganizationOrder);
       return current.copyWith(
         selectedOrgDepartment: department,
         selectedOrgUserId: members.firstOrNull?.id,
