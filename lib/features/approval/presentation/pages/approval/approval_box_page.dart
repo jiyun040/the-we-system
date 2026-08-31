@@ -9,6 +9,7 @@ import 'package:the_we_system/common/components/the_we_back_button.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 
 import 'approval_box_mobile.dart';
@@ -37,7 +38,13 @@ class ApprovalBoxPage extends ConsumerWidget {
             final visibleDocuments = formId == null
                 ? documents
                 : documents
-                      .where((document) => _matchesForm(document, formId!))
+                      .where(
+                        (document) => _matchesForm(
+                          document,
+                          formId!,
+                          value.formTemplates,
+                        ),
+                      )
                       .toList();
 
             return Padding(
@@ -147,13 +154,16 @@ class ApprovalBoxPage extends ConsumerWidget {
     };
   }
 
-  bool _matchesForm(ApprovalDocument document, String id) {
-    return switch (id) {
-      'team-vacation' => document.form.contains('휴가'),
-      'expense-slip' => document.form.contains('지출'),
-      'purchase-request' => document.form.contains('구매'),
-      _ => document.form == id,
-    };
+  bool _matchesForm(
+    ApprovalDocument document,
+    String id,
+    List<ApprovalFormTemplate> templates,
+  ) {
+    final templateName = templates
+        .where((template) => template.id == id)
+        .firstOrNull
+        ?.name;
+    return document.form == id || document.form == templateName;
   }
 
   List<ApprovalDocument> _documentsForKind(ApprovalDashboardState state) {

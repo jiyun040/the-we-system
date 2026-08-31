@@ -91,7 +91,14 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
               steps: steps,
             )
           : await api.createDraft(draft: request, steps: steps);
-      _replaceRemoteDocument(this, documentId, saved, departmentVisible);
+      _replaceRemoteDocument(
+        this,
+        previousId: documentId,
+        document: saved,
+        departmentVisible: departmentVisible,
+        formId: formId,
+        incrementUsage: currentDocument?.status != '작성중',
+      );
       return saved.id;
     } catch (error) {
       reportOperationError(error, fallback: '임시 저장을 완료하지 못했습니다.');
@@ -134,9 +141,11 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       final submitted = await api.submitDocument(saved.id);
       _replaceRemoteDocument(
         this,
-        documentId ?? saved.id,
-        submitted,
-        draft.departmentVisible,
+        previousId: documentId ?? saved.id,
+        document: submitted,
+        departmentVisible: draft.departmentVisible,
+        formId: draft.formId,
+        incrementUsage: sourceDocument?.status != '작성중',
       );
       return submitted.id;
     } catch (error) {
@@ -167,11 +176,13 @@ List<Map<String, dynamic>> _remoteSteps(
 }).toList();
 
 void _replaceRemoteDocument(
-  ApprovalDashboardController controller,
-  String? previousId,
-  ApprovalDocument document,
-  bool departmentVisible,
-) {
+  ApprovalDashboardController controller, {
+  required String? previousId,
+  required ApprovalDocument document,
+  required bool departmentVisible,
+  required String formId,
+  required bool incrementUsage,
+}) {
   setApprovalDashboardState(controller, (current) {
     final documents = [
       ...current.documents.where(
@@ -183,8 +194,31 @@ void _replaceRemoteDocument(
       ..remove(previousId)
       ..remove(document.id);
     if (!departmentVisible) restricted.add(document.id);
+    final frequentForms = [...current.frequentForms];
+    if (incrementUsage) {
+      final index = frequentForms.indexWhere((form) => form.id == formId);
+      if (index >= 0) {
+        final form = frequentForms[index];
+        frequentForms[index] = form.copyWith(recentCount: form.recentCount + 1);
+      } else {
+        final template = current.formTemplates
+            .where((form) => form.id == formId)
+            .firstOrNull;
+        if (template != null) {
+          frequentForms.add(
+            ApprovalForm(
+              id: template.id,
+              name: template.name,
+              description: template.description,
+              recentCount: 1,
+            ),
+          );
+        }
+      }
+    }
     return current.copyWith(
       documents: documents,
+      frequentForms: frequentForms,
       restrictedDocumentIds: restricted,
     );
   });

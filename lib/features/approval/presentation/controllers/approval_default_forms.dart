@@ -1,26 +1,5 @@
 import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 
-const approvalDefaultFrequentForms = [
-  ApprovalForm(
-    id: 'business-draft',
-    name: '업무기안[기본양식]',
-    description: '일반 기안 문서',
-    recentCount: 15,
-  ),
-  ApprovalForm(
-    id: 'team-vacation',
-    name: '팀 휴가 결재서',
-    description: '팀 단위 휴가 일정 승인',
-    recentCount: 12,
-  ),
-  ApprovalForm(
-    id: 'expense-slip',
-    name: '지출 결의서(지급품의)',
-    description: '비용 지급 승인',
-    recentCount: 9,
-  ),
-];
-
 const approvalDefaultFormTemplates = [
   ApprovalFormTemplate(
     id: 'business-draft',
@@ -160,19 +139,6 @@ List<ApprovalFormTemplate> mergeApprovalFormTemplates(
     ...remote,
     ...approvalDefaultFormTemplates.where(
       (template) => !remoteIds.contains(template.id),
-    ),
-  ];
-}
-
-List<ApprovalForm> mergeApprovalFrequentForms(
-  Iterable<ApprovalForm> remoteForms,
-) {
-  final remote = remoteForms.toList();
-  final remoteIds = remote.map((form) => form.id).toSet();
-  return [
-    ...remote,
-    ...approvalDefaultFrequentForms.where(
-      (form) => !remoteIds.contains(form.id),
     ),
   ];
 }

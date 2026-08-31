@@ -131,13 +131,12 @@ ApprovalDashboardState _remoteState(
   bool adminMode = false,
 }) {
   final formTemplates = mergeApprovalFormTemplates(remote.formTemplates);
-  final frequentForms = mergeApprovalFrequentForms(remote.frequentForms);
   return ApprovalDashboardState(
     accounts: remote.accounts
         .where((account) => !account.isSystemAdministrator)
         .toList(),
     organizationDepartments: remote.departments,
-    frequentForms: frequentForms,
+    frequentForms: remote.frequentForms,
     formTemplates: formTemplates,
     documents: remote.documents,
     annualLeaveByYear: remote.annualLeaveByYear,

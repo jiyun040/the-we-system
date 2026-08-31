@@ -168,7 +168,20 @@ class ApprovalDashboardState {
     final activeIds = activeFormTemplates
         .map((template) => template.id)
         .toSet();
-    return frequentForms.where((form) => activeIds.contains(form.id)).toList();
+    final forms =
+        frequentForms
+            .where(
+              (form) => activeIds.contains(form.id) && form.recentCount > 0,
+            )
+            .toList()
+          ..sort((left, right) {
+            final countComparison = right.recentCount.compareTo(
+              left.recentCount,
+            );
+            if (countComparison != 0) return countComparison;
+            return left.name.compareTo(right.name);
+          });
+    return forms.take(5).toList();
   }
 
   List<ApprovalDocument> get visibleDocuments {
@@ -290,16 +303,24 @@ class ApprovalDashboardState {
 
     return visibleDocuments
         .where(
-          (document) =>
-              document.references.contains(user.name) ||
-              document.viewers.contains(user.name),
+          (document) => _audienceIncludesCurrentUser([
+            ...document.references,
+            ...document.viewers,
+          ], user),
         )
         .toList();
   }
 
   List<ApprovalDocument> get receivedDocuments {
+    final user = currentUser;
+    if (user == null) return const [];
     return visibleDocuments
-        .where((document) => document.receivedRequest)
+        .where(
+          (document) =>
+              document.receivedRequest &&
+              document.drafter != user.name &&
+              _audienceIncludesCurrentUser(document.receivers, user),
+        )
         .toList()
       ..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
   }
@@ -476,6 +497,15 @@ class ApprovalDashboardState {
     }
     return false;
   }
+}
+
+bool _audienceIncludesCurrentUser(
+  Iterable<String> audience,
+  EmployeeAccount user,
+) {
+  final labels = {user.id, user.name, user.department}
+    ..removeWhere((label) => label.trim().isEmpty);
+  return audience.any((label) => labels.contains(label.trim()));
 }
 
 const _preferredDepartmentOrder = <String>[
