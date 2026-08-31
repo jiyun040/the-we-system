@@ -7,6 +7,7 @@ import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/models/signup_employee_profile.dart';
 
 class ApprovalSignupPage extends ConsumerStatefulWidget {
   const ApprovalSignupPage({super.key});
@@ -19,24 +20,52 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
   final nameController = TextEditingController();
   final idController = TextEditingController();
   final emailController = TextEditingController();
-  final departmentController = TextEditingController();
   final positionController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
+  String? selectedDepartment;
   bool showPassword = false;
   bool showConfirmPassword = false;
   String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    nameController.addListener(_handleNameChanged);
+  }
 
   @override
   void dispose() {
     nameController.dispose();
     idController.dispose();
     emailController.dispose();
-    departmentController.dispose();
     positionController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  void _handleNameChanged() {
+    _syncPosition();
+    if (errorMessage.isNotEmpty) setState(() => errorMessage = '');
+  }
+
+  void _selectDepartment(String? department) {
+    setState(() {
+      selectedDepartment = department;
+      errorMessage = '';
+    });
+    _syncPosition();
+  }
+
+  void _syncPosition() {
+    final department = selectedDepartment;
+    final position = department == null
+        ? ''
+        : signupPositionFor(department: department, name: nameController.text);
+    if (positionController.text != position) {
+      positionController.text = position;
+    }
   }
 
   @override
@@ -88,22 +117,62 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   ),
                   const SizedBox(height: 24),
                   _FieldLabel('이름'),
-                  CustomTextFormField(controller: nameController),
+                  CustomTextFormField(
+                    key: const Key('signup-name-field'),
+                    controller: nameController,
+                  ),
                   const SizedBox(height: 14),
                   _FieldLabel('아이디'),
-                  CustomTextFormField(controller: idController),
+                  CustomTextFormField(
+                    key: const Key('signup-id-field'),
+                    controller: idController,
+                  ),
                   const SizedBox(height: 14),
                   _FieldLabel('이메일'),
-                  CustomTextFormField(controller: emailController),
+                  CustomTextFormField(
+                    key: const Key('signup-email-field'),
+                    controller: emailController,
+                    keyboardType: TextInputType.emailAddress,
+                  ),
                   const SizedBox(height: 14),
                   _FieldLabel('부서'),
-                  CustomTextFormField(controller: departmentController),
+                  DropdownButtonFormField<String>(
+                    key: const Key('signup-department-dropdown'),
+                    initialValue: selectedDepartment,
+                    isExpanded: true,
+                    hint: const Text('부서를 선택해 주세요.'),
+                    decoration: const InputDecoration(
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                    ),
+                    items: signupDepartments
+                        .map(
+                          (department) => DropdownMenuItem(
+                            value: department,
+                            child: Text(department),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: _selectDepartment,
+                  ),
                   const SizedBox(height: 14),
                   _FieldLabel('직책'),
-                  CustomTextFormField(controller: positionController),
+                  CustomTextFormField(
+                    key: const Key('signup-position-field'),
+                    controller: positionController,
+                    readOnly: true,
+                    style: TheWeTextStyle.body,
+                    decoration: const InputDecoration(
+                      hintText: '이름과 부서에 따라 자동으로 입력됩니다.',
+                      suffixIcon: Icon(Icons.lock_outline_rounded, size: 18),
+                    ),
+                  ),
                   const SizedBox(height: 14),
                   _FieldLabel('비밀번호'),
                   CustomTextFormField(
+                    key: const Key('signup-password-field'),
                     controller: passwordController,
                     obscureText: !showPassword,
                     decoration: InputDecoration(
@@ -122,6 +191,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   const SizedBox(height: 14),
                   _FieldLabel('비밀번호 확인'),
                   CustomTextFormField(
+                    key: const Key('signup-confirm-password-field'),
                     controller: confirmPasswordController,
                     obscureText: !showConfirmPassword,
                     decoration: InputDecoration(
@@ -180,7 +250,7 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
     final name = nameController.text.trim();
     final id = idController.text.trim();
     final email = emailController.text.trim();
-    final department = departmentController.text.trim();
+    final department = selectedDepartment ?? '';
     final position = positionController.text.trim();
     final password = passwordController.text.trim();
     final confirmPassword = confirmPasswordController.text.trim();
@@ -190,7 +260,6 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
       id,
       email,
       department,
-      position,
       password,
       confirmPassword,
     ].any((value) => value.isEmpty)) {
@@ -200,6 +269,16 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
 
     if (password != confirmPassword) {
       setState(() => errorMessage = '비밀번호 확인이 일치하지 않습니다.');
+      return;
+    }
+
+    final employeeError = validateSignupEmployee(
+      name: name,
+      department: department,
+      position: position,
+    );
+    if (employeeError != null) {
+      setState(() => errorMessage = employeeError);
       return;
     }
 
