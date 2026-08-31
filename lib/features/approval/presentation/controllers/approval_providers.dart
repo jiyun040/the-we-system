@@ -3,6 +3,7 @@ import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/data/datasources/the_we_api_service.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_default_forms.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_dashboard_state.dart';
 
 export 'approval_dashboard_admin_actions.dart';
@@ -128,34 +129,39 @@ const signedOutApprovalState = ApprovalDashboardState(
 ApprovalDashboardState _remoteState(
   RemoteBootstrapData remote, {
   bool adminMode = false,
-}) => ApprovalDashboardState(
-  accounts: remote.accounts
-      .where((account) => !account.isSystemAdministrator)
-      .toList(),
-  organizationDepartments: remote.departments,
-  frequentForms: remote.frequentForms,
-  formTemplates: remote.formTemplates,
-  documents: remote.documents,
-  annualLeaveByYear: remote.annualLeaveByYear,
-  monthlyLeavePerMonth: remote.monthlyLeavePerMonth,
-  currentUser: remote.currentUser,
-  selectedOrgDepartment: remote.currentUser.department,
-  selectedOrgUserId: remote.currentUser.id,
-  adminMode: adminMode,
-  restrictedDocumentIds: remote.restrictedDocumentIds,
-  leaveRequests: remote.leaveRequests,
-  acknowledgedLeaveRequestIds: remote.acknowledgedLeaveRequestIds,
-  portalName: remote.portalName,
-  customLogoBytes: remote.customLogoBytes,
-  customLogoFileName: remote.customLogoFileName,
-  adminOtpEnabled: remote.adminOtpEnabled,
-  settingsPasswordEnabled: remote.settingsPasswordEnabled,
-  adminDocumentAccessEnabled: remote.adminDocumentAccessEnabled,
-  enabledAppIds: remote.enabledAppIds,
-  disabledFormTemplateIds: remote.formTemplates
-      .where((form) => remote.disabledFormTemplateIds.contains(form.id))
-      .map((form) => form.id)
-      .toSet(),
-  organizationWideDocumentCategories: remote.organizationWideDocumentCategories,
-  documentCategoryViewerIds: remote.documentCategoryViewerIds,
-);
+}) {
+  final formTemplates = mergeApprovalFormTemplates(remote.formTemplates);
+  final frequentForms = mergeApprovalFrequentForms(remote.frequentForms);
+  return ApprovalDashboardState(
+    accounts: remote.accounts
+        .where((account) => !account.isSystemAdministrator)
+        .toList(),
+    organizationDepartments: remote.departments,
+    frequentForms: frequentForms,
+    formTemplates: formTemplates,
+    documents: remote.documents,
+    annualLeaveByYear: remote.annualLeaveByYear,
+    monthlyLeavePerMonth: remote.monthlyLeavePerMonth,
+    currentUser: remote.currentUser,
+    selectedOrgDepartment: remote.currentUser.department,
+    selectedOrgUserId: remote.currentUser.id,
+    adminMode: adminMode,
+    restrictedDocumentIds: remote.restrictedDocumentIds,
+    leaveRequests: remote.leaveRequests,
+    acknowledgedLeaveRequestIds: remote.acknowledgedLeaveRequestIds,
+    portalName: remote.portalName,
+    customLogoBytes: remote.customLogoBytes,
+    customLogoFileName: remote.customLogoFileName,
+    adminOtpEnabled: remote.adminOtpEnabled,
+    settingsPasswordEnabled: remote.settingsPasswordEnabled,
+    adminDocumentAccessEnabled: remote.adminDocumentAccessEnabled,
+    enabledAppIds: remote.enabledAppIds,
+    disabledFormTemplateIds: formTemplates
+        .where((form) => remote.disabledFormTemplateIds.contains(form.id))
+        .map((form) => form.id)
+        .toSet(),
+    organizationWideDocumentCategories:
+        remote.organizationWideDocumentCategories,
+    documentCategoryViewerIds: remote.documentCategoryViewerIds,
+  );
+}
