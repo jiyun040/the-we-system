@@ -85,12 +85,16 @@ class AdminEmployeeManagement extends ConsumerWidget {
     );
   }
 
-  Future<void> _addEmployee(BuildContext context, WidgetRef ref) async {
+  Future<void> _addEmployee(
+    BuildContext context,
+    WidgetRef ref, {
+    String initialDepartment = '',
+  }) async {
     final id = TextEditingController();
     final password = TextEditingController();
     final name = TextEditingController();
     final email = TextEditingController();
-    final department = TextEditingController();
+    final department = TextEditingController(text: initialDepartment);
     final position = TextEditingController();
     final hireDate = TextEditingController(
       text: DateTime.now().toIso8601String().substring(0, 10),
@@ -134,6 +138,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   const SizedBox(height: 10),
                   TextField(
                     controller: department,
+                    readOnly: initialDepartment.isNotEmpty,
                     decoration: const InputDecoration(labelText: '부서'),
                   ),
                   const SizedBox(height: 10),
@@ -203,14 +208,17 @@ class AdminEmployeeManagement extends ConsumerWidget {
     WidgetRef ref,
     EmployeeAccount account,
   ) async {
+    final name = TextEditingController(text: account.name);
+    final email = TextEditingController(text: account.email);
     final department = TextEditingController(text: account.department);
     final position = TextEditingController(text: account.position);
     final hireDate = TextEditingController(text: account.hireDate);
     final password = TextEditingController();
-    final saved = await showDialog<bool>(
+    var error = '';
+    await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setDialogState) => AlertDialog(
           backgroundColor: TheWeColor.surfaceAlt,
           title: Text('${account.name} 계정 수정'),
           content: SizedBox(
@@ -218,6 +226,17 @@ class AdminEmployeeManagement extends ConsumerWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  TextField(
+                    controller: name,
+                    decoration: const InputDecoration(labelText: '이름'),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: email,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: const InputDecoration(labelText: '이메일'),
+                  ),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: department,
                     decoration: const InputDecoration(labelText: '부서'),
@@ -246,34 +265,53 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       hintText: '변경하지 않으면 비워두세요.',
                     ),
                   ),
+                  if (error.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        error,
+                        style: TheWeTextStyle.caption.copyWith(
+                          color: TheWeColor.danger,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => Navigator.pop(context),
               child: const Text('취소'),
             ),
             FilledButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () {
+                final message = ref
+                    .read(approvalDashboardControllerProvider.notifier)
+                    .updateEmployee(
+                      userId: account.id,
+                      name: name.text,
+                      email: email.text,
+                      department: department.text,
+                      position: position.text,
+                      hireDate: hireDate.text,
+                      password: password.text,
+                      isAdmin: account.isAdmin,
+                    );
+                if (message != null) {
+                  setDialogState(() => error = message);
+                  return;
+                }
+                Navigator.pop(context);
+              },
               child: const Text('저장'),
             ),
           ],
         ),
       ),
     );
-    if (saved != true) return;
-    ref
-        .read(approvalDashboardControllerProvider.notifier)
-        .updateEmployee(
-          userId: account.id,
-          department: department.text,
-          position: position.text,
-          hireDate: hireDate.text,
-          password: password.text,
-          isAdmin: account.isAdmin,
-        );
   }
 }
 
@@ -416,10 +454,20 @@ class AdminOrganizationManagement extends ConsumerWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('조직도 및 부서 관리', style: TheWeTextStyle.title),
+        Row(
+          children: [
+            Expanded(child: Text('조직도 및 부서 관리', style: TheWeTextStyle.title)),
+            OutlinedButton.icon(
+              key: const ValueKey('add-department-button'),
+              onPressed: () => addAdminDepartment(context, ref),
+              icon: const Icon(Icons.create_new_folder_outlined),
+              label: const Text('부서 추가'),
+            ),
+          ],
+        ),
         const SizedBox(height: 8),
         Text(
-          '계정에 설정된 부서 기준으로 전자결재 부서 문서함이 자동 연결됩니다.',
+          '부서와 구성원을 추가·수정·삭제할 수 있으며 전자결재 부서 문서함에 자동 연결됩니다.',
           style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
         ),
         const SizedBox(height: 18),
@@ -432,10 +480,13 @@ class AdminOrganizationManagement extends ConsumerWidget {
               spacing: 16,
               runSpacing: 16,
               children: state.departments.map((department) {
-                final members = state.accounts
-                    .where((account) => account.department == department)
-                    .toList();
+                final members =
+                    state.accounts
+                        .where((account) => account.department == department)
+                        .toList()
+                      ..sort((a, b) => a.name.compareTo(b.name));
                 return Container(
+                  key: ValueKey('department-card-$department'),
                   width: width,
                   padding: const EdgeInsets.all(20),
                   decoration: adminSurface(),
@@ -458,13 +509,48 @@ class AdminOrganizationManagement extends ConsumerWidget {
                           Chip(label: Text('${members.length}명')),
                           IconButton(
                             onPressed: () =>
+                                AdminEmployeeManagement(
+                                  state: state,
+                                )._addEmployee(
+                                  context,
+                                  ref,
+                                  initialDepartment: department,
+                                ),
+                            icon: const Icon(
+                              Icons.person_add_alt_outlined,
+                              size: 19,
+                            ),
+                            tooltip: '$department 구성원 추가',
+                          ),
+                          IconButton(
+                            onPressed: () =>
                                 renameAdminDepartment(context, ref, department),
                             icon: const Icon(Icons.edit_outlined, size: 19),
                             tooltip: '부서명 수정',
                           ),
+                          IconButton(
+                            onPressed: () => deleteAdminDepartment(
+                              context,
+                              ref,
+                              department,
+                              members,
+                            ),
+                            icon: const Icon(Icons.delete_outline, size: 19),
+                            tooltip: '부서 삭제',
+                          ),
                         ],
                       ),
                       adminDivider(height: 26),
+                      if (members.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            '소속 구성원이 없습니다.',
+                            style: TheWeTextStyle.body.copyWith(
+                              color: TheWeColor.black500,
+                            ),
+                          ),
+                        ),
                       ...members.map(
                         (member) => ListTile(
                           contentPadding: EdgeInsets.zero,
@@ -474,6 +560,27 @@ class AdminOrganizationManagement extends ConsumerWidget {
                           ),
                           title: Text(member.name),
                           subtitle: Text('${member.position} · ${member.id}'),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () => AdminEmployeeManagement(
+                                  state: state,
+                                )._editEmployee(context, ref, member),
+                                icon: const Icon(Icons.edit_outlined, size: 18),
+                                tooltip: '${member.name} 정보 수정',
+                              ),
+                              IconButton(
+                                onPressed: () =>
+                                    deleteAdminEmployee(context, ref, member),
+                                icon: const Icon(
+                                  Icons.person_remove_outlined,
+                                  size: 18,
+                                ),
+                                tooltip: '${member.name} 구성원 삭제',
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
@@ -488,6 +595,19 @@ class AdminOrganizationManagement extends ConsumerWidget {
   );
 }
 
+Future<void> addAdminDepartment(BuildContext context, WidgetRef ref) async {
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => _DepartmentNameDialog(
+      title: '부서 추가',
+      actionLabel: '추가',
+      onSave: (name) => ref
+          .read(approvalDashboardControllerProvider.notifier)
+          .addDepartment(name),
+    ),
+  );
+}
+
 Future<void> renameAdminDepartment(
   BuildContext context,
   WidgetRef ref,
@@ -495,8 +615,10 @@ Future<void> renameAdminDepartment(
 ) async {
   await showDialog<void>(
     context: context,
-    builder: (dialogContext) => _RenameDepartmentDialog(
-      department: department,
+    builder: (dialogContext) => _DepartmentNameDialog(
+      title: '부서명 수정',
+      actionLabel: '저장',
+      initialName: department,
       onSave: (nextName) => ref
           .read(approvalDashboardControllerProvider.notifier)
           .renameDepartment(department, nextName),
@@ -504,28 +626,106 @@ Future<void> renameAdminDepartment(
   );
 }
 
-class _RenameDepartmentDialog extends StatefulWidget {
-  const _RenameDepartmentDialog({
-    required this.department,
+Future<void> deleteAdminDepartment(
+  BuildContext context,
+  WidgetRef ref,
+  String department,
+  List<EmployeeAccount> members,
+) async {
+  if (members.isNotEmpty) {
+    showTheWeSnackBar(
+      context,
+      message: '소속 구성원을 이동하거나 삭제한 뒤 부서를 삭제해 주세요.',
+      type: TheWeSnackBarType.error,
+    );
+    return;
+  }
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: TheWeColor.surfaceAlt,
+      title: const Text('부서 삭제'),
+      content: Text('$department 부서를 삭제할까요?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          style: FilledButton.styleFrom(backgroundColor: TheWeColor.danger),
+          child: const Text('삭제'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  final message = ref
+      .read(approvalDashboardControllerProvider.notifier)
+      .deleteDepartment(department);
+  if (message != null) {
+    showTheWeSnackBar(context, message: message, type: TheWeSnackBarType.error);
+  }
+}
+
+Future<void> deleteAdminEmployee(
+  BuildContext context,
+  WidgetRef ref,
+  EmployeeAccount employee,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: TheWeColor.surfaceAlt,
+      title: const Text('구성원 삭제'),
+      content: Text('${employee.name}님의 계정을 비활성화하고 조직도에서 제외할까요?'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('취소'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          style: FilledButton.styleFrom(backgroundColor: TheWeColor.danger),
+          child: const Text('삭제'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+  final message = ref
+      .read(approvalDashboardControllerProvider.notifier)
+      .deleteEmployee(employee.id);
+  if (message != null) {
+    showTheWeSnackBar(context, message: message, type: TheWeSnackBarType.error);
+  }
+}
+
+class _DepartmentNameDialog extends StatefulWidget {
+  const _DepartmentNameDialog({
+    required this.title,
+    required this.actionLabel,
     required this.onSave,
+    this.initialName = '',
   });
 
-  final String department;
+  final String title;
+  final String actionLabel;
+  final String initialName;
   final String? Function(String nextName) onSave;
 
   @override
-  State<_RenameDepartmentDialog> createState() =>
-      _RenameDepartmentDialogState();
+  State<_DepartmentNameDialog> createState() => _DepartmentNameDialogState();
 }
 
-class _RenameDepartmentDialogState extends State<_RenameDepartmentDialog> {
+class _DepartmentNameDialogState extends State<_DepartmentNameDialog> {
   late final TextEditingController _controller;
   String _error = '';
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.department);
+    _controller = TextEditingController(text: widget.initialName);
   }
 
   @override
@@ -538,7 +738,7 @@ class _RenameDepartmentDialogState extends State<_RenameDepartmentDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       backgroundColor: TheWeColor.surfaceAlt,
-      title: const Text('부서명 수정'),
+      title: Text(widget.title),
       content: SizedBox(
         width: 420,
         child: TextField(
@@ -565,7 +765,7 @@ class _RenameDepartmentDialogState extends State<_RenameDepartmentDialog> {
             }
             Navigator.pop(context);
           },
-          child: const Text('저장'),
+          child: Text(widget.actionLabel),
         ),
       ],
     );

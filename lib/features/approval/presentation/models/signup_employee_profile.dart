@@ -20,7 +20,7 @@ const signupEmployeeProfiles = [
   SignupEmployeeProfile(name: '조용덕', department: '연구소', position: '부장'),
 ];
 
-const signupDepartments = ['대표이사', '기술부', '공무', '경리부', '관리부', '연구소'];
+const signupDepartments = ['대표이사', '기술부', '연구소', '관리부', '공무', '경리부'];
 
 SignupEmployeeProfile? signupProfileForName(String name) {
   final normalizedName = name.trim();

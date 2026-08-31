@@ -132,6 +132,7 @@ ApprovalDashboardState _remoteState(
   accounts: remote.accounts
       .where((account) => !account.isSystemAdministrator)
       .toList(),
+  organizationDepartments: remote.departments,
   frequentForms: remote.frequentForms,
   formTemplates: remote.formTemplates,
   documents: remote.documents,

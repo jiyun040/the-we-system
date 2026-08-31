@@ -9,6 +9,7 @@ class ApprovalDashboardState {
     required this.formTemplates,
     required this.documents,
     required this.annualLeaveByYear,
+    this.organizationDepartments = const <String>[],
     this.monthlyLeavePerMonth = 1,
     this.currentUser,
     this.keyword = '',
@@ -46,6 +47,7 @@ class ApprovalDashboardState {
   final List<ApprovalFormTemplate> formTemplates;
   final List<ApprovalDocument> documents;
   final Map<int, int> annualLeaveByYear;
+  final List<String> organizationDepartments;
   final int monthlyLeavePerMonth;
   final EmployeeAccount? currentUser;
   final String keyword;
@@ -74,6 +76,7 @@ class ApprovalDashboardState {
     List<ApprovalFormTemplate>? formTemplates,
     List<ApprovalDocument>? documents,
     Map<int, int>? annualLeaveByYear,
+    List<String>? organizationDepartments,
     int? monthlyLeavePerMonth,
     EmployeeAccount? currentUser,
     bool clearCurrentUser = false,
@@ -105,6 +108,8 @@ class ApprovalDashboardState {
       formTemplates: formTemplates ?? this.formTemplates,
       documents: documents ?? this.documents,
       annualLeaveByYear: annualLeaveByYear ?? this.annualLeaveByYear,
+      organizationDepartments:
+          organizationDepartments ?? this.organizationDepartments,
       monthlyLeavePerMonth: monthlyLeavePerMonth ?? this.monthlyLeavePerMonth,
       currentUser: clearCurrentUser ? null : (currentUser ?? this.currentUser),
       keyword: keyword ?? this.keyword,
@@ -313,16 +318,13 @@ class ApprovalDashboardState {
 
   List<String> get departments {
     final values =
-        accounts
-            .where(
-              (account) =>
-                  !account.isSystemAdministrator &&
-                  account.department.trim().isNotEmpty,
-            )
-            .map((account) => account.department.trim())
-            .toSet()
-            .toList()
-          ..sort();
+        <String>{
+            ...organizationDepartments.map((department) => department.trim()),
+            ...accounts
+                .where((account) => !account.isSystemAdministrator)
+                .map((account) => account.department.trim()),
+          }.where((department) => department.isNotEmpty).toList()
+          ..sort(_compareDepartments);
     return values;
   }
 
@@ -474,4 +476,22 @@ class ApprovalDashboardState {
     }
     return false;
   }
+}
+
+const _preferredDepartmentOrder = <String>[
+  '대표이사',
+  '기술부',
+  '연구소',
+  '관리부',
+  '공무',
+  '경리부',
+];
+
+int _compareDepartments(String left, String right) {
+  final leftIndex = _preferredDepartmentOrder.indexOf(left);
+  final rightIndex = _preferredDepartmentOrder.indexOf(right);
+  if (leftIndex >= 0 && rightIndex >= 0) return leftIndex.compareTo(rightIndex);
+  if (leftIndex >= 0) return -1;
+  if (rightIndex >= 0) return 1;
+  return left.compareTo(right);
 }

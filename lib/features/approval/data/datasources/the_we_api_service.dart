@@ -12,6 +12,7 @@ class RemoteBootstrapData {
   const RemoteBootstrapData({
     required this.currentUser,
     required this.accounts,
+    required this.departments,
     required this.frequentForms,
     required this.formTemplates,
     required this.disabledFormTemplateIds,
@@ -34,6 +35,7 @@ class RemoteBootstrapData {
 
   final EmployeeAccount currentUser;
   final List<EmployeeAccount> accounts;
+  final List<String> departments;
   final List<ApprovalForm> frequentForms;
   final List<ApprovalFormTemplate> formTemplates;
   final Set<String> disabledFormTemplateIds;
@@ -146,6 +148,7 @@ class TheWeApiService {
       accounts: _list(
         data['accounts'],
       ).map((item) => _account(_map(item))).toList(),
+      departments: _departmentNames(data['departments']),
       frequentForms: _list(
         data['frequentForms'],
       ).map((item) => ApprovalForm.fromJson(_map(item))).toList(),
@@ -288,6 +291,17 @@ class TheWeApiService {
         );
       });
 
+  Future<void> deleteEmployee(String id) => _guard(() async {
+    await _dio.delete<void>('/organization/employees/$id');
+  });
+
+  Future<void> createDepartment(String name) => _guard(() async {
+    await _dio.post<Map<String, dynamic>>(
+      '/organization/departments',
+      data: {'name': name},
+    );
+  });
+
   Future<void> renameDepartment(String currentName, String nextName) =>
       _guard(() async {
         final response = await _dio.get<Map<String, dynamic>>(
@@ -304,6 +318,22 @@ class TheWeApiService {
           data: {'name': nextName},
         );
       });
+
+  Future<void> deleteDepartment(String name) => _guard(() async {
+    final id = await _departmentId(name);
+    await _dio.delete<void>('/organization/departments/$id');
+  });
+
+  Future<Object> _departmentId(String name) async {
+    final response = await _dio.get<Map<String, dynamic>>(
+      '/organization/departments',
+    );
+    final department = _list(
+      response.data?['departments'],
+    ).map(_map).where((item) => item['name']?.toString() == name).firstOrNull;
+    if (department == null) throw const ApiException('부서를 찾을 수 없습니다.');
+    return department['id']!;
+  }
 
   Future<void> updateSettings(Map<String, dynamic> data) => _guard(() async {
     await _dio.patch<Map<String, dynamic>>('/settings', data: data);
@@ -358,6 +388,12 @@ List<dynamic> _list(dynamic value) => value is List ? value : const [];
 
 List<String> _strings(dynamic value) =>
     _list(value).map((item) => item.toString()).toList();
+
+List<String> _departmentNames(dynamic value) => _list(value)
+    .map((item) => item is Map ? _map(item)['name'] : item)
+    .map((item) => item?.toString().trim() ?? '')
+    .where((item) => item.isNotEmpty)
+    .toList();
 
 int _integer(dynamic value, int fallback) => value is num
     ? value.toInt()

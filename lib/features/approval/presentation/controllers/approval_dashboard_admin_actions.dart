@@ -51,21 +51,55 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     }
   }
 
-  void updateEmployee({
+  String? updateEmployee({
     required String userId,
     required String department,
     required String position,
     required String hireDate,
+    String? name,
+    String? email,
     String? password,
     bool? isAdmin,
   }) {
+    final current = currentDashboardState;
+    if (current == null) return '직원 정보를 불러오지 못했습니다.';
+    final account = current.accounts
+        .where((item) => item.id == userId)
+        .firstOrNull;
+    if (account == null) return '수정할 직원을 찾지 못했습니다.';
+    final normalizedName = (name ?? account.name).trim();
+    final normalizedEmail = (email ?? account.email).trim();
+    final normalizedDepartment = department.trim();
+    final normalizedPosition = position.trim();
+    final normalizedHireDate = hireDate.trim();
+    if ([
+      normalizedName,
+      normalizedEmail,
+      normalizedDepartment,
+      normalizedPosition,
+      normalizedHireDate,
+    ].any((value) => value.isEmpty)) {
+      return '필수 항목을 모두 입력해 주세요.';
+    }
+    if (DateTime.tryParse(normalizedHireDate) == null) {
+      return '입사일을 YYYY-MM-DD 형식으로 입력해 주세요.';
+    }
+    if (current.accounts.any(
+      (item) =>
+          item.id != userId &&
+          item.email.toLowerCase() == normalizedEmail.toLowerCase(),
+    )) {
+      return '이미 사용 중인 이메일입니다.';
+    }
     setApprovalDashboardState(this, (value) {
       final accounts = value.accounts.map((account) {
         if (account.id != userId) return account;
         return account.copyWith(
-          department: department.trim(),
-          position: position.trim(),
-          hireDate: hireDate.trim(),
+          name: normalizedName,
+          email: normalizedEmail,
+          department: normalizedDepartment,
+          position: normalizedPosition,
+          hireDate: normalizedHireDate,
           password: password?.trim().isEmpty == true ? null : password?.trim(),
           isAdmin: account.isAdmin,
         );
@@ -77,12 +111,35 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     });
     syncRemote(
       () => api.updateEmployee(userId, {
-        'department': department.trim(),
-        'position': position.trim(),
-        'hireDate': hireDate.trim(),
+        'name': normalizedName,
+        'email': normalizedEmail,
+        'department': normalizedDepartment,
+        'position': normalizedPosition,
+        'hireDate': normalizedHireDate,
         if (password?.trim().isNotEmpty == true) 'password': password!.trim(),
       }),
     );
+    return null;
+  }
+
+  String? deleteEmployee(String userId) {
+    final current = currentDashboardState;
+    if (current == null) return '직원 정보를 불러오지 못했습니다.';
+    if (current.currentUser?.id == userId) return '현재 로그인한 계정은 삭제할 수 없습니다.';
+    if (!current.accounts.any((account) => account.id == userId)) {
+      return '삭제할 직원을 찾지 못했습니다.';
+    }
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(
+        accounts: value.accounts
+            .where((account) => account.id != userId)
+            .toList(),
+        clearSelectedOrgUser: value.selectedOrgUserId == userId,
+      ),
+    );
+    syncRemote(() => api.deleteEmployee(userId));
+    return null;
   }
 
   String? addEmployee({
@@ -403,8 +460,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (normalized.isEmpty) return '변경할 부서명을 입력해 주세요.';
     final current = currentDashboardState;
     if (current == null) return '조직 정보를 불러오지 못했습니다.';
-    if (normalized != currentName &&
-        current.accounts.any((account) => account.department == normalized)) {
+    if (normalized != currentName && current.departments.contains(normalized)) {
       return '이미 사용 중인 부서명입니다.';
     }
     final accounts = current.accounts
@@ -417,12 +473,17 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     final currentUser = current.currentUser == null
         ? null
         : accounts
-              .where((account) => account.id == current.currentUser!.id)
-              .first;
+                  .where((account) => account.id == current.currentUser!.id)
+                  .firstOrNull ??
+              current.currentUser;
     setApprovalDashboardState(
       this,
       (value) => value.copyWith(
         accounts: accounts,
+        organizationDepartments: value.organizationDepartments
+            .map((name) => name == currentName ? normalized : name)
+            .toSet()
+            .toList(),
         currentUser: currentUser,
         selectedOrgDepartment: value.selectedOrgDepartment == currentName
             ? normalized
@@ -430,6 +491,48 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       ),
     );
     syncRemote(() => api.renameDepartment(currentName, normalized));
+    return null;
+  }
+
+  String? addDepartment(String name) {
+    final normalized = name.trim();
+    if (normalized.isEmpty) return '추가할 부서명을 입력해 주세요.';
+    final current = currentDashboardState;
+    if (current == null) return '조직 정보를 불러오지 못했습니다.';
+    if (current.departments.contains(normalized)) return '이미 사용 중인 부서명입니다.';
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(
+        organizationDepartments: [...value.organizationDepartments, normalized],
+      ),
+    );
+    syncRemote(() => api.createDepartment(normalized));
+    return null;
+  }
+
+  String? deleteDepartment(String name) {
+    final current = currentDashboardState;
+    if (current == null) return '조직 정보를 불러오지 못했습니다.';
+    if (!current.departments.contains(name)) return '삭제할 부서를 찾지 못했습니다.';
+    if (current.accounts.any((account) => account.department == name)) {
+      return '소속 직원이 있는 부서는 삭제할 수 없습니다.';
+    }
+    final remainingDepartments = current.departments
+        .where((department) => department != name)
+        .toList();
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(
+        organizationDepartments: value.organizationDepartments
+            .where((department) => department != name)
+            .toList(),
+        selectedOrgDepartment: value.selectedOrgDepartment == name
+            ? (remainingDepartments.firstOrNull ?? '')
+            : value.selectedOrgDepartment,
+        clearSelectedOrgUser: value.selectedOrgDepartment == name,
+      ),
+    );
+    syncRemote(() => api.deleteDepartment(name));
     return null;
   }
 
