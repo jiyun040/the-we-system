@@ -129,8 +129,15 @@ void main() {
       department: '경리부',
       position: '대리',
     );
+    final representative = _account(
+      id: 'ceo',
+      name: '조상훈',
+      department: '대표이사',
+      position: '대표',
+      isAdmin: false,
+    );
     final state = signedOutApprovalState.copyWith(
-      accounts: [account],
+      accounts: [account, representative],
       organizationDepartments: const ['신규부서'],
     );
 
@@ -156,9 +163,12 @@ void main() {
     expect(find.byKey(const ValueKey('add-department-button')), findsOneWidget);
     expect(find.byKey(const ValueKey('department-card-신규부서')), findsOneWidget);
     expect(find.byTooltip('신규부서 구성원 추가'), findsOneWidget);
-    expect(find.byTooltip('부서명 수정'), findsNWidgets(2));
-    expect(find.byTooltip('부서 삭제'), findsNWidgets(2));
+    expect(find.byTooltip('대표이사 구성원 추가'), findsNothing);
+    expect(find.byTooltip('부서명 수정'), findsNWidgets(3));
+    expect(find.byTooltip('부서 삭제'), findsNWidgets(3));
     expect(find.byTooltip('김효민 정보 수정'), findsOneWidget);
     expect(find.byTooltip('김효민 구성원 삭제'), findsOneWidget);
+    expect(find.byTooltip('조상훈 정보 수정'), findsOneWidget);
+    expect(find.byTooltip('조상훈 구성원 삭제'), findsNothing);
   });
 }

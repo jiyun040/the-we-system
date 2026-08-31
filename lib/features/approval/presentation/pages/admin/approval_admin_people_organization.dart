@@ -480,11 +480,12 @@ class AdminOrganizationManagement extends ConsumerWidget {
               spacing: 16,
               runSpacing: 16,
               children: state.departments.map((department) {
+                final protectsHeadcount = department == '대표이사';
                 final members =
                     state.accounts
                         .where((account) => account.department == department)
                         .toList()
-                      ..sort((a, b) => a.name.compareTo(b.name));
+                      ..sort(compareEmployeeOrganizationOrder);
                 return Container(
                   key: ValueKey('department-card-$department'),
                   width: width,
@@ -507,21 +508,22 @@ class AdminOrganizationManagement extends ConsumerWidget {
                             ),
                           ),
                           Chip(label: Text('${members.length}명')),
-                          IconButton(
-                            onPressed: () =>
-                                AdminEmployeeManagement(
-                                  state: state,
-                                )._addEmployee(
-                                  context,
-                                  ref,
-                                  initialDepartment: department,
-                                ),
-                            icon: const Icon(
-                              Icons.person_add_alt_outlined,
-                              size: 19,
+                          if (!protectsHeadcount)
+                            IconButton(
+                              onPressed: () =>
+                                  AdminEmployeeManagement(
+                                    state: state,
+                                  )._addEmployee(
+                                    context,
+                                    ref,
+                                    initialDepartment: department,
+                                  ),
+                              icon: const Icon(
+                                Icons.person_add_alt_outlined,
+                                size: 19,
+                              ),
+                              tooltip: '$department 구성원 추가',
                             ),
-                            tooltip: '$department 구성원 추가',
-                          ),
                           IconButton(
                             onPressed: () =>
                                 renameAdminDepartment(context, ref, department),
@@ -570,15 +572,16 @@ class AdminOrganizationManagement extends ConsumerWidget {
                                 icon: const Icon(Icons.edit_outlined, size: 18),
                                 tooltip: '${member.name} 정보 수정',
                               ),
-                              IconButton(
-                                onPressed: () =>
-                                    deleteAdminEmployee(context, ref, member),
-                                icon: const Icon(
-                                  Icons.person_remove_outlined,
-                                  size: 18,
+                              if (!protectsHeadcount)
+                                IconButton(
+                                  onPressed: () =>
+                                      deleteAdminEmployee(context, ref, member),
+                                  icon: const Icon(
+                                    Icons.person_remove_outlined,
+                                    size: 18,
+                                  ),
+                                  tooltip: '${member.name} 구성원 삭제',
                                 ),
-                                tooltip: '${member.name} 구성원 삭제',
-                              ),
                             ],
                           ),
                         ),
