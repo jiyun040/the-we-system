@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -136,25 +137,12 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
                   ),
                   const SizedBox(height: 14),
                   _FieldLabel('부서'),
-                  DropdownButtonFormField<String>(
+                  TheWeDropdown<String>(
                     key: const Key('signup-department-dropdown'),
-                    initialValue: selectedDepartment,
-                    isExpanded: true,
-                    hint: const Text('부서를 선택해 주세요.'),
-                    decoration: const InputDecoration(
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                    ),
-                    items: signupDepartments
-                        .map(
-                          (department) => DropdownMenuItem(
-                            value: department,
-                            child: Text(department),
-                          ),
-                        )
-                        .toList(),
+                    value: selectedDepartment,
+                    items: signupDepartments,
+                    labelBuilder: (department) => department,
+                    hintText: '부서를 선택해 주세요.',
                     onChanged: _selectDepartment,
                   ),
                   const SizedBox(height: 14),

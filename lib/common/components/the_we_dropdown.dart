@@ -10,13 +10,15 @@ class TheWeDropdown<T> extends StatelessWidget {
     required this.labelBuilder,
     required this.onChanged,
     this.width,
+    this.hintText,
   });
 
-  final T value;
+  final T? value;
   final List<T> items;
   final String Function(T value) labelBuilder;
   final ValueChanged<T?> onChanged;
   final double? width;
+  final String? hintText;
 
   @override
   Widget build(BuildContext context) => SizedBox(
@@ -24,6 +26,7 @@ class TheWeDropdown<T> extends StatelessWidget {
     child: DropdownMenu<T>(
       key: ValueKey(value),
       initialSelection: value,
+      hintText: hintText,
       expandedInsets: EdgeInsets.zero,
       requestFocusOnTap: false,
       enableFilter: false,
