@@ -148,7 +148,7 @@ class SideBarBrand extends ConsumerWidget {
                         : TheWeColor.black500,
                   ),
                 ),
-                if (currentUser!.isAdmin) ...[
+                if (currentUser!.canAccessAdminMode) ...[
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,

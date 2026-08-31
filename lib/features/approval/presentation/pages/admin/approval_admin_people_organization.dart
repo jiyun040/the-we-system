@@ -410,77 +410,81 @@ class AdminOrganizationManagement extends ConsumerWidget {
   const AdminOrganizationManagement({super.key, required this.state});
   final ApprovalDashboardState state;
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text('조직도 및 부서 관리', style: TheWeTextStyle.title),
-      const SizedBox(height: 8),
-      Text(
-        '계정에 설정된 부서 기준으로 전자결재 부서 문서함이 자동 연결됩니다.',
-        style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
-      ),
-      const SizedBox(height: 18),
-      LayoutBuilder(
-        builder: (context, constraints) {
-          final width = constraints.maxWidth < 680
-              ? constraints.maxWidth
-              : (constraints.maxWidth - 16) / 2;
-          return Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: state.departments.map((department) {
-              final members = state.accounts
-                  .where((account) => account.department == department)
-                  .toList();
-              return Container(
-                width: width,
-                padding: const EdgeInsets.all(20),
-                decoration: adminSurface(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.folder_shared_outlined,
-                          color: TheWeColor.blue300,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            department,
-                            style: TheWeTextStyle.subtitle,
+  Widget build(BuildContext context, WidgetRef ref) => SizedBox(
+    key: const ValueKey('admin-organization-page'),
+    width: double.infinity,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('조직도 및 부서 관리', style: TheWeTextStyle.title),
+        const SizedBox(height: 8),
+        Text(
+          '계정에 설정된 부서 기준으로 전자결재 부서 문서함이 자동 연결됩니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 18),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final width = constraints.maxWidth < 680
+                ? constraints.maxWidth
+                : (constraints.maxWidth - 16) / 2;
+            return Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: state.departments.map((department) {
+                final members = state.accounts
+                    .where((account) => account.department == department)
+                    .toList();
+                return Container(
+                  width: width,
+                  padding: const EdgeInsets.all(20),
+                  decoration: adminSurface(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.folder_shared_outlined,
+                            color: TheWeColor.blue300,
                           ),
-                        ),
-                        Chip(label: Text('${members.length}명')),
-                        IconButton(
-                          onPressed: () =>
-                              renameAdminDepartment(context, ref, department),
-                          icon: const Icon(Icons.edit_outlined, size: 19),
-                          tooltip: '부서명 수정',
-                        ),
-                      ],
-                    ),
-                    adminDivider(height: 26),
-                    ...members.map(
-                      (member) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        leading: CircleAvatar(
-                          child: Text(member.name.substring(0, 1)),
-                        ),
-                        title: Text(member.name),
-                        subtitle: Text('${member.position} · ${member.id}'),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              department,
+                              style: TheWeTextStyle.subtitle,
+                            ),
+                          ),
+                          Chip(label: Text('${members.length}명')),
+                          IconButton(
+                            onPressed: () =>
+                                renameAdminDepartment(context, ref, department),
+                            icon: const Icon(Icons.edit_outlined, size: 19),
+                            tooltip: '부서명 수정',
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
-          );
-        },
-      ),
-    ],
+                      adminDivider(height: 26),
+                      ...members.map(
+                        (member) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          leading: CircleAvatar(
+                            child: Text(member.name.substring(0, 1)),
+                          ),
+                          title: Text(member.name),
+                          subtitle: Text('${member.position} · ${member.id}'),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
+    ),
   );
 }
 

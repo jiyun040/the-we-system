@@ -20,7 +20,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     try {
       final current = currentDashboardState;
       if (current == null ||
-          current.currentUser?.isAdmin != true ||
+          current.currentUser?.canAccessAdminMode != true ||
           (current.adminOtpEnabled && !await api.verifyAdminOtp(otp))) {
         return false;
       }

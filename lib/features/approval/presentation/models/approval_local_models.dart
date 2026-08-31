@@ -23,6 +23,13 @@ class EmployeeAccount {
 
   bool get isSystemAdministrator => isAdmin && id == 'admin';
 
+  bool get canAccessAdminMode =>
+      isSystemAdministrator ||
+      (isAdmin &&
+          name.trim() == '김효민' &&
+          department.trim() == '경리부' &&
+          position.trim() == '대리');
+
   EmployeeAccount copyWith({
     String? id,
     String? password,

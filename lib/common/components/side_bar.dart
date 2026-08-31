@@ -12,6 +12,18 @@ import 'side_bar_menu.dart';
 import 'side_bar_org.dart';
 import 'side_bar_sections.dart';
 
+class SideBarDivider extends StatelessWidget {
+  const SideBarDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return VerticalDivider(
+      width: 1,
+      color: TheWeColor.black300.withValues(alpha: 0.32),
+    );
+  }
+}
+
 class SideBar extends ConsumerWidget {
   const SideBar({
     super.key,

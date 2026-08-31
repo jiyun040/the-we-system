@@ -68,8 +68,10 @@ class _AppInteractionLayer extends ConsumerWidget {
 
     return Listener(
       onPointerSignal: (event) {
-        if (event is PointerScrollEvent &&
-            HardwareKeyboard.instance.isControlPressed) {
+        final keyboard = HardwareKeyboard.instance;
+        final hasZoomModifier =
+            keyboard.isControlPressed || keyboard.isMetaPressed;
+        if (event is PointerScrollEvent && hasZoomModifier) {
           ref
               .read(approvalDashboardControllerProvider.notifier)
               .adjustZoom(event.scrollDelta.dy > 0 ? -0.05 : 0.05);

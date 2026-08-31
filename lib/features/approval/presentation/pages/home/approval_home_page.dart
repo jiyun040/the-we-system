@@ -90,7 +90,8 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                           controller: searchController,
                           showAdminAction:
                               isPhone &&
-                              approvalState.currentUser?.isAdmin == true &&
+                              approvalState.currentUser?.canAccessAdminMode ==
+                                  true &&
                               !approvalState.isAdminMode,
                           onAdminPressed: () =>
                               context.goNamed(AppRouteName.admin),
@@ -153,10 +154,7 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                 openPendingDocument: dashboard.referenceCount,
                 scheduledDocument: dashboard.scheduledCount,
               ),
-              VerticalDivider(
-                width: 1,
-                color: TheWeColor.black300.withValues(alpha: 0.32),
-              ),
+              const SideBarDivider(),
               content,
             ],
           );

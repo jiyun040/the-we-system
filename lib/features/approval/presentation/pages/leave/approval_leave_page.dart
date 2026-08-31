@@ -36,7 +36,7 @@ class ApprovalLeavePage extends ConsumerWidget {
           return Row(
             children: [
               sidebar,
-              const VerticalDivider(width: 1),
+              const SideBarDivider(),
               Expanded(child: content),
             ],
           );

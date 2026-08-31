@@ -58,7 +58,7 @@ class ApprovalAbsencePage extends ConsumerWidget {
                 openPendingDocument: value.dashboard.referenceCount,
                 scheduledDocument: value.dashboard.scheduledCount,
               ),
-              const VerticalDivider(width: 1),
+              const SideBarDivider(),
               content,
             ],
           );

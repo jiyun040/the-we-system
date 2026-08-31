@@ -146,7 +146,7 @@ class ApprovalDashboardState {
 
   bool get isAuthenticated => currentUser != null;
 
-  bool get isAdmin => currentUser?.isAdmin ?? false;
+  bool get isAdmin => currentUser?.canAccessAdminMode ?? false;
 
   bool get isAdminMode => isAdmin && adminMode;
 
