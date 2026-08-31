@@ -71,15 +71,59 @@ class _AppInteractionLayer extends ConsumerWidget {
         final keyboard = HardwareKeyboard.instance;
         final hasZoomModifier =
             keyboard.isControlPressed || keyboard.isMetaPressed;
-        if (event is PointerScrollEvent && hasZoomModifier) {
+        if (event is PointerScrollEvent &&
+            hasZoomModifier &&
+            event.scrollDelta.dy != 0) {
           ref
               .read(approvalDashboardControllerProvider.notifier)
               .adjustZoom(event.scrollDelta.dy > 0 ? -0.05 : 0.05);
         }
       },
-      child: MediaQuery(
-        data: mediaQuery.copyWith(textScaler: TextScaler.linear(zoom)),
-        child: child,
+      child: AppZoomViewport(zoom: zoom, mediaQuery: mediaQuery, child: child),
+    );
+  }
+}
+
+class AppZoomViewport extends StatelessWidget {
+  const AppZoomViewport({
+    required this.zoom,
+    required this.mediaQuery,
+    required this.child,
+    super.key,
+  });
+
+  final double zoom;
+  final MediaQueryData mediaQuery;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = zoom.clamp(0.85, 1.55);
+    final viewportSize = mediaQuery.size;
+    final logicalSize = Size(
+      viewportSize.width / scale,
+      viewportSize.height / scale,
+    );
+
+    return ClipRect(
+      child: OverflowBox(
+        alignment: Alignment.topLeft,
+        minWidth: 0,
+        maxWidth: double.infinity,
+        minHeight: 0,
+        maxHeight: double.infinity,
+        child: Transform.scale(
+          scale: scale,
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: logicalSize.width,
+            height: logicalSize.height,
+            child: MediaQuery(
+              data: mediaQuery.copyWith(size: logicalSize),
+              child: child,
+            ),
+          ),
+        ),
       ),
     );
   }
