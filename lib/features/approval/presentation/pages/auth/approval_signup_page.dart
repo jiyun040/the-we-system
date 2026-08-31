@@ -260,6 +260,11 @@ class _ApprovalSignupPageState extends ConsumerState<ApprovalSignupPage> {
       return;
     }
 
+    if (password.length < 8) {
+      setState(() => errorMessage = '비밀번호는 보안을 위해 최소 8자리 이상이 되어야 합니다.');
+      return;
+    }
+
     final employeeError = validateSignupEmployee(
       name: name,
       department: department,
