@@ -34,6 +34,29 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
     }
   }
 
+  Future<String?> registerAccount({
+    required String id,
+    required String password,
+    required String name,
+    required String department,
+    required String position,
+  }) async {
+    try {
+      await api.register(
+        id: id.trim(),
+        password: password,
+        name: name.trim(),
+        department: department.trim(),
+        position: position.trim(),
+      );
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(error);
+    }
+  }
+
   Future<void> logout() async {
     await api.logout();
     emitDashboardState(signedOutApprovalState);

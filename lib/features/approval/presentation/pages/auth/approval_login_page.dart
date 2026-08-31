@@ -183,6 +183,20 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => context.pushNamed(AppRouteName.signup),
+                      child: Text(
+                        '회원가입',
+                        style: TheWeTextStyle.body.copyWith(
+                          color: TheWeColor.blue300,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),

@@ -88,7 +88,7 @@ void main() {
     for (final field in fields) {
       expect(field.controller?.text ?? '', isEmpty);
     }
-    expect(find.text('회원가입'), findsNothing);
+    expect(find.text('회원가입'), findsOneWidget);
   });
 
   testWidgets('로그인 입력 글자를 읽기 쉽게 표시하고 Enter 동작을 제공한다', (tester) async {

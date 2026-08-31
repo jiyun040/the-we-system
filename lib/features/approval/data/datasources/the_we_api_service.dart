@@ -83,6 +83,25 @@ class TheWeApiService {
     await _tokenStore.write(token);
   });
 
+  Future<void> register({
+    required String id,
+    required String password,
+    required String name,
+    required String department,
+    required String position,
+  }) => _guard(() async {
+    await _dio.post<Map<String, dynamic>>(
+      '/auth/register',
+      data: {
+        'id': id,
+        'password': password,
+        'name': name,
+        'department': department,
+        'position': position,
+      },
+    );
+  });
+
   Future<void> logout() async {
     try {
       if (await hasStoredToken()) await _dio.post<void>('/auth/logout');
