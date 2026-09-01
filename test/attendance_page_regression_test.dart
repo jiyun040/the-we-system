@@ -17,16 +17,16 @@ class _AttendanceTestController extends ApprovalDashboardController {
 }
 
 void main() {
-  testWidgets('김효민 대리 관리자 모드에서도 근태 현황을 표시한다', (tester) async {
+  testWidgets('관리자 모드에서도 근태 현황을 표시한다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     const account = EmployeeAccount(
-      id: 'we061046',
+      id: designatedAdminAccountId,
       password: '',
-      name: '김효민',
-      department: '경리부',
-      position: '대리',
+      name: '테스트 관리자',
+      department: '테스트부서',
+      position: '담당',
       email: '',
     );
     final state = signedOutApprovalState.copyWith(
@@ -60,6 +60,6 @@ void main() {
 
     expect(find.text('근태 데이터가 연결되지 않았습니다.'), findsNothing);
     expect(find.text('전사 근태현황'), findsWidgets);
-    expect(find.text('김효민'), findsWidgets);
+    expect(find.text('테스트 관리자'), findsWidgets);
   });
 }

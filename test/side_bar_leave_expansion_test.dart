@@ -25,11 +25,11 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
 
     const account = EmployeeAccount(
-      id: 'we061046',
+      id: 'test-user',
       password: '',
-      name: '김효민',
-      department: '경리부',
-      position: '대리',
+      name: '테스트 사용자',
+      department: '테스트부서',
+      position: '담당',
       email: '',
     );
     final state = signedOutApprovalState.copyWith(
@@ -71,9 +71,6 @@ void main() {
     final leaveScroll = tester.widget<SingleChildScrollView>(
       find.byKey(const ValueKey('leave-content-scroll')),
     );
-    expect(
-      leaveScroll.padding,
-      const EdgeInsets.fromLTRB(28, 24, 28, 28),
-    );
+    expect(leaveScroll.padding, const EdgeInsets.fromLTRB(28, 24, 28, 28));
   });
 }

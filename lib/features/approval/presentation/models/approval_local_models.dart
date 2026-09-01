@@ -1,5 +1,10 @@
 import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 
+const designatedAdminAccountId = 'we81048';
+const designatedAdminName = '김효민';
+const designatedAdminDepartment = '경리부';
+const designatedAdminPosition = '대리';
+
 class EmployeeAccount {
   const EmployeeAccount({
     required this.id,
@@ -26,15 +31,16 @@ class EmployeeAccount {
 
   bool get isSystemAdministrator => isAdmin && normalizedId == 'admin';
 
-  bool get isKimHyominAdministrator =>
-      normalizedId == 'we061046' ||
+  bool get isDesignatedAdministrator =>
+      normalizedId == designatedAdminAccountId ||
       (isAdmin &&
-          name.trim() == '김효민' &&
-          department.replaceAll(RegExp(r'\s+'), '') == '경리부' &&
-          position.replaceAll(RegExp(r'\s+'), '') == '대리');
+          name.trim() == designatedAdminName &&
+          department.replaceAll(RegExp(r'\s+'), '') ==
+              designatedAdminDepartment &&
+          position.replaceAll(RegExp(r'\s+'), '') == designatedAdminPosition);
 
   bool get canAccessAdminMode =>
-      isSystemAdministrator || isKimHyominAdministrator;
+      isSystemAdministrator || isDesignatedAdministrator;
 
   EmployeeAccount copyWith({
     String? id,

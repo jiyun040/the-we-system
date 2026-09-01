@@ -33,26 +33,16 @@ class _RecordingApiService extends TheWeApiService {
 
 void main() {
   test('회원가입 구성원의 이름·부서·직책 조합을 고정한다', () {
-    const expected = {
-      '조상훈': ('대표이사', '대표'),
-      '조세훈': ('기술부', '전무'),
-      '김현정': ('공무', '대리'),
-      '김효민': ('경리부', '대리'),
-      '정효정': ('관리부', '이사'),
-      '송형숙': ('관리부', '부장'),
-      '조용덕': ('연구소', '부장'),
-    };
-
-    for (final entry in expected.entries) {
-      final profile = signupProfileForName(entry.key);
+    for (final expected in signupEmployeeProfiles) {
+      final profile = signupProfileForName(expected.name);
       expect(profile, isNotNull);
-      expect(profile!.department, entry.value.$1);
-      expect(profile.position, entry.value.$2);
+      expect(profile!.department, expected.department);
+      expect(profile.position, expected.position);
       expect(
         validateSignupEmployee(
-          name: entry.key,
-          department: entry.value.$1,
-          position: entry.value.$2,
+          name: expected.name,
+          department: expected.department,
+          position: expected.position,
         ),
         isNull,
       );
@@ -60,48 +50,79 @@ void main() {
   });
 
   test('이름과 다른 부서·직책 조합을 거부한다', () {
-    expect(
-      validateSignupEmployee(name: '조용덕', department: '대표이사', position: '대표'),
-      '조용덕님의 부서는 연구소입니다.',
+    final profile = signupEmployeeProfiles.first;
+    final another = signupEmployeeProfiles.firstWhere(
+      (candidate) => candidate.department != profile.department,
     );
     expect(
-      validateSignupEmployee(name: '정효정', department: '관리부', position: '부장'),
-      '정효정님의 직책은 이사입니다.',
+      validateSignupEmployee(
+        name: profile.name,
+        department: another.department,
+        position: another.position,
+      ),
+      '${profile.name}님의 부서는 ${profile.department}입니다.',
     );
   });
 
   testWidgets('부서와 이름에 따라 직책을 자동 입력한다', (tester) async {
+    final sharedDepartment = signupEmployeeProfiles
+        .map((profile) => profile.department)
+        .firstWhere(
+          (department) =>
+              signupEmployeeProfiles
+                  .where((profile) => profile.department == department)
+                  .length >
+              1,
+        );
+    final sharedProfiles = signupEmployeeProfiles
+        .where((profile) => profile.department == sharedDepartment)
+        .toList();
+    final firstProfile = signupEmployeeProfiles.firstWhere(
+      (profile) => profile.department != sharedDepartment,
+    );
+    final secondProfile = sharedProfiles.first;
+    final thirdProfile = sharedProfiles.last;
     await tester.pumpWidget(const MaterialApp(home: ApprovalSignupPage()));
 
-    await tester.enterText(find.byKey(const Key('signup-name-field')), '조용덕');
+    await tester.enterText(
+      find.byKey(const Key('signup-name-field')),
+      firstProfile.name,
+    );
     await tester.tap(find.byKey(const Key('signup-department-dropdown')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('연구소').last);
+    await tester.tap(find.text(firstProfile.department).last);
     await tester.pumpAndSettle();
 
     var positionField = tester.widget<CustomTextFormField>(
       find.byKey(const Key('signup-position-field')),
     );
-    expect(positionField.controller.text, '부장');
+    expect(positionField.controller.text, firstProfile.position);
     expect(positionField.readOnly, isTrue);
 
-    await tester.enterText(find.byKey(const Key('signup-name-field')), '정효정');
+    await tester.enterText(
+      find.byKey(const Key('signup-name-field')),
+      secondProfile.name,
+    );
     await tester.tap(find.byKey(const Key('signup-department-dropdown')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('관리부').last);
+    await tester.tap(find.text(secondProfile.department).last);
     await tester.pumpAndSettle();
 
     positionField = tester.widget<CustomTextFormField>(
       find.byKey(const Key('signup-position-field')),
     );
-    expect(positionField.controller.text, '이사');
+    expect(positionField.controller.text, secondProfile.position);
 
-    await tester.enterText(find.byKey(const Key('signup-name-field')), '송형숙');
+    await tester.enterText(
+      find.byKey(const Key('signup-name-field')),
+      thirdProfile.name,
+    );
     await tester.pump();
-    expect(positionField.controller.text, '부장');
+    expect(positionField.controller.text, thirdProfile.position);
   });
 
   testWidgets('제출 시 자동 선택된 직책을 다시 계산해 서버로 전달한다', (tester) async {
+    final profile = signupEmployeeProfiles.last;
     final api = _RecordingApiService();
     await tester.binding.setSurfaceSize(const Size(800, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -112,7 +133,10 @@ void main() {
       ),
     );
 
-    await tester.enterText(find.byKey(const Key('signup-name-field')), '김효민');
+    await tester.enterText(
+      find.byKey(const Key('signup-name-field')),
+      profile.name,
+    );
     await tester.enterText(
       find.byKey(const Key('signup-id-field')),
       'kim_account',
@@ -127,20 +151,20 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('signup-department-dropdown')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('경리부').last);
+    await tester.tap(find.text(profile.department).last);
     await tester.pumpAndSettle();
 
     final positionField = tester.widget<CustomTextFormField>(
       find.byKey(const Key('signup-position-field')),
     );
-    expect(positionField.controller.text, '대리');
+    expect(positionField.controller.text, profile.position);
 
     // 브라우저 리빌드로 표시 컨트롤러가 비워지는 상황을 재현한다.
     positionField.controller.clear();
     await tester.tap(find.widgetWithText(FilledButton, '회원가입 완료'));
     await tester.pumpAndSettle();
 
-    expect(api.registeredPosition, '대리');
+    expect(api.registeredPosition, profile.position);
     expect(find.text('모든 항목을 입력해 주세요.'), findsNothing);
   });
 
@@ -157,11 +181,18 @@ void main() {
   });
 
   testWidgets('이름과 맞지 않는 부서로는 회원가입할 수 없다', (tester) async {
+    final profile = signupEmployeeProfiles.first;
+    final another = signupEmployeeProfiles.firstWhere(
+      (candidate) => candidate.department != profile.department,
+    );
     await tester.binding.setSurfaceSize(const Size(800, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const MaterialApp(home: ApprovalSignupPage()));
 
-    await tester.enterText(find.byKey(const Key('signup-name-field')), '조용덕');
+    await tester.enterText(
+      find.byKey(const Key('signup-name-field')),
+      profile.name,
+    );
     await tester.enterText(
       find.byKey(const Key('signup-id-field')),
       'research_lead',
@@ -176,7 +207,7 @@ void main() {
     );
     await tester.tap(find.byKey(const Key('signup-department-dropdown')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('대표이사').last);
+    await tester.tap(find.text(another.department).last);
     await tester.pumpAndSettle();
 
     final submitButton = tester.widget<FilledButton>(
@@ -185,6 +216,9 @@ void main() {
     submitButton.onPressed?.call();
     await tester.pump();
 
-    expect(find.text('조용덕님의 부서는 연구소입니다.'), findsOneWidget);
+    expect(
+      find.text('${profile.name}님의 부서는 ${profile.department}입니다.'),
+      findsOneWidget,
+    );
   });
 }

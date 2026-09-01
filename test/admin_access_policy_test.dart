@@ -89,64 +89,68 @@ void main() {
     expect(state.reorderedDepartments('경리부', 1), state.departments);
   });
 
-  test('슈퍼어드민과 김효민 대리만 관리자 모드에 접근한다', () {
+  test('슈퍼어드민과 지정 관리자만 관리자 모드에 접근한다', () {
     final systemAdmin = _account(
       id: 'admin',
       name: '슈퍼어드민',
       department: '시스템관리',
       position: '시스템 관리자',
     );
-    final kimHyomin = _account(
-      id: 'we061046',
-      name: '김효민',
-      department: '경리부',
-      position: '대리',
+    final designatedAdmin = _account(
+      id: designatedAdminAccountId,
+      name: '지정 관리자',
+      department: '테스트부서',
+      position: '담당',
       isAdmin: false,
     );
     final otherAdmin = _account(
       id: 'other-admin',
-      name: '조상훈',
+      name: '기타 관리자',
       department: '대표이사',
       position: '대표',
     );
     final wrongProfile = _account(
       id: 'another-account',
-      name: '김효민',
-      department: '경리부',
-      position: '대리',
+      name: '지정 관리자',
+      department: '테스트부서',
+      position: '담당',
       isAdmin: false,
     );
-    final serverVerifiedKimHyomin = _account(
+    final serverVerifiedDesignatedAdmin = _account(
       id: 'legacy-account-id',
-      name: '김효민',
-      department: '경리부',
-      position: '대리',
+      name: designatedAdminName,
+      department: designatedAdminDepartment,
+      position: designatedAdminPosition,
     );
 
     expect(systemAdmin.canAccessAdminMode, isTrue);
-    expect(kimHyomin.canAccessAdminMode, isTrue);
+    expect(designatedAdmin.canAccessAdminMode, isTrue);
     expect(otherAdmin.canAccessAdminMode, isFalse);
     expect(wrongProfile.canAccessAdminMode, isFalse);
-    expect(serverVerifiedKimHyomin.canAccessAdminMode, isTrue);
+    expect(serverVerifiedDesignatedAdmin.canAccessAdminMode, isTrue);
   });
 
-  testWidgets('김효민 대리 계정은 사이드바에 관리자 전환 버튼을 표시한다', (tester) async {
+  testWidgets('지정 관리자 계정은 사이드바에 관리자 전환 버튼을 표시한다', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1440, 900);
     addTearDown(tester.view.resetDevicePixelRatio);
     addTearDown(tester.view.resetPhysicalSize);
 
-    const account = EmployeeAccount(
-      id: 'we\u200B061046',
+    final markerIndex = designatedAdminAccountId.length ~/ 2;
+    final obscuredId =
+        '${designatedAdminAccountId.substring(0, markerIndex)}\u200B'
+        '${designatedAdminAccountId.substring(markerIndex)}';
+    final account = EmployeeAccount(
+      id: obscuredId,
       password: '',
-      name: '김효민',
-      department: '경리부',
-      position: '대리',
+      name: '지정 관리자',
+      department: '테스트부서',
+      position: '담당',
       email: '',
     );
     final state = signedOutApprovalState.copyWith(
       currentUser: account,
-      accounts: const [account],
+      accounts: [account],
     );
 
     await tester.pumpWidget(
@@ -156,7 +160,7 @@ void main() {
             () => _AdminAccessTestController(state),
           ),
         ],
-        child: const MaterialApp(
+        child: MaterialApp(
           home: Scaffold(
             body: SizedBox(
               width: 320,
@@ -174,14 +178,14 @@ void main() {
   test('조직도 구성원은 이름보다 직급이 높은 순서로 표시한다', () {
     final director = _account(
       id: 'jung_hyojung',
-      name: '정효정',
+      name: '테스트 이사',
       department: '관리부',
       position: '이사',
       isAdmin: false,
     );
     final departmentHead = _account(
       id: 'song_hyeongsuk',
-      name: '송형숙',
+      name: '테스트 부장',
       department: '관리부',
       position: '부장',
       isAdmin: false,
@@ -192,10 +196,10 @@ void main() {
     );
 
     expect(state.selectedDepartmentMembers.map((member) => member.name), [
-      '정효정',
-      '송형숙',
+      '테스트 이사',
+      '테스트 부장',
     ]);
-    expect(state.selectedOrgMember?.name, '정효정');
+    expect(state.selectedOrgMember?.name, '테스트 이사');
   });
 
   test('관리자 직원 목록은 부서 순서 다음 직급 순서로 표시한다', () {
@@ -203,49 +207,49 @@ void main() {
       accounts: [
         _account(
           id: 'accounting',
-          name: '김효민',
+          name: '경리 담당',
           department: '경리부',
           position: '대리',
           isAdmin: false,
         ),
         _account(
           id: 'manager',
-          name: '송형숙',
+          name: '관리 부장',
           department: '관리부',
           position: '부장',
           isAdmin: false,
         ),
         _account(
           id: 'research',
-          name: '조용덕',
+          name: '연구 부장',
           department: '연구소',
           position: '부장',
           isAdmin: false,
         ),
         _account(
           id: 'ceo',
-          name: '조상훈',
+          name: '대표 담당',
           department: '대표이사',
           position: '대표',
           isAdmin: false,
         ),
         _account(
           id: 'director',
-          name: '정효정',
+          name: '관리 이사',
           department: '관리부',
           position: '이사',
           isAdmin: false,
         ),
         _account(
           id: 'construction',
-          name: '김현정',
+          name: '공무 담당',
           department: '공무',
           position: '대리',
           isAdmin: false,
         ),
         _account(
           id: 'technology',
-          name: '조세훈',
+          name: '기술 전무',
           department: '기술부',
           position: '전무',
           isAdmin: false,
@@ -254,26 +258,26 @@ void main() {
     );
 
     expect(state.organizationOrderedAccounts.map((account) => account.name), [
-      '조상훈',
-      '조세훈',
-      '조용덕',
-      '정효정',
-      '송형숙',
-      '김현정',
-      '김효민',
+      '대표 담당',
+      '기술 전무',
+      '연구 부장',
+      '관리 이사',
+      '관리 부장',
+      '공무 담당',
+      '경리 담당',
     ]);
   });
 
   testWidgets('조직도 및 부서 관리 화면은 가용 너비에 좌측 정렬된다', (tester) async {
     final account = _account(
       id: 'account',
-      name: '김효민',
+      name: '테스트 구성원',
       department: '경리부',
       position: '대리',
     );
     final representative = _account(
       id: 'ceo',
-      name: '조상훈',
+      name: '테스트 대표',
       department: '대표이사',
       position: '대표',
       isAdmin: false,
@@ -310,9 +314,9 @@ void main() {
     expect(find.byTooltip('신규부서 아래로 이동'), findsOneWidget);
     expect(find.byTooltip('부서명 수정'), findsNWidgets(3));
     expect(find.byTooltip('부서 삭제'), findsNWidgets(3));
-    expect(find.byTooltip('김효민 정보 수정'), findsOneWidget);
-    expect(find.byTooltip('김효민 구성원 삭제'), findsOneWidget);
-    expect(find.byTooltip('조상훈 정보 수정'), findsOneWidget);
-    expect(find.byTooltip('조상훈 구성원 삭제'), findsNothing);
+    expect(find.byTooltip('테스트 구성원 정보 수정'), findsOneWidget);
+    expect(find.byTooltip('테스트 구성원 구성원 삭제'), findsOneWidget);
+    expect(find.byTooltip('테스트 대표 정보 수정'), findsOneWidget);
+    expect(find.byTooltip('테스트 대표 구성원 삭제'), findsNothing);
   });
 }

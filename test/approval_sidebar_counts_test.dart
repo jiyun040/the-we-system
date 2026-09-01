@@ -33,11 +33,11 @@ ApprovalDocument _document({
 void main() {
   test('자주 쓰는 양식은 사용 횟수순이며 결재 메뉴 숫자는 문서함 개수와 같다', () {
     const user = EmployeeAccount(
-      id: 'we061046',
+      id: 'test-user',
       password: '',
-      name: '김효민',
-      department: '경리부',
-      position: '대리',
+      name: '테스트 사용자',
+      department: '테스트부서',
+      position: '담당',
       email: '',
     );
     const template = ApprovalFormTemplate(
@@ -75,33 +75,33 @@ void main() {
       documents: [
         _document(
           id: 'waiting',
-          drafter: '송형숙',
+          drafter: '기안자 A',
           steps: const [
-            ApprovalStep(name: '김효민', department: '경리부', status: '진행중'),
+            ApprovalStep(name: '테스트 사용자', department: '테스트부서', status: '진행중'),
           ],
         ),
         _document(
           id: 'received',
-          drafter: '정효정',
+          drafter: '기안자 B',
           received: true,
-          receivers: const ['경리부'],
+          receivers: const ['테스트부서'],
         ),
         _document(
           id: 'not-received',
-          drafter: '정효정',
+          drafter: '기안자 B',
           received: true,
           receivers: const ['기술부'],
         ),
         _document(
           id: 'reference',
-          drafter: '조세훈',
-          references: const ['we061046'],
+          drafter: '기안자 C',
+          references: const ['test-user'],
         ),
         _document(
           id: 'scheduled',
-          drafter: '조상훈',
+          drafter: '기안자 D',
           steps: const [
-            ApprovalStep(name: '김효민', department: '경리부', status: '결재 예정'),
+            ApprovalStep(name: '테스트 사용자', department: '테스트부서', status: '결재 예정'),
           ],
         ),
       ],
