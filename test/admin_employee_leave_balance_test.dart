@@ -18,6 +18,20 @@ const _account = EmployeeAccount(
   leaveBalanceAdjustment: 2,
 );
 
+EmployeeAccount _directoryAccount({
+  required String id,
+  required String name,
+  required String department,
+  required String position,
+}) => EmployeeAccount(
+  id: id,
+  password: '',
+  name: name,
+  department: department,
+  position: position,
+  email: '$id@example.com',
+);
+
 void main() {
   test('관리자가 입력한 연차와 보정값에서 승인·대기 휴가를 차감한다', () {
     final state = signedOutApprovalState.copyWith(
@@ -99,5 +113,82 @@ void main() {
     expect(annualField.controller?.text, '20');
     expect(monthlyField.controller?.text, '6');
     expect(remainingField.controller?.text, '22');
+  });
+
+  testWidgets('사원관리 필터는 전체 직급순·부서별·이름순으로 표시한다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1440, 1500));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final state = signedOutApprovalState.copyWith(
+      organizationDepartments: const ['대표이사', '관리부', '경리부'],
+      accounts: [
+        _directoryAccount(
+          id: 'staff',
+          name: '가사원',
+          department: '대표이사',
+          position: '사원',
+        ),
+        _directoryAccount(
+          id: 'director',
+          name: '나이사',
+          department: '경리부',
+          position: '이사',
+        ),
+        _directoryAccount(
+          id: 'manager',
+          name: '다부장',
+          department: '관리부',
+          position: '부장',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: AdminEmployeeManagement(state: state),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    double rowTop(String id) =>
+        tester.getTopLeft(find.byKey(ValueKey('employee-row-$id'))).dy;
+    expect(rowTop('director'), lessThan(rowTop('manager')));
+    expect(rowTop('manager'), lessThan(rowTop('staff')));
+
+    await tester.tap(find.byKey(const ValueKey('employee-filter-department')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('employee-row-staff')), findsOneWidget);
+    expect(find.byKey(const ValueKey('employee-row-director')), findsNothing);
+    expect(
+      tester
+          .widget<Text>(find.byKey(const ValueKey('employee-filter-count')))
+          .data,
+      '1명',
+    );
+
+    await tester.tap(find.byKey(const ValueKey('employee-department-filter')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('경리부').last);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('employee-row-director')), findsOneWidget);
+    expect(find.byKey(const ValueKey('employee-row-staff')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('employee-filter-name')));
+    await tester.pumpAndSettle();
+    expect(rowTop('staff'), lessThan(rowTop('director')));
+    expect(rowTop('director'), lessThan(rowTop('manager')));
+
+    await tester.enterText(
+      find.byKey(const ValueKey('employee-name-filter')),
+      '다',
+    );
+    await tester.pump();
+    expect(find.byKey(const ValueKey('employee-row-manager')), findsOneWidget);
+    expect(find.byKey(const ValueKey('employee-row-staff')), findsNothing);
+    expect(find.byKey(const ValueKey('employee-row-director')), findsNothing);
   });
 }

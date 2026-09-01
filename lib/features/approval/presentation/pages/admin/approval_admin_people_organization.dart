@@ -7,7 +7,6 @@ class AdminEmployeeManagement extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mobile = MediaQuery.sizeOf(context).width < 700;
-    final orderedAccounts = state.organizationOrderedAccounts;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -29,75 +28,10 @@ class AdminEmployeeManagement extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 14),
-        if (mobile)
-          ...orderedAccounts.map(
-            (account) => _EmployeeCard(
-              account: account,
-              state: state,
-              onEdit: () => _editEmployee(context, ref, account),
-            ),
-          )
-        else
-          TheWeDataTable(
-            headers: const [
-              '이름/아이디',
-              '부서',
-              '직위',
-              '입사일',
-              '연차',
-              '월차',
-              '잔여',
-              '권한',
-              '관리',
-            ],
-            columnFlexes: const [1.6, 1.15, .9, 1.15, .8, .8, .8, .85, .65],
-            minWidth: 1320,
-            rows: orderedAccounts
-                .map(
-                  (account) => <Widget>[
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(account.name),
-                        const SizedBox(height: 3),
-                        Text(
-                          account.id,
-                          style: TheWeTextStyle.caption.copyWith(
-                            color: TheWeColor.black500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Text(account.department),
-                    Text(account.position),
-                    Text(account.hireDate),
-                    Text(adminLeaveDays(state.annualLeaveDaysFor(account))),
-                    Text(adminLeaveDays(state.monthlyLeaveDaysFor(account))),
-                    Text(
-                      adminLeaveDays(state.remainingAnnualLeaveFor(account)),
-                    ),
-                    Align(
-                      alignment: Alignment.center,
-                      child: Chip(
-                        backgroundColor: account.isAdmin
-                            ? TheWeColor.blueSurface
-                            : TheWeColor.background,
-                        side: BorderSide(
-                          color: TheWeColor.black300.withValues(alpha: .2),
-                        ),
-                        label: Text(account.isAdmin ? '관리자' : '일반'),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () => _editEmployee(context, ref, account),
-                      icon: const Icon(Icons.edit_outlined),
-                      tooltip: '계정 수정',
-                    ),
-                  ],
-                )
-                .toList(),
-          ),
+        _EmployeeManagementDirectory(
+          state: state,
+          onEdit: (account) => _editEmployee(context, ref, account),
+        ),
       ],
     );
   }
@@ -375,8 +309,239 @@ class AdminEmployeeManagement extends ConsumerWidget {
   }
 }
 
+enum _EmployeeDirectoryMode { all, department, name }
+
+class _EmployeeManagementDirectory extends StatefulWidget {
+  const _EmployeeManagementDirectory({
+    required this.state,
+    required this.onEdit,
+  });
+
+  final ApprovalDashboardState state;
+  final ValueChanged<EmployeeAccount> onEdit;
+
+  @override
+  State<_EmployeeManagementDirectory> createState() =>
+      _EmployeeManagementDirectoryState();
+}
+
+class _EmployeeManagementDirectoryState
+    extends State<_EmployeeManagementDirectory> {
+  final _nameSearch = TextEditingController();
+  _EmployeeDirectoryMode _mode = _EmployeeDirectoryMode.all;
+  String? _department;
+
+  @override
+  void dispose() {
+    _nameSearch.dispose();
+    super.dispose();
+  }
+
+  List<EmployeeAccount> _visibleAccounts() {
+    final accounts = widget.state.accounts
+        .where((account) => !account.isSystemAdministrator)
+        .toList();
+    switch (_mode) {
+      case _EmployeeDirectoryMode.all:
+        return accounts..sort(compareEmployeeOrganizationOrder);
+      case _EmployeeDirectoryMode.department:
+        final department = _effectiveDepartment;
+        return accounts
+            .where((account) => account.department.trim() == department)
+            .toList()
+          ..sort(compareEmployeeOrganizationOrder);
+      case _EmployeeDirectoryMode.name:
+        final query = _nameSearch.text.trim().toLowerCase();
+        final filtered = accounts
+            .where(
+              (account) =>
+                  query.isEmpty || account.name.toLowerCase().contains(query),
+            )
+            .toList();
+        filtered.sort((left, right) {
+          final nameComparison = left.name.compareTo(right.name);
+          if (nameComparison != 0) return nameComparison;
+          return left.id.compareTo(right.id);
+        });
+        return filtered;
+    }
+  }
+
+  String get _effectiveDepartment {
+    final departments = widget.state.departments;
+    if (departments.contains(_department)) return _department!;
+    return departments.firstOrNull ?? '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final mobile = MediaQuery.sizeOf(context).width < 700;
+    final accounts = _visibleAccounts();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            _filterChip(
+              key: const ValueKey('employee-filter-all'),
+              label: '전체',
+              mode: _EmployeeDirectoryMode.all,
+            ),
+            _filterChip(
+              key: const ValueKey('employee-filter-department'),
+              label: '부서별',
+              mode: _EmployeeDirectoryMode.department,
+            ),
+            _filterChip(
+              key: const ValueKey('employee-filter-name'),
+              label: '이름',
+              mode: _EmployeeDirectoryMode.name,
+            ),
+            if (_mode == _EmployeeDirectoryMode.department)
+              SizedBox(
+                width: mobile ? 210 : 250,
+                child: DropdownButtonFormField<String>(
+                  key: const ValueKey('employee-department-filter'),
+                  initialValue: _effectiveDepartment.isEmpty
+                      ? null
+                      : _effectiveDepartment,
+                  decoration: const InputDecoration(
+                    labelText: '부서 선택',
+                    isDense: true,
+                  ),
+                  items: widget.state.departments
+                      .map(
+                        (department) => DropdownMenuItem(
+                          value: department,
+                          child: Text(department),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _department = value),
+                ),
+              ),
+            if (_mode == _EmployeeDirectoryMode.name)
+              SizedBox(
+                width: mobile ? 240 : 300,
+                child: TextField(
+                  key: const ValueKey('employee-name-filter'),
+                  controller: _nameSearch,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: '이름 검색',
+                    hintText: '직원 이름을 입력하세요.',
+                    prefixIcon: Icon(Icons.search),
+                    isDense: true,
+                  ),
+                ),
+              ),
+            Text(
+              '${accounts.length}명',
+              key: const ValueKey('employee-filter-count'),
+              style: TheWeTextStyle.caption.copyWith(
+                color: TheWeColor.black500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        if (accounts.isEmpty)
+          Container(
+            key: const ValueKey('employee-filter-empty'),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 34, horizontal: 20),
+            decoration: adminSurface(),
+            alignment: Alignment.center,
+            child: Text(
+              '조건에 맞는 직원이 없습니다.',
+              style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+            ),
+          )
+        else if (mobile)
+          ...accounts.map(
+            (account) => _EmployeeCard(
+              key: ValueKey('employee-row-${account.id}'),
+              account: account,
+              state: widget.state,
+              onEdit: () => widget.onEdit(account),
+            ),
+          )
+        else
+          TheWeDataTable(
+            headers: const [
+              '이름/아이디',
+              '부서',
+              '직위',
+              '입사일',
+              '연차',
+              '월차',
+              '잔여',
+              '권한',
+              '관리',
+            ],
+            columnFlexes: const [1.6, 1.15, .9, 1.15, .8, .8, .8, .85, .65],
+            minWidth: 1320,
+            rows: accounts.map((account) => _employeeRow(account)).toList(),
+          ),
+      ],
+    );
+  }
+
+  Widget _filterChip({
+    required Key key,
+    required String label,
+    required _EmployeeDirectoryMode mode,
+  }) => ChoiceChip(
+    key: key,
+    label: Text(label),
+    selected: _mode == mode,
+    onSelected: (_) => setState(() => _mode = mode),
+  );
+
+  List<Widget> _employeeRow(EmployeeAccount account) => <Widget>[
+    Column(
+      key: ValueKey('employee-row-${account.id}'),
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(account.name),
+        const SizedBox(height: 3),
+        Text(
+          account.id,
+          style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+        ),
+      ],
+    ),
+    Text(account.department),
+    Text(account.position),
+    Text(account.hireDate),
+    Text(adminLeaveDays(widget.state.annualLeaveDaysFor(account))),
+    Text(adminLeaveDays(widget.state.monthlyLeaveDaysFor(account))),
+    Text(adminLeaveDays(widget.state.remainingAnnualLeaveFor(account))),
+    Align(
+      alignment: Alignment.center,
+      child: Chip(
+        backgroundColor: account.isAdmin
+            ? TheWeColor.blueSurface
+            : TheWeColor.background,
+        side: BorderSide(color: TheWeColor.black300.withValues(alpha: .2)),
+        label: Text(account.isAdmin ? '관리자' : '일반'),
+      ),
+    ),
+    IconButton(
+      onPressed: () => widget.onEdit(account),
+      icon: const Icon(Icons.edit_outlined),
+      tooltip: '계정 수정',
+    ),
+  ];
+}
+
 class _EmployeeCard extends StatelessWidget {
   const _EmployeeCard({
+    super.key,
     required this.account,
     required this.state,
     required this.onEdit,
