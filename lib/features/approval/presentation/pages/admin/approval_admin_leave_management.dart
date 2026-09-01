@@ -367,6 +367,7 @@ class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final mobile = MediaQuery.sizeOf(context).width < 700;
+    final orderedAccounts = state.organizationOrderedAccounts;
     return Dialog(
       backgroundColor: TheWeColor.surfaceAlt,
       insetPadding: EdgeInsets.all(mobile ? 12 : 32),
@@ -392,10 +393,10 @@ class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
               Expanded(
                 child: mobile
                     ? ListView.separated(
-                        itemCount: state.accounts.length,
+                        itemCount: orderedAccounts.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 8),
                         itemBuilder: (context, index) {
-                          final account = state.accounts[index];
+                          final account = orderedAccounts[index];
                           return ListTile(
                             tileColor: TheWeColor.white,
                             shape: RoundedRectangleBorder(
@@ -421,7 +422,7 @@ class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
                         headers: const ['이름', '직급', '부서', '연차 현황'],
                         columnFlexes: const [1.4, 1.1, 1.5, 2.4],
                         minWidth: 860,
-                        rows: state.accounts.map((account) {
+                        rows: orderedAccounts.map((account) {
                           final total = state.totalAnnualLeaveFor(account);
                           final used = state.usedAnnualLeaveFor(account.id);
                           final pending = state.pendingAnnualLeaveFor(

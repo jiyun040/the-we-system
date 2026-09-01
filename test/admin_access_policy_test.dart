@@ -122,6 +122,72 @@ void main() {
     expect(state.selectedOrgMember?.name, '정효정');
   });
 
+  test('관리자 직원 목록은 부서 순서 다음 직급 순서로 표시한다', () {
+    final state = signedOutApprovalState.copyWith(
+      accounts: [
+        _account(
+          id: 'accounting',
+          name: '김효민',
+          department: '경리부',
+          position: '대리',
+          isAdmin: false,
+        ),
+        _account(
+          id: 'manager',
+          name: '송형숙',
+          department: '관리부',
+          position: '부장',
+          isAdmin: false,
+        ),
+        _account(
+          id: 'research',
+          name: '조용덕',
+          department: '연구소',
+          position: '부장',
+          isAdmin: false,
+        ),
+        _account(
+          id: 'ceo',
+          name: '조상훈',
+          department: '대표이사',
+          position: '대표',
+          isAdmin: false,
+        ),
+        _account(
+          id: 'director',
+          name: '정효정',
+          department: '관리부',
+          position: '이사',
+          isAdmin: false,
+        ),
+        _account(
+          id: 'construction',
+          name: '김현정',
+          department: '공무',
+          position: '대리',
+          isAdmin: false,
+        ),
+        _account(
+          id: 'technology',
+          name: '조세훈',
+          department: '기술부',
+          position: '전무',
+          isAdmin: false,
+        ),
+      ],
+    );
+
+    expect(state.organizationOrderedAccounts.map((account) => account.name), [
+      '조상훈',
+      '조세훈',
+      '조용덕',
+      '정효정',
+      '송형숙',
+      '김현정',
+      '김효민',
+    ]);
+  });
+
   testWidgets('조직도 및 부서 관리 화면은 가용 너비에 좌측 정렬된다', (tester) async {
     final account = _account(
       id: 'account',

@@ -7,6 +7,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mobile = MediaQuery.sizeOf(context).width < 700;
+    final orderedAccounts = state.organizationOrderedAccounts;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -29,7 +30,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
         ),
         const SizedBox(height: 14),
         if (mobile)
-          ...state.accounts.map(
+          ...orderedAccounts.map(
             (account) => _EmployeeCard(
               account: account,
               onEdit: () => _editEmployee(context, ref, account),
@@ -40,7 +41,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
             headers: const ['이름/아이디', '부서', '직위', '입사일', '권한', '관리'],
             columnFlexes: const [1.65, 1.25, 1, 1.25, .9, .7],
             minWidth: 1050,
-            rows: state.accounts
+            rows: orderedAccounts
                 .map(
                   (account) => <Widget>[
                     Column(

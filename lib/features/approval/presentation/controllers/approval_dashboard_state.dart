@@ -364,6 +364,11 @@ class ApprovalDashboardState {
       ..sort(compareEmployeeOrganizationOrder);
   }
 
+  List<EmployeeAccount> get organizationOrderedAccounts {
+    return accounts.where((account) => !account.isSystemAdministrator).toList()
+      ..sort(compareEmployeeDepartmentAndPositionOrder);
+  }
+
   EmployeeAccount? get selectedOrgMember {
     final members = selectedDepartmentMembers;
     if (members.isEmpty) {
@@ -558,6 +563,18 @@ int compareEmployeeOrganizationOrder(
   final positionComparison = leftRank.compareTo(rightRank);
   if (positionComparison != 0) return positionComparison;
   return left.name.compareTo(right.name);
+}
+
+int compareEmployeeDepartmentAndPositionOrder(
+  EmployeeAccount left,
+  EmployeeAccount right,
+) {
+  final departmentComparison = _compareDepartments(
+    left.department.trim(),
+    right.department.trim(),
+  );
+  if (departmentComparison != 0) return departmentComparison;
+  return compareEmployeeOrganizationOrder(left, right);
 }
 
 int _positionRank(String position) {
