@@ -66,6 +66,76 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     }
   }
 
+  Future<String?> saveNotice({
+    String? noticeId,
+    required String title,
+    required String content,
+    required bool isPinned,
+  }) async {
+    final current = currentDashboardState;
+    if (current?.canManageNotices != true) {
+      return 'OTP 관리자 계정만 공지사항을 관리할 수 있습니다.';
+    }
+    final normalizedTitle = title.trim();
+    final normalizedContent = content.trim();
+    if (normalizedTitle.isEmpty || normalizedContent.isEmpty) {
+      return '공지 제목과 내용을 모두 입력해 주세요.';
+    }
+    if (normalizedTitle.length > 200) {
+      return '공지 제목은 200자 이하로 입력해 주세요.';
+    }
+    try {
+      final notice = noticeId == null
+          ? await api.createNotice(
+              title: normalizedTitle,
+              content: normalizedContent,
+              isPinned: isPinned,
+            )
+          : await api.updateNotice(
+              noticeId,
+              title: normalizedTitle,
+              content: normalizedContent,
+              isPinned: isPinned,
+            );
+      setApprovalDashboardState(this, (value) {
+        final notices = noticeId == null
+            ? [notice, ...value.notices]
+            : value.notices
+                  .map((item) => item.id == noticeId ? notice : item)
+                  .toList();
+        notices.sort(_compareNotices);
+        return value.copyWith(notices: notices);
+      });
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(error, fallback: '공지사항을 저장하지 못했습니다.');
+    }
+  }
+
+  Future<String?> deleteNotice(String noticeId) async {
+    if (currentDashboardState?.canManageNotices != true) {
+      return 'OTP 관리자 계정만 공지사항을 관리할 수 있습니다.';
+    }
+    try {
+      await api.deleteNotice(noticeId);
+      setApprovalDashboardState(
+        this,
+        (value) => value.copyWith(
+          notices: value.notices
+              .where((notice) => notice.id != noticeId)
+              .toList(),
+        ),
+      );
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(error, fallback: '공지사항을 삭제하지 못했습니다.');
+    }
+  }
+
   String? updateEmployee({
     required String userId,
     required String department,
@@ -856,3 +926,8 @@ bool _validLeaveDays(double? value) =>
 
 List<String> _replaceUserId(List<String> values, String oldId, String newId) =>
     values.map((value) => value == oldId ? newId : value).toList();
+
+int _compareNotices(PortalNotice left, PortalNotice right) {
+  if (left.isPinned != right.isPinned) return left.isPinned ? -1 : 1;
+  return right.createdAt.compareTo(left.createdAt);
+}

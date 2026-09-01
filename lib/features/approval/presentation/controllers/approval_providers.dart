@@ -147,6 +147,7 @@ ApprovalDashboardState _remoteState(
     adminMode: adminMode,
     restrictedDocumentIds: remote.restrictedDocumentIds,
     leaveRequests: remote.leaveRequests,
+    notices: remote.notices,
     acknowledgedLeaveRequestIds: remote.acknowledgedLeaveRequestIds,
     portalName: remote.portalName,
     customLogoBytes: remote.customLogoBytes,

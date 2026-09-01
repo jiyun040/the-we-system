@@ -19,6 +19,7 @@ class RemoteBootstrapData {
     required this.documents,
     required this.restrictedDocumentIds,
     required this.leaveRequests,
+    required this.notices,
     required this.acknowledgedLeaveRequestIds,
     required this.portalName,
     required this.annualLeaveByYear,
@@ -42,6 +43,7 @@ class RemoteBootstrapData {
   final List<ApprovalDocument> documents;
   final Set<String> restrictedDocumentIds;
   final List<LeaveRequest> leaveRequests;
+  final List<PortalNotice> notices;
   final Set<String> acknowledgedLeaveRequestIds;
   final String portalName;
   final Map<int, int> annualLeaveByYear;
@@ -140,6 +142,35 @@ class TheWeApiService {
     );
   });
 
+  Future<PortalNotice> createNotice({
+    required String title,
+    required String content,
+    required bool isPinned,
+  }) => _guard(() async {
+    final response = await _dio.post<Map<String, dynamic>>(
+      '/notices',
+      data: {'title': title, 'content': content, 'isPinned': isPinned},
+    );
+    return _notice(response.data ?? <String, dynamic>{});
+  });
+
+  Future<PortalNotice> updateNotice(
+    String id, {
+    required String title,
+    required String content,
+    required bool isPinned,
+  }) => _guard(() async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/notices/$id',
+      data: {'title': title, 'content': content, 'isPinned': isPinned},
+    );
+    return _notice(response.data ?? <String, dynamic>{});
+  });
+
+  Future<void> deleteNotice(String id) => _guard(() async {
+    await _dio.delete<void>('/notices/$id');
+  });
+
   Future<RemoteBootstrapData> fetchBootstrap() => _guard(() async {
     final response = await _dio.get<Map<String, dynamic>>('/bootstrap');
     final data = response.data ?? <String, dynamic>{};
@@ -175,6 +206,9 @@ class TheWeApiService {
       leaveRequests: _list(
         data['leaveRequests'],
       ).map((item) => _leaveRequest(_map(item))).toList(),
+      notices: _list(
+        data['notices'],
+      ).map((item) => _notice(_map(item))).toList(),
       acknowledgedLeaveRequestIds: _strings(
         data['acknowledgedLeaveRequestIds'],
       ).toSet(),
@@ -472,4 +506,14 @@ LeaveRequest _leaveRequest(Map<String, dynamic> data) => LeaveRequest(
   rejectedBy: data['rejectedBy']?.toString() ?? '',
   directEntry: data['directEntry'] == true,
   registeredBy: data['registeredBy']?.toString() ?? '',
+);
+
+PortalNotice _notice(Map<String, dynamic> data) => PortalNotice(
+  id: data['id']?.toString() ?? '',
+  title: data['title']?.toString() ?? '',
+  content: data['content']?.toString() ?? '',
+  authorName: data['authorName']?.toString() ?? '',
+  createdAt: data['createdAt']?.toString() ?? '',
+  updatedAt: data['updatedAt']?.toString() ?? '',
+  isPinned: data['isPinned'] == true,
 );

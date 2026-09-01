@@ -9,6 +9,7 @@ class ApprovalDashboardState {
     required this.formTemplates,
     required this.documents,
     required this.annualLeaveByYear,
+    this.notices = const <PortalNotice>[],
     this.organizationDepartments = const <String>[],
     this.monthlyLeavePerMonth = 1,
     this.currentUser,
@@ -47,6 +48,7 @@ class ApprovalDashboardState {
   final List<ApprovalFormTemplate> formTemplates;
   final List<ApprovalDocument> documents;
   final Map<int, int> annualLeaveByYear;
+  final List<PortalNotice> notices;
   final List<String> organizationDepartments;
   final int monthlyLeavePerMonth;
   final EmployeeAccount? currentUser;
@@ -76,6 +78,7 @@ class ApprovalDashboardState {
     List<ApprovalFormTemplate>? formTemplates,
     List<ApprovalDocument>? documents,
     Map<int, int>? annualLeaveByYear,
+    List<PortalNotice>? notices,
     List<String>? organizationDepartments,
     int? monthlyLeavePerMonth,
     EmployeeAccount? currentUser,
@@ -108,6 +111,7 @@ class ApprovalDashboardState {
       formTemplates: formTemplates ?? this.formTemplates,
       documents: documents ?? this.documents,
       annualLeaveByYear: annualLeaveByYear ?? this.annualLeaveByYear,
+      notices: notices ?? this.notices,
       organizationDepartments:
           organizationDepartments ?? this.organizationDepartments,
       monthlyLeavePerMonth: monthlyLeavePerMonth ?? this.monthlyLeavePerMonth,
@@ -156,6 +160,9 @@ class ApprovalDashboardState {
   bool get isAdminMode => isAdmin && adminMode;
 
   bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
+
+  bool get canManageNotices =>
+      isAdminMode && currentUser?.canChangeAdminOtp == true;
 
   bool isAppEnabled(String appId) => enabledAppIds.contains(appId);
 

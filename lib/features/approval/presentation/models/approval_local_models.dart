@@ -5,6 +5,26 @@ const designatedAdminName = '김효민';
 const designatedAdminDepartment = '경리부';
 const designatedAdminPosition = '대리';
 
+class PortalNotice {
+  const PortalNotice({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.authorName,
+    required this.createdAt,
+    required this.updatedAt,
+    this.isPinned = false,
+  });
+
+  final String id;
+  final String title;
+  final String content;
+  final String authorName;
+  final String createdAt;
+  final String updatedAt;
+  final bool isPinned;
+}
+
 class EmployeeAccount {
   const EmployeeAccount({
     required this.id,

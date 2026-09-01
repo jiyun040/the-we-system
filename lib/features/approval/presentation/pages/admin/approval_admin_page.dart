@@ -14,6 +14,7 @@ import 'approval_admin_apps_forms.dart';
 import 'approval_admin_dashboard_access.dart';
 import 'approval_admin_direct_leave.dart';
 import 'approval_admin_document_access.dart';
+import 'approval_admin_notices.dart';
 import 'approval_admin_people_organization.dart';
 import 'approval_admin_settings.dart';
 
@@ -35,6 +36,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
     (Icons.account_tree_outlined, '조직 관리'),
     (Icons.apps_outlined, 'APP 관리'),
     (Icons.tune_outlined, '통합 설정'),
+    (Icons.campaign_outlined, '공지 관리'),
   ];
 
   @override
@@ -47,6 +49,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
         data: (state) => state.isAdminMode && mobile
             ? _AdminBottomNavigation(
                 selectedIndex: selectedIndex,
+                canManageNotices: state.canManageNotices,
                 onSelected: (value) => setState(() => selectedIndex = value),
               )
             : null,
@@ -69,6 +72,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                     selectedIndex: selectedIndex,
                     portalName: state.portalName,
                     logoBytes: state.customLogoBytes,
+                    canManageNotices: state.canManageNotices,
                     onSelected: (value) =>
                         setState(() => selectedIndex = value),
                     onLeave: _leaveAdmin,
@@ -107,7 +111,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                     state: state,
                                   ),
                                   4 => AdminAppManagement(state: state),
-                                  _ =>
+                                  5 =>
                                     !state.settingsPasswordEnabled ||
                                             settingsUnlocked
                                         ? AdminIntegratedSettings(state: state)
@@ -116,6 +120,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                               () => settingsUnlocked = true,
                                             ),
                                           ),
+                                  _ => AdminNoticeManagement(state: state),
                                 },
                               ),
                             ),
@@ -162,7 +167,9 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
       showDragHandle: true,
       builder: (context) => ListView.builder(
         shrinkWrap: true,
-        itemCount: destinations.length,
+        itemCount: state.canManageNotices
+            ? destinations.length
+            : destinations.length - 1,
         itemBuilder: (context, index) => ListTile(
           selected: selectedIndex == index,
           leading: Icon(destinations[index].$1),
@@ -258,6 +265,7 @@ class _AdminNavigation extends StatelessWidget {
     required this.selectedIndex,
     required this.portalName,
     required this.logoBytes,
+    required this.canManageNotices,
     required this.onSelected,
     required this.onLeave,
     required this.onLogout,
@@ -265,6 +273,7 @@ class _AdminNavigation extends StatelessWidget {
   final int selectedIndex;
   final String portalName;
   final Uint8List? logoBytes;
+  final bool canManageNotices;
   final ValueChanged<int> onSelected;
   final VoidCallback onLeave;
   final VoidCallback onLogout;
@@ -293,24 +302,27 @@ class _AdminNavigation extends StatelessWidget {
             style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
           ),
           const SizedBox(height: 30),
-          ...List.generate(_ApprovalAdminPageState.destinations.length, (
-            index,
-          ) {
-            final item = _ApprovalAdminPageState.destinations[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: ListTile(
-                selected: selectedIndex == index,
-                selectedTileColor: TheWeColor.blueSurface,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          ...List.generate(
+            canManageNotices
+                ? _ApprovalAdminPageState.destinations.length
+                : _ApprovalAdminPageState.destinations.length - 1,
+            (index) {
+              final item = _ApprovalAdminPageState.destinations[index];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: ListTile(
+                  selected: selectedIndex == index,
+                  selectedTileColor: TheWeColor.blueSurface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: Icon(item.$1),
+                  title: Text(item.$2),
+                  onTap: () => onSelected(index),
                 ),
-                leading: Icon(item.$1),
-                title: Text(item.$2),
-                onTap: () => onSelected(index),
-              ),
-            );
-          }),
+              );
+            },
+          ),
           const Spacer(),
           OutlinedButton.icon(
             onPressed: onLeave,
@@ -378,10 +390,12 @@ class _AdminHeader extends StatelessWidget {
 class _AdminBottomNavigation extends StatelessWidget {
   const _AdminBottomNavigation({
     required this.selectedIndex,
+    required this.canManageNotices,
     required this.onSelected,
   });
 
   final int selectedIndex;
+  final bool canManageNotices;
   final ValueChanged<int> onSelected;
 
   @override
@@ -401,7 +415,11 @@ class _AdminBottomNavigation extends StatelessWidget {
     ),
     onDestinationSelected: onSelected,
     destinations: [
-      for (final destination in _ApprovalAdminPageState.destinations)
+      for (final destination in _ApprovalAdminPageState.destinations.take(
+        canManageNotices
+            ? _ApprovalAdminPageState.destinations.length
+            : _ApprovalAdminPageState.destinations.length - 1,
+      ))
         NavigationDestination(
           icon: Icon(destination.$1),
           selectedIcon: Icon(destination.$1, color: TheWeColor.blue300),

@@ -89,7 +89,9 @@ class ApprovalHomeOverview extends StatelessWidget {
         final processingDocuments = state.dashboard.processingDocuments;
         final rightChild = Column(
           children: [
-            const _PortalSurface(child: ApprovalHomeNoticePanel()),
+            _PortalSurface(
+              child: ApprovalHomeNoticePanel(notices: state.notices),
+            ),
             if (state.isAppEnabled(PortalAppId.approval) &&
                 processingDocuments.isNotEmpty) ...[
               const SizedBox(height: 18),
