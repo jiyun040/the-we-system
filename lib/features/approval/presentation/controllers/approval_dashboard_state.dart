@@ -338,15 +338,25 @@ class ApprovalDashboardState {
   );
 
   List<String> get departments {
-    final values =
-        <String>{
-            ...organizationDepartments.map((department) => department.trim()),
-            ...accounts
-                .where((account) => !account.isSystemAdministrator)
-                .map((account) => account.department.trim()),
-          }.where((department) => department.isNotEmpty).toList()
+    final ordered = <String>[];
+    for (final department in organizationDepartments) {
+      final normalized = department.trim();
+      if (normalized.isNotEmpty && !ordered.contains(normalized)) {
+        ordered.add(normalized);
+      }
+    }
+    final missing =
+        accounts
+            .where((account) => !account.isSystemAdministrator)
+            .map((account) => account.department.trim())
+            .where(
+              (department) =>
+                  department.isNotEmpty && !ordered.contains(department),
+            )
+            .toSet()
+            .toList()
           ..sort(_compareDepartments);
-    return values;
+    return [...ordered, ...missing];
   }
 
   List<EmployeeAccount> get selectedDepartmentMembers {
@@ -365,8 +375,28 @@ class ApprovalDashboardState {
   }
 
   List<EmployeeAccount> get organizationOrderedAccounts {
+    final departmentOrder = departments;
     return accounts.where((account) => !account.isSystemAdministrator).toList()
-      ..sort(compareEmployeeDepartmentAndPositionOrder);
+      ..sort((left, right) {
+        final leftIndex = departmentOrder.indexOf(left.department.trim());
+        final rightIndex = departmentOrder.indexOf(right.department.trim());
+        final departmentComparison = leftIndex.compareTo(rightIndex);
+        if (departmentComparison != 0) return departmentComparison;
+        return compareEmployeeOrganizationOrder(left, right);
+      });
+  }
+
+  List<String> reorderedDepartments(String department, int offset) {
+    final ordered = departments;
+    final currentIndex = ordered.indexOf(department);
+    final targetIndex = currentIndex + offset;
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= ordered.length) {
+      return ordered;
+    }
+    final reordered = [...ordered];
+    final moved = reordered.removeAt(currentIndex);
+    reordered.insert(targetIndex, moved);
+    return reordered;
   }
 
   EmployeeAccount? get selectedOrgMember {
@@ -563,18 +593,6 @@ int compareEmployeeOrganizationOrder(
   final positionComparison = leftRank.compareTo(rightRank);
   if (positionComparison != 0) return positionComparison;
   return left.name.compareTo(right.name);
-}
-
-int compareEmployeeDepartmentAndPositionOrder(
-  EmployeeAccount left,
-  EmployeeAccount right,
-) {
-  final departmentComparison = _compareDepartments(
-    left.department.trim(),
-    right.department.trim(),
-  );
-  if (departmentComparison != 0) return departmentComparison;
-  return compareEmployeeOrganizationOrder(left, right);
 }
 
 int _positionRank(String position) {

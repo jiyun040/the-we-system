@@ -468,7 +468,7 @@ class AdminOrganizationManagement extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          '부서와 구성원을 추가·수정·삭제할 수 있으며 전자결재 부서 문서함에 자동 연결됩니다.',
+          '부서 순서를 변경하고 구성원을 추가·수정·삭제할 수 있으며 전자결재 부서 문서함에 자동 연결됩니다.',
           style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
         ),
         const SizedBox(height: 18),
@@ -480,7 +480,9 @@ class AdminOrganizationManagement extends ConsumerWidget {
             return Wrap(
               spacing: 16,
               runSpacing: 16,
-              children: state.departments.map((department) {
+              children: state.departments.asMap().entries.map((entry) {
+                final index = entry.key;
+                final department = entry.value;
                 final protectsHeadcount = department == '대표이사';
                 final members =
                     state.accounts
@@ -507,6 +509,16 @@ class AdminOrganizationManagement extends ConsumerWidget {
                               department,
                               style: TheWeTextStyle.subtitle,
                             ),
+                          ),
+                          _DepartmentOrderButtons(
+                            department: department,
+                            canMoveUp: index > 0,
+                            canMoveDown: index < state.departments.length - 1,
+                            onMove: (offset) => ref
+                                .read(
+                                  approvalDashboardControllerProvider.notifier,
+                                )
+                                .moveDepartment(department, offset),
                           ),
                           Chip(label: Text('${members.length}명')),
                           if (!protectsHeadcount)
@@ -596,6 +608,57 @@ class AdminOrganizationManagement extends ConsumerWidget {
         ),
       ],
     ),
+  );
+}
+
+class _DepartmentOrderButtons extends StatelessWidget {
+  const _DepartmentOrderButtons({
+    required this.department,
+    required this.canMoveUp,
+    required this.canMoveDown,
+    required this.onMove,
+  });
+
+  final String department;
+  final bool canMoveUp;
+  final bool canMoveDown;
+  final ValueChanged<int> onMove;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: 28,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _button(
+          key: ValueKey('move-department-up-$department'),
+          icon: Icons.keyboard_arrow_up,
+          tooltip: '$department 위로 이동',
+          onPressed: canMoveUp ? () => onMove(-1) : null,
+        ),
+        _button(
+          key: ValueKey('move-department-down-$department'),
+          icon: Icons.keyboard_arrow_down,
+          tooltip: '$department 아래로 이동',
+          onPressed: canMoveDown ? () => onMove(1) : null,
+        ),
+      ],
+    ),
+  );
+
+  Widget _button({
+    required Key key,
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback? onPressed,
+  }) => IconButton(
+    key: key,
+    onPressed: onPressed,
+    icon: Icon(icon, size: 18),
+    tooltip: tooltip,
+    padding: EdgeInsets.zero,
+    constraints: const BoxConstraints.tightFor(width: 28, height: 26),
+    visualDensity: VisualDensity.compact,
   );
 }
 

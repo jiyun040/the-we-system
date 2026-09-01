@@ -302,6 +302,13 @@ class TheWeApiService {
     );
   });
 
+  Future<void> reorderDepartments(List<String> departments) => _guard(() async {
+    await _dio.patch<Map<String, dynamic>>(
+      '/organization/departments/reorder',
+      data: {'departments': departments},
+    );
+  });
+
   Future<void> renameDepartment(String currentName, String nextName) =>
       _guard(() async {
         final response = await _dio.get<Map<String, dynamic>>(

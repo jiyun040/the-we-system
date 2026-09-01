@@ -510,6 +510,18 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     return null;
   }
 
+  void moveDepartment(String name, int offset) {
+    final current = currentDashboardState;
+    if (current == null) return;
+    final reordered = current.reorderedDepartments(name, offset);
+    if (reordered.indexOf(name) == current.departments.indexOf(name)) return;
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(organizationDepartments: reordered),
+    );
+    syncRemote(() => api.reorderDepartments(reordered));
+  }
+
   String? deleteDepartment(String name) {
     final current = currentDashboardState;
     if (current == null) return '조직 정보를 불러오지 못했습니다.';

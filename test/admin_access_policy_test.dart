@@ -22,7 +22,7 @@ EmployeeAccount _account({
 );
 
 void main() {
-  test('조직도 부서는 지정 순서로 표시하고 추가 부서는 가나다순으로 정렬한다', () {
+  test('조직도 부서는 서버에 저장된 순서를 유지하고 누락 부서는 뒤에 추가한다', () {
     final state = signedOutApprovalState.copyWith(
       organizationDepartments: const ['추가부서', '연구소', '대표이사', '기술부', '가나다부서'],
       accounts: [
@@ -51,15 +51,32 @@ void main() {
     );
 
     expect(state.departments, [
+      '추가부서',
+      '연구소',
       '대표이사',
       '기술부',
-      '연구소',
+      '가나다부서',
       '관리부',
       '공무',
       '경리부',
-      '가나다부서',
-      '추가부서',
     ]);
+  });
+
+  test('관리자가 조직도 부서를 한 칸씩 이동할 수 있다', () {
+    final state = signedOutApprovalState.copyWith(
+      organizationDepartments: const ['대표이사', '기술부', '연구소', '관리부', '공무', '경리부'],
+    );
+
+    expect(state.reorderedDepartments('관리부', -1), [
+      '대표이사',
+      '기술부',
+      '관리부',
+      '연구소',
+      '공무',
+      '경리부',
+    ]);
+    expect(state.reorderedDepartments('대표이사', -1), state.departments);
+    expect(state.reorderedDepartments('경리부', 1), state.departments);
   });
 
   test('슈퍼어드민과 김효민 대리만 관리자 모드에 접근한다', () {
@@ -230,6 +247,8 @@ void main() {
     expect(find.byKey(const ValueKey('department-card-신규부서')), findsOneWidget);
     expect(find.byTooltip('신규부서 구성원 추가'), findsOneWidget);
     expect(find.byTooltip('대표이사 구성원 추가'), findsNothing);
+    expect(find.byTooltip('신규부서 위로 이동'), findsOneWidget);
+    expect(find.byTooltip('신규부서 아래로 이동'), findsOneWidget);
     expect(find.byTooltip('부서명 수정'), findsNWidgets(3));
     expect(find.byTooltip('부서 삭제'), findsNWidgets(3));
     expect(find.byTooltip('김효민 정보 수정'), findsOneWidget);
