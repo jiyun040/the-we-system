@@ -112,7 +112,7 @@ class _DocumentAccessManagementState
           );
           final accessPanel = _DocumentCategoryAccessPanel(
             category: selectedCategory,
-            accounts: widget.state.accounts,
+            accounts: widget.state.organizationOrderedAccounts,
             organizationWide: _isOrganizationWide(selectedCategory),
             selectedUserIds:
                 draftViewerIds[selectedCategory] ?? const <String>{},
@@ -414,9 +414,13 @@ class _DocumentAccessOrganizationDialogState
 
   @override
   Widget build(BuildContext context) {
-    final departments =
-        widget.accounts.map((account) => account.department).toSet().toList()
-          ..sort();
+    final departments = <String>[];
+    for (final account in widget.accounts) {
+      final department = account.department.trim();
+      if (department.isNotEmpty && !departments.contains(department)) {
+        departments.add(department);
+      }
+    }
     return AlertDialog(
       key: const ValueKey('document-access-organization-dialog'),
       backgroundColor: TheWeColor.white,
@@ -450,6 +454,7 @@ class _DocumentAccessOrganizationDialogState
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: ExpansionTile(
+                  key: ValueKey('document-access-department-$department'),
                   tilePadding: const EdgeInsets.symmetric(horizontal: 12),
                   childrenPadding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                   shape: const RoundedRectangleBorder(side: BorderSide.none),
@@ -498,6 +503,9 @@ class _DocumentAccessOrganizationDialogState
                             color: TheWeColor.white,
                             borderRadius: BorderRadius.circular(9),
                             child: CheckboxListTile(
+                              key: ValueKey(
+                                'document-access-user-${account.id}',
+                              ),
                               value: selectedUserIds.contains(account.id),
                               activeColor: TheWeColor.blue300,
                               shape: RoundedRectangleBorder(
