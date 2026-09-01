@@ -229,6 +229,7 @@ class LeaveRequest {
   final String registeredBy;
 
   LeaveRequest copyWith({
+    String? userId,
     String? status,
     String? ceoStatus,
     String? rejectedBy,
@@ -236,7 +237,7 @@ class LeaveRequest {
     String? registeredBy,
   }) => LeaveRequest(
     id: id,
-    userId: userId,
+    userId: userId ?? this.userId,
     type: type,
     startDate: startDate,
     endDate: endDate,

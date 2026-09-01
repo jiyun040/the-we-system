@@ -239,6 +239,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
     WidgetRef ref,
     EmployeeAccount account,
   ) async {
+    final id = TextEditingController(text: account.id);
     final name = TextEditingController(text: account.name);
     final email = TextEditingController(text: account.email);
     final department = TextEditingController(text: account.department);
@@ -266,6 +267,15 @@ class AdminEmployeeManagement extends ConsumerWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  TextField(
+                    key: const ValueKey('employee-id-edit-field'),
+                    controller: id,
+                    decoration: const InputDecoration(
+                      labelText: '아이디',
+                      helperText: '변경 후에는 새 아이디로 로그인합니다.',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: name,
                     decoration: const InputDecoration(labelText: '이름'),
@@ -338,6 +348,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     .read(approvalDashboardControllerProvider.notifier)
                     .updateEmployee(
                       userId: account.id,
+                      id: id.text,
                       name: name.text,
                       email: email.text,
                       department: department.text,

@@ -71,6 +71,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String department,
     required String position,
     required String hireDate,
+    String? id,
     String? name,
     String? email,
     String? password,
@@ -85,12 +86,14 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         .where((item) => item.id == userId)
         .firstOrNull;
     if (account == null) return '수정할 직원을 찾지 못했습니다.';
+    final normalizedId = (id ?? account.id).trim();
     final normalizedName = (name ?? account.name).trim();
     final normalizedEmail = (email ?? account.email).trim();
     final normalizedDepartment = department.trim();
     final normalizedPosition = position.trim();
     final normalizedHireDate = hireDate.trim();
     if ([
+      normalizedId,
       normalizedName,
       normalizedEmail,
       normalizedDepartment,
@@ -98,6 +101,16 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       normalizedHireDate,
     ].any((value) => value.isEmpty)) {
       return '필수 항목을 모두 입력해 주세요.';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9@.+_-]+$').hasMatch(normalizedId)) {
+      return '아이디는 영문, 숫자와 @/./+/-/_만 사용할 수 있습니다.';
+    }
+    if (current.accounts.any(
+      (item) =>
+          item.id != userId &&
+          item.id.toLowerCase() == normalizedId.toLowerCase(),
+    )) {
+      return '이미 사용 중인 아이디입니다.';
     }
     if (DateTime.tryParse(normalizedHireDate) == null) {
       return '입사일을 YYYY-MM-DD 형식으로 입력해 주세요.';
@@ -138,6 +151,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       final accounts = value.accounts.map((account) {
         if (account.id != userId) return account;
         return account.copyWith(
+          id: normalizedId,
           name: normalizedName,
           email: normalizedEmail,
           department: normalizedDepartment,
@@ -151,12 +165,80 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         );
       }).toList();
       final currentUser = value.currentUser?.id == userId
-          ? accounts.where((account) => account.id == userId).first
+          ? accounts.where((account) => account.id == normalizedId).first
           : value.currentUser;
-      return value.copyWith(accounts: accounts, currentUser: currentUser);
+      final leaveRequests = value.leaveRequests
+          .map(
+            (request) => request.userId == userId
+                ? request.copyWith(userId: normalizedId)
+                : request,
+          )
+          .toList();
+      final templates = value.formTemplates
+          .map(
+            (template) => template.copyWith(
+              receivers: _replaceUserId(
+                template.receivers,
+                userId,
+                normalizedId,
+              ),
+              references: _replaceUserId(
+                template.references,
+                userId,
+                normalizedId,
+              ),
+              viewers: _replaceUserId(template.viewers, userId, normalizedId),
+              publicReceivers: _replaceUserId(
+                template.publicReceivers,
+                userId,
+                normalizedId,
+              ),
+            ),
+          )
+          .toList();
+      final documents = value.documents
+          .map(
+            (document) => document.copyWith(
+              receivers: _replaceUserId(
+                document.receivers,
+                userId,
+                normalizedId,
+              ),
+              references: _replaceUserId(
+                document.references,
+                userId,
+                normalizedId,
+              ),
+              viewers: _replaceUserId(document.viewers, userId, normalizedId),
+              publicReceivers: _replaceUserId(
+                document.publicReceivers,
+                userId,
+                normalizedId,
+              ),
+            ),
+          )
+          .toList();
+      final viewerIds = {
+        for (final entry in value.documentCategoryViewerIds.entries)
+          entry.key: {
+            for (final id in entry.value) id == userId ? normalizedId : id,
+          },
+      };
+      return value.copyWith(
+        accounts: accounts,
+        currentUser: currentUser,
+        selectedOrgUserId: value.selectedOrgUserId == userId
+            ? normalizedId
+            : value.selectedOrgUserId,
+        leaveRequests: leaveRequests,
+        formTemplates: templates,
+        documents: documents,
+        documentCategoryViewerIds: viewerIds,
+      );
     });
     syncRemote(() {
       final payload = <String, dynamic>{
+        'id': normalizedId,
         'name': normalizedName,
         'email': normalizedEmail,
         'department': normalizedDepartment,
@@ -771,3 +853,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
 
 bool _validLeaveDays(double? value) =>
     value != null && value.isFinite && value >= 0 && value <= 365;
+
+List<String> _replaceUserId(List<String> values, String oldId, String newId) =>
+    values.map((value) => value == oldId ? newId : value).toList();

@@ -50,7 +50,7 @@ void main() {
     expect(state.remainingAnnualLeaveFor(_account), 17);
   });
 
-  testWidgets('직원 수정 화면에서 입사일과 연차·월차·잔여 개수를 편집한다', (tester) async {
+  testWidgets('직원 수정 화면에서 아이디와 입사일·휴가 개수를 편집한다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final state = signedOutApprovalState.copyWith(accounts: const [_account]);
@@ -69,6 +69,10 @@ void main() {
     await tester.tap(find.byTooltip('계정 수정'));
     await tester.pumpAndSettle();
 
+    final idField = tester.widget<TextField>(
+      find.byKey(const ValueKey('employee-id-edit-field')),
+    );
+    expect(idField.controller?.text, 'employee-test');
     expect(find.widgetWithText(TextField, '입사일'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('employee-leave-field-연차 개수')),
