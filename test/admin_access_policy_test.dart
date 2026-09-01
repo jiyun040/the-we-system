@@ -1,9 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_we_system/common/components/side_bar_sections.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_people_organization.dart';
+
+class _AdminAccessTestController extends ApprovalDashboardController {
+  _AdminAccessTestController(this.initialState);
+
+  final ApprovalDashboardState initialState;
+
+  @override
+  Future<ApprovalDashboardState> build() async => initialState;
+}
 
 EmployeeAccount _account({
   required String id,
@@ -104,12 +114,61 @@ void main() {
       name: '김효민',
       department: '경리부',
       position: '대리',
+      isAdmin: false,
+    );
+    final serverVerifiedKimHyomin = _account(
+      id: 'legacy-account-id',
+      name: '김효민',
+      department: '경리부',
+      position: '대리',
     );
 
     expect(systemAdmin.canAccessAdminMode, isTrue);
     expect(kimHyomin.canAccessAdminMode, isTrue);
     expect(otherAdmin.canAccessAdminMode, isFalse);
     expect(wrongProfile.canAccessAdminMode, isFalse);
+    expect(serverVerifiedKimHyomin.canAccessAdminMode, isTrue);
+  });
+
+  testWidgets('김효민 대리 계정은 사이드바에 관리자 전환 버튼을 표시한다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1440, 900);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    const account = EmployeeAccount(
+      id: 'we\u200B061046',
+      password: '',
+      name: '김효민',
+      department: '경리부',
+      position: '대리',
+      email: '',
+    );
+    final state = signedOutApprovalState.copyWith(
+      currentUser: account,
+      accounts: const [account],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            () => _AdminAccessTestController(state),
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SizedBox(
+              width: 320,
+              child: SideBarBrand(isCompact: false, currentUser: account),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('관리자 계정 전환'), findsOneWidget);
   });
 
   test('조직도 구성원은 이름보다 직급이 높은 순서로 표시한다', () {

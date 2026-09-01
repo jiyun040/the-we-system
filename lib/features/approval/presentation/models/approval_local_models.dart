@@ -21,11 +21,20 @@ class EmployeeAccount {
   final String hireDate;
   final bool isAdmin;
 
-  bool get isSystemAdministrator =>
-      isAdmin && id.trim().toLowerCase() == 'admin';
+  String get normalizedId =>
+      id.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+
+  bool get isSystemAdministrator => isAdmin && normalizedId == 'admin';
+
+  bool get isKimHyominAdministrator =>
+      normalizedId == 'we061046' ||
+      (isAdmin &&
+          name.trim() == '김효민' &&
+          department.replaceAll(RegExp(r'\s+'), '') == '경리부' &&
+          position.replaceAll(RegExp(r'\s+'), '') == '대리');
 
   bool get canAccessAdminMode =>
-      isSystemAdministrator || id.trim().toLowerCase() == 'we061046';
+      isSystemAdministrator || isKimHyominAdministrator;
 
   EmployeeAccount copyWith({
     String? id,
