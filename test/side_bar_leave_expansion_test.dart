@@ -68,5 +68,12 @@ void main() {
     expect(find.byType(ExpansionTile), findsOneWidget);
     expect(find.text('자주 쓰는 양식'), findsNothing);
     expect(find.text('휴가 현황/신청'), findsOneWidget);
+    final leaveScroll = tester.widget<SingleChildScrollView>(
+      find.byKey(const ValueKey('leave-content-scroll')),
+    );
+    expect(
+      leaveScroll.padding,
+      const EdgeInsets.fromLTRB(28, 24, 28, 28),
+    );
   });
 }

@@ -14,8 +14,12 @@ class ApprovalLeaveContent extends ConsumerWidget {
     final remaining = state.remainingAnnualLeave;
     return SafeArea(
       child: SingleChildScrollView(
-        padding: EdgeInsets.all(
-          MediaQuery.sizeOf(context).width < 520 ? 18 : 32,
+        key: const ValueKey('leave-content-scroll'),
+        padding: EdgeInsets.fromLTRB(
+          mobile ? 18 : 28,
+          mobile ? 18 : 24,
+          mobile ? 18 : 28,
+          mobile ? 18 : 28,
         ),
         child: Center(
           child: ConstrainedBox(
