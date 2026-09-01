@@ -16,6 +16,9 @@ class EmployeeAccount {
     this.hireDate = '2024-01-15',
     this.isAdmin = false,
     this.canChangeAdminOtp = false,
+    this.annualLeaveDays,
+    this.monthlyLeaveDays,
+    this.leaveBalanceAdjustment = 0,
   });
 
   final String id;
@@ -27,6 +30,9 @@ class EmployeeAccount {
   final String hireDate;
   final bool isAdmin;
   final bool canChangeAdminOtp;
+  final double? annualLeaveDays;
+  final double? monthlyLeaveDays;
+  final double leaveBalanceAdjustment;
 
   String get normalizedId =>
       id.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -54,6 +60,9 @@ class EmployeeAccount {
     String? hireDate,
     bool? isAdmin,
     bool? canChangeAdminOtp,
+    double? annualLeaveDays,
+    double? monthlyLeaveDays,
+    double? leaveBalanceAdjustment,
   }) {
     return EmployeeAccount(
       id: id ?? this.id,
@@ -65,6 +74,10 @@ class EmployeeAccount {
       hireDate: hireDate ?? this.hireDate,
       isAdmin: isAdmin ?? this.isAdmin,
       canChangeAdminOtp: canChangeAdminOtp ?? this.canChangeAdminOtp,
+      annualLeaveDays: annualLeaveDays ?? this.annualLeaveDays,
+      monthlyLeaveDays: monthlyLeaveDays ?? this.monthlyLeaveDays,
+      leaveBalanceAdjustment:
+          leaveBalanceAdjustment ?? this.leaveBalanceAdjustment,
     );
   }
 }

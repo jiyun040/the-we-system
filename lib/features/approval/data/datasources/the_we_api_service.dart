@@ -433,6 +433,10 @@ EmployeeAccount _account(Map<String, dynamic> data) => EmployeeAccount(
   hireDate: data['hireDate']?.toString() ?? '',
   isAdmin: data['isAdmin'] == true,
   canChangeAdminOtp: data['canChangeAdminOtp'] == true,
+  annualLeaveDays: (data['annualLeaveDays'] as num?)?.toDouble(),
+  monthlyLeaveDays: (data['monthlyLeaveDays'] as num?)?.toDouble(),
+  leaveBalanceAdjustment:
+      (data['leaveBalanceAdjustment'] as num?)?.toDouble() ?? 0,
 );
 
 ApprovalFormTemplate _formTemplate(Map<String, dynamic> data) =>

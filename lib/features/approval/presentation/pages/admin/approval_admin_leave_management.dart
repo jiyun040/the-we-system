@@ -436,7 +436,7 @@ class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
                             Text(account.position),
                             Text(account.department),
                             Text(
-                              '${state.isUnderOneYear(account) ? '월차' : '연차'} $total일 · 사용 ${adminLeaveDays(used)} · 대기 ${adminLeaveDays(pending)} · 잔여 ${adminLeaveDays(state.remainingAnnualLeaveFor(account))}',
+                              '${state.isUnderOneYear(account) ? '월차' : '연차'} ${adminLeaveDays(total)} · 사용 ${adminLeaveDays(used)} · 대기 ${adminLeaveDays(pending)} · 잔여 ${adminLeaveDays(state.remainingAnnualLeaveFor(account))}',
                               textAlign: TextAlign.center,
                             ),
                           ];

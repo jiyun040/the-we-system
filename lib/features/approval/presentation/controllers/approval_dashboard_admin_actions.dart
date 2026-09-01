@@ -75,6 +75,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     String? email,
     String? password,
     bool? isAdmin,
+    String? annualLeaveDays,
+    String? monthlyLeaveDays,
+    String? remainingLeaveDays,
   }) {
     final current = currentDashboardState;
     if (current == null) return '직원 정보를 불러오지 못했습니다.';
@@ -99,6 +102,20 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (DateTime.tryParse(normalizedHireDate) == null) {
       return '입사일을 YYYY-MM-DD 형식으로 입력해 주세요.';
     }
+    final annualDays = annualLeaveDays == null
+        ? account.annualLeaveDays
+        : double.tryParse(annualLeaveDays.trim());
+    final monthlyDays = monthlyLeaveDays == null
+        ? account.monthlyLeaveDays
+        : double.tryParse(monthlyLeaveDays.trim());
+    final remainingDays = remainingLeaveDays == null
+        ? null
+        : double.tryParse(remainingLeaveDays.trim());
+    if ((annualLeaveDays != null && !_validLeaveDays(annualDays)) ||
+        (monthlyLeaveDays != null && !_validLeaveDays(monthlyDays)) ||
+        (remainingLeaveDays != null && !_validLeaveDays(remainingDays))) {
+      return '연차, 월차, 잔여 개수는 0일 이상 365일 이하로 입력해 주세요.';
+    }
     if (current.accounts.any(
       (item) =>
           item.id != userId &&
@@ -106,6 +123,17 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     )) {
       return '이미 사용 중인 이메일입니다.';
     }
+    final preview = account.copyWith(
+      hireDate: normalizedHireDate,
+      annualLeaveDays: annualDays,
+      monthlyLeaveDays: monthlyDays,
+    );
+    final adjustment = remainingDays == null
+        ? account.leaveBalanceAdjustment
+        : remainingDays -
+              (current.totalAnnualLeaveFor(preview) -
+                  current.usedAnnualLeaveFor(userId) -
+                  current.pendingAnnualLeaveFor(userId));
     setApprovalDashboardState(this, (value) {
       final accounts = value.accounts.map((account) {
         if (account.id != userId) return account;
@@ -117,6 +145,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           hireDate: normalizedHireDate,
           password: password?.trim().isEmpty == true ? null : password?.trim(),
           isAdmin: account.isAdmin,
+          annualLeaveDays: annualDays,
+          monthlyLeaveDays: monthlyDays,
+          leaveBalanceAdjustment: adjustment,
         );
       }).toList();
       final currentUser = value.currentUser?.id == userId
@@ -124,16 +155,20 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           : value.currentUser;
       return value.copyWith(accounts: accounts, currentUser: currentUser);
     });
-    syncRemote(
-      () => api.updateEmployee(userId, {
+    syncRemote(() {
+      final payload = <String, dynamic>{
         'name': normalizedName,
         'email': normalizedEmail,
         'department': normalizedDepartment,
         'position': normalizedPosition,
         'hireDate': normalizedHireDate,
         if (password?.trim().isNotEmpty == true) 'password': password!.trim(),
-      }),
-    );
+        'leaveBalanceAdjustment': adjustment,
+      };
+      if (annualDays != null) payload['annualLeaveDays'] = annualDays;
+      if (monthlyDays != null) payload['monthlyLeaveDays'] = monthlyDays;
+      return api.updateEmployee(userId, payload);
+    });
     return null;
   }
 
@@ -166,6 +201,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String email,
     required String hireDate,
     required bool isAdmin,
+    required String annualLeaveDays,
+    required String monthlyLeaveDays,
+    required String remainingLeaveDays,
   }) {
     final current = currentDashboardState;
     if (current == null) return '직원 정보를 불러오지 못했습니다.';
@@ -191,7 +229,15 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (DateTime.tryParse(hireDate.trim()) == null) {
       return '입사일을 YYYY-MM-DD 형식으로 입력해 주세요.';
     }
-    final account = EmployeeAccount(
+    final annualDays = double.tryParse(annualLeaveDays.trim());
+    final monthlyDays = double.tryParse(monthlyLeaveDays.trim());
+    final remainingDays = double.tryParse(remainingLeaveDays.trim());
+    if (!_validLeaveDays(annualDays) ||
+        !_validLeaveDays(monthlyDays) ||
+        !_validLeaveDays(remainingDays)) {
+      return '연차, 월차, 잔여 개수는 0일 이상 365일 이하로 입력해 주세요.';
+    }
+    final preview = EmployeeAccount(
       id: normalizedId,
       password: password.trim(),
       name: name.trim(),
@@ -200,7 +246,11 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       email: normalizedEmail,
       hireDate: hireDate.trim(),
       isAdmin: false,
+      annualLeaveDays: annualDays,
+      monthlyLeaveDays: monthlyDays,
     );
+    final adjustment = remainingDays! - current.totalAnnualLeaveFor(preview);
+    final account = preview.copyWith(leaveBalanceAdjustment: adjustment);
     setApprovalDashboardState(
       this,
       (value) => value.copyWith(accounts: [...value.accounts, account]),
@@ -214,6 +264,9 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         'position': position.trim(),
         'email': normalizedEmail,
         'hireDate': hireDate.trim(),
+        'annualLeaveDays': annualDays,
+        'monthlyLeaveDays': monthlyDays,
+        'leaveBalanceAdjustment': adjustment,
       }),
     );
     return null;
@@ -715,3 +768,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     }
   }
 }
+
+bool _validLeaveDays(double? value) =>
+    value != null && value.isFinite && value >= 0 && value <= 365;

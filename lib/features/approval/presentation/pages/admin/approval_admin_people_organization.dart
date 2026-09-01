@@ -33,14 +33,25 @@ class AdminEmployeeManagement extends ConsumerWidget {
           ...orderedAccounts.map(
             (account) => _EmployeeCard(
               account: account,
+              state: state,
               onEdit: () => _editEmployee(context, ref, account),
             ),
           )
         else
           TheWeDataTable(
-            headers: const ['이름/아이디', '부서', '직위', '입사일', '권한', '관리'],
-            columnFlexes: const [1.65, 1.25, 1, 1.25, .9, .7],
-            minWidth: 1050,
+            headers: const [
+              '이름/아이디',
+              '부서',
+              '직위',
+              '입사일',
+              '연차',
+              '월차',
+              '잔여',
+              '권한',
+              '관리',
+            ],
+            columnFlexes: const [1.6, 1.15, .9, 1.15, .8, .8, .8, .85, .65],
+            minWidth: 1320,
             rows: orderedAccounts
                 .map(
                   (account) => <Widget>[
@@ -61,6 +72,11 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     Text(account.department),
                     Text(account.position),
                     Text(account.hireDate),
+                    Text(adminLeaveDays(state.annualLeaveDaysFor(account))),
+                    Text(adminLeaveDays(state.monthlyLeaveDaysFor(account))),
+                    Text(
+                      adminLeaveDays(state.remainingAnnualLeaveFor(account)),
+                    ),
                     Align(
                       alignment: Alignment.center,
                       child: Chip(
@@ -100,6 +116,11 @@ class AdminEmployeeManagement extends ConsumerWidget {
     final hireDate = TextEditingController(
       text: DateTime.now().toIso8601String().substring(0, 10),
     );
+    final annualLeave = TextEditingController(
+      text: (state.annualLeaveByYear[1] ?? 15).toString(),
+    );
+    final monthlyLeave = TextEditingController(text: '0');
+    final remainingLeave = TextEditingController(text: '0');
     var error = '';
 
     await showDialog<void>(
@@ -157,6 +178,12 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       suffixIcon: Icon(Icons.calendar_month_outlined),
                     ),
                   ),
+                  const SizedBox(height: 10),
+                  _leaveDaysField(annualLeave, '연차 개수'),
+                  const SizedBox(height: 10),
+                  _leaveDaysField(monthlyLeave, '월차 개수'),
+                  const SizedBox(height: 10),
+                  _leaveDaysField(remainingLeave, '잔여 개수'),
                   if (error.isNotEmpty)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -189,6 +216,9 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       email: email.text,
                       hireDate: hireDate.text,
                       isAdmin: false,
+                      annualLeaveDays: annualLeave.text,
+                      monthlyLeaveDays: monthlyLeave.text,
+                      remainingLeaveDays: remainingLeave.text,
                     );
                 if (message != null) {
                   setDialogState(() => error = message);
@@ -214,6 +244,15 @@ class AdminEmployeeManagement extends ConsumerWidget {
     final department = TextEditingController(text: account.department);
     final position = TextEditingController(text: account.position);
     final hireDate = TextEditingController(text: account.hireDate);
+    final annualLeave = TextEditingController(
+      text: _leaveNumber(state.annualLeaveDaysFor(account)),
+    );
+    final monthlyLeave = TextEditingController(
+      text: _leaveNumber(state.monthlyLeaveDaysFor(account)),
+    );
+    final remainingLeave = TextEditingController(
+      text: _leaveNumber(state.remainingAnnualLeaveFor(account)),
+    );
     final password = TextEditingController();
     var error = '';
     await showDialog<void>(
@@ -258,6 +297,12 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  _leaveDaysField(annualLeave, '연차 개수'),
+                  const SizedBox(height: 10),
+                  _leaveDaysField(monthlyLeave, '월차 개수'),
+                  const SizedBox(height: 10),
+                  _leaveDaysField(remainingLeave, '잔여 개수'),
+                  const SizedBox(height: 10),
                   TextField(
                     controller: password,
                     obscureText: true,
@@ -300,6 +345,9 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       hireDate: hireDate.text,
                       password: password.text,
                       isAdmin: account.isAdmin,
+                      annualLeaveDays: annualLeave.text,
+                      monthlyLeaveDays: monthlyLeave.text,
+                      remainingLeaveDays: remainingLeave.text,
                     );
                 if (message != null) {
                   setDialogState(() => error = message);
@@ -317,9 +365,14 @@ class AdminEmployeeManagement extends ConsumerWidget {
 }
 
 class _EmployeeCard extends StatelessWidget {
-  const _EmployeeCard({required this.account, required this.onEdit});
+  const _EmployeeCard({
+    required this.account,
+    required this.state,
+    required this.onEdit,
+  });
 
   final EmployeeAccount account;
+  final ApprovalDashboardState state;
   final VoidCallback onEdit;
 
   @override
@@ -393,10 +446,45 @@ class _EmployeeCard extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _EmployeeInfo(
+                label: '연차',
+                value: adminLeaveDays(state.annualLeaveDaysFor(account)),
+              ),
+            ),
+            Expanded(
+              child: _EmployeeInfo(
+                label: '월차',
+                value: adminLeaveDays(state.monthlyLeaveDaysFor(account)),
+              ),
+            ),
+            Expanded(
+              child: _EmployeeInfo(
+                label: '잔여',
+                value: adminLeaveDays(state.remainingAnnualLeaveFor(account)),
+              ),
+            ),
+          ],
+        ),
       ],
     ),
   );
 }
+
+Widget _leaveDaysField(TextEditingController controller, String label) =>
+    TextField(
+      key: ValueKey('employee-leave-field-$label'),
+      controller: controller,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      decoration: InputDecoration(labelText: label, suffixText: '일'),
+    );
+
+String _leaveNumber(double value) => value == value.roundToDouble()
+    ? value.toInt().toString()
+    : value.toStringAsFixed(1);
 
 class _EmployeeInfo extends StatelessWidget {
   const _EmployeeInfo({required this.label, required this.value});

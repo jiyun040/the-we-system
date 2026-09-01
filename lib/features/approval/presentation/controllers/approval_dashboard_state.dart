@@ -473,11 +473,20 @@ class ApprovalDashboardState {
   int accruedMonthlyLeaveFor(EmployeeAccount? account) =>
       completedServiceMonthsFor(account) * monthlyLeavePerMonth;
 
-  int totalAnnualLeaveFor(EmployeeAccount? account) {
-    if (isUnderOneYear(account)) return accruedMonthlyLeaveFor(account);
-    return annualLeaveByYear[serviceYearFor(account).clamp(1, 10)] ??
-        annualLeaveByYear[10] ??
-        19;
+  double annualLeaveDaysFor(EmployeeAccount account) =>
+      account.annualLeaveDays ??
+      (annualLeaveByYear[serviceYearFor(account).clamp(1, 10)] ??
+              annualLeaveByYear[10] ??
+              19)
+          .toDouble();
+
+  double monthlyLeaveDaysFor(EmployeeAccount account) =>
+      account.monthlyLeaveDays ?? accruedMonthlyLeaveFor(account).toDouble();
+
+  double totalAnnualLeaveFor(EmployeeAccount? account) {
+    if (account == null) return 0;
+    if (isUnderOneYear(account)) return monthlyLeaveDaysFor(account);
+    return annualLeaveDaysFor(account);
   }
 
   String leaveEntitlementLabelFor(EmployeeAccount? account) =>
@@ -494,7 +503,7 @@ class ApprovalDashboardState {
       ? '${completedServiceMonthsFor(account)}개월차'
       : '${serviceYearFor(account)}년차';
 
-  int get totalAnnualLeave => totalAnnualLeaveFor(currentUser);
+  double get totalAnnualLeave => totalAnnualLeaveFor(currentUser);
 
   double usedAnnualLeaveFor(String userId) => leaveRequestsFor(userId)
       .where((request) => request.status == '승인완료')
@@ -507,8 +516,9 @@ class ApprovalDashboardState {
   double remainingAnnualLeaveFor(EmployeeAccount account) =>
       (totalAnnualLeaveFor(account) -
               usedAnnualLeaveFor(account.id) -
-              pendingAnnualLeaveFor(account.id))
-          .clamp(0, totalAnnualLeaveFor(account))
+              pendingAnnualLeaveFor(account.id) +
+              account.leaveBalanceAdjustment)
+          .clamp(0, 365)
           .toDouble();
 
   double get usedAnnualLeave => currentUserLeaveRequests
@@ -520,8 +530,11 @@ class ApprovalDashboardState {
       .fold(0, (sum, request) => sum + request.days);
 
   double get remainingAnnualLeave =>
-      (totalAnnualLeave - usedAnnualLeave - pendingAnnualLeave)
-          .clamp(0, totalAnnualLeave)
+      (totalAnnualLeave -
+              usedAnnualLeave -
+              pendingAnnualLeave +
+              (currentUser?.leaveBalanceAdjustment ?? 0))
+          .clamp(0, 365)
           .toDouble();
 
   bool canActOnLeave(LeaveRequest request) {

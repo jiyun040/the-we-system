@@ -82,7 +82,7 @@ class AdminEmployeeLeaveOverviewDialog extends StatelessWidget {
                 children: [
                   AdminEmployeeLeaveMetric(
                     label: state.leaveEntitlementLabelFor(account),
-                    value: '$total일',
+                    value: adminLeaveDays(total),
                   ),
                   AdminEmployeeLeaveMetric(
                     label: state.leaveUsedLabelFor(account),
