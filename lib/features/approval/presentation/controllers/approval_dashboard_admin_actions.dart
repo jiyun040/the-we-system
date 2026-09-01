@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
@@ -48,6 +49,20 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     } catch (error) {
       reportOperationError(error, fallback: '비밀번호 확인을 완료하지 못했습니다.');
       return false;
+    }
+  }
+
+  Future<String?> changeAdminOtp({
+    required String currentOtp,
+    required String newOtp,
+  }) async {
+    try {
+      await api.changeAdminOtp(currentOtp: currentOtp, newOtp: newOtp);
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(error, fallback: 'OTP 번호를 변경하지 못했습니다.');
     }
   }
 

@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'approval_admin_dependencies.dart';
 import 'approval_admin_annual_leave_policy.dart';
 import 'approval_admin_apps_forms.dart';
@@ -120,6 +122,8 @@ class AdminIntegratedSettings extends ConsumerWidget {
                     .updateSecurityPolicy(adminOtpEnabled: value),
               ),
               adminDivider(),
+              _AdminOtpManagementTile(account: state.currentUser),
+              adminDivider(),
               _SecurityPolicyTile(
                 key: const ValueKey('security-settings-password'),
                 icon: Icons.password_outlined,
@@ -151,6 +155,157 @@ class AdminIntegratedSettings extends ConsumerWidget {
         ),
       ],
     );
+  }
+}
+
+class _AdminOtpManagementTile extends ConsumerWidget {
+  const _AdminOtpManagementTile({required this.account});
+
+  final EmployeeAccount? account;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = account;
+    final isFixed = current?.isSystemAdministrator == true;
+    return ListTile(
+      key: const ValueKey('admin-otp-management'),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      leading: const Icon(Icons.pin_outlined, color: TheWeColor.blue300),
+      title: const Text('OTP 번호 관리'),
+      subtitle: Text(
+        isFixed
+            ? '슈퍼어드민 OTP는 123456으로 고정됩니다.'
+            : current?.canChangeAdminOtp == true
+            ? '현재 OTP를 확인한 뒤 새 6자리 번호로 변경합니다.'
+            : 'OTP 변경 권한이 없습니다.',
+      ),
+      trailing: isFixed
+          ? const Chip(label: Text('123456 고정'))
+          : current?.canChangeAdminOtp == true
+          ? OutlinedButton.icon(
+              key: const ValueKey('admin-otp-change-button'),
+              onPressed: () async {
+                final changed = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => const _ChangeAdminOtpDialog(),
+                );
+                if (changed == true && context.mounted) {
+                  showTheWeSnackBar(context, message: 'OTP 번호가 변경되었습니다.');
+                }
+              },
+              icon: const Icon(Icons.edit_outlined, size: 18),
+              label: const Text('OTP 변경'),
+            )
+          : null,
+    );
+  }
+}
+
+class _ChangeAdminOtpDialog extends ConsumerStatefulWidget {
+  const _ChangeAdminOtpDialog();
+
+  @override
+  ConsumerState<_ChangeAdminOtpDialog> createState() =>
+      _ChangeAdminOtpDialogState();
+}
+
+class _ChangeAdminOtpDialogState extends ConsumerState<_ChangeAdminOtpDialog> {
+  final currentController = TextEditingController();
+  final nextController = TextEditingController();
+  final confirmController = TextEditingController();
+  String error = '';
+  bool saving = false;
+
+  @override
+  void dispose() {
+    currentController.dispose();
+    nextController.dispose();
+    confirmController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    key: const ValueKey('admin-otp-change-dialog'),
+    backgroundColor: TheWeColor.white,
+    title: const Text('OTP 번호 변경'),
+    content: SizedBox(
+      width: 420,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _otpField(controller: currentController, label: '현재 OTP'),
+          const SizedBox(height: 10),
+          _otpField(controller: nextController, label: '새 OTP'),
+          const SizedBox(height: 10),
+          _otpField(controller: confirmController, label: '새 OTP 확인'),
+          if (error.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                error,
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.danger,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: saving ? null : () => Navigator.pop(context, false),
+        child: const Text('취소'),
+      ),
+      FilledButton(
+        key: const ValueKey('admin-otp-change-submit'),
+        onPressed: saving ? null : _submit,
+        child: Text(saving ? '변경 중...' : '변경'),
+      ),
+    ],
+  );
+
+  Widget _otpField({
+    required TextEditingController controller,
+    required String label,
+  }) => TextField(
+    controller: controller,
+    obscureText: true,
+    keyboardType: TextInputType.number,
+    maxLength: 6,
+    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+    decoration: InputDecoration(labelText: label, counterText: ''),
+  );
+
+  Future<void> _submit() async {
+    final currentOtp = currentController.text;
+    final nextOtp = nextController.text;
+    if (currentOtp.length != 6 || nextOtp.length != 6) {
+      setState(() => error = 'OTP는 숫자 6자리로 입력해 주세요.');
+      return;
+    }
+    if (nextOtp != confirmController.text) {
+      setState(() => error = '새 OTP 번호가 일치하지 않습니다.');
+      return;
+    }
+    setState(() {
+      saving = true;
+      error = '';
+    });
+    final result = await ref
+        .read(approvalDashboardControllerProvider.notifier)
+        .changeAdminOtp(currentOtp: currentOtp, newOtp: nextOtp);
+    if (!mounted) return;
+    if (result == null) {
+      Navigator.pop(context, true);
+      return;
+    }
+    setState(() {
+      saving = false;
+      error = result;
+    });
   }
 }
 

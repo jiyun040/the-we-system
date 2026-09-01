@@ -15,6 +15,7 @@ class EmployeeAccount {
     required this.email,
     this.hireDate = '2024-01-15',
     this.isAdmin = false,
+    this.canChangeAdminOtp = false,
   });
 
   final String id;
@@ -25,6 +26,7 @@ class EmployeeAccount {
   final String email;
   final String hireDate;
   final bool isAdmin;
+  final bool canChangeAdminOtp;
 
   String get normalizedId =>
       id.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
@@ -51,6 +53,7 @@ class EmployeeAccount {
     String? email,
     String? hireDate,
     bool? isAdmin,
+    bool? canChangeAdminOtp,
   }) {
     return EmployeeAccount(
       id: id ?? this.id,
@@ -61,6 +64,7 @@ class EmployeeAccount {
       email: email ?? this.email,
       hireDate: hireDate ?? this.hireDate,
       isAdmin: isAdmin ?? this.isAdmin,
+      canChangeAdminOtp: canChangeAdminOtp ?? this.canChangeAdminOtp,
     );
   }
 }

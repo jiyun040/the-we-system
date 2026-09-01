@@ -130,6 +130,16 @@ class TheWeApiService {
     return response.data?['valid'] == true;
   });
 
+  Future<void> changeAdminOtp({
+    required String currentOtp,
+    required String newOtp,
+  }) => _guard(() async {
+    await _dio.post<void>(
+      '/admin/change-otp',
+      data: {'currentOtp': currentOtp, 'newOtp': newOtp},
+    );
+  });
+
   Future<RemoteBootstrapData> fetchBootstrap() => _guard(() async {
     final response = await _dio.get<Map<String, dynamic>>('/bootstrap');
     final data = response.data ?? <String, dynamic>{};
@@ -422,6 +432,7 @@ EmployeeAccount _account(Map<String, dynamic> data) => EmployeeAccount(
   email: data['email']?.toString() ?? '',
   hireDate: data['hireDate']?.toString() ?? '',
   isAdmin: data['isAdmin'] == true,
+  canChangeAdminOtp: data['canChangeAdminOtp'] == true,
 );
 
 ApprovalFormTemplate _formTemplate(Map<String, dynamic> data) =>
