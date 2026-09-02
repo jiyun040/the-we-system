@@ -242,20 +242,14 @@ class AdminNoticeManagement extends ConsumerWidget {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('공지사항 삭제'),
-        content: Text('‘${notice.title}’ 공지사항을 삭제할까요?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: FilledButton.styleFrom(backgroundColor: TheWeColor.danger),
-            child: const Text('삭제'),
-          ),
-        ],
+      builder: (context) => TheWeConfirmDialog(
+        title: '공지사항을 삭제할까요?',
+        message: '‘${notice.title}’ 공지사항은 삭제하면 다시 복구할 수 없습니다.',
+        primaryLabel: '삭제',
+        secondaryLabel: '취소',
+        primaryColor: TheWeColor.danger,
+        onPrimaryPressed: () => Navigator.of(context).pop(true),
+        onSecondaryPressed: () => Navigator.of(context).pop(false),
       ),
     );
     if (confirmed != true || !context.mounted) return;

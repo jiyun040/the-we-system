@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_page.dart';
@@ -179,6 +180,15 @@ void main() {
     final content = tester.widget<Text>(find.text('상세 모달에서 보여줄 긴 공지 내용'));
     expect(content.maxLines, 1);
     expect(content.overflow, TextOverflow.ellipsis);
+
+    await tester.tap(
+      find.byKey(const ValueKey('admin-notice-delete-admin-notice-test')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(TheWeConfirmDialog), findsOneWidget);
+    expect(find.byKey(const ValueKey('notice-detail-dialog')), findsNothing);
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
 
     await tester.tap(
       find.byKey(const ValueKey('admin-notice-admin-notice-test')),
