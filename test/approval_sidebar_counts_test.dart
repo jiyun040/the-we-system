@@ -38,7 +38,6 @@ void main() {
       name: '테스트 사용자',
       department: '테스트부서',
       position: '담당',
-      email: '',
     );
     const template = ApprovalFormTemplate(
       id: 'business-draft',

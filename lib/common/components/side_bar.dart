@@ -152,7 +152,7 @@ class SideBar extends ConsumerWidget {
                                   ),
                                 ),
                                 SideBarMenuItem(
-                                  icon: Icons.mark_email_unread_outlined,
+                                  icon: Icons.inbox_outlined,
                                   label: '결재수신문서',
                                   count: receiveDocument,
                                   selected: onReceivedPage,

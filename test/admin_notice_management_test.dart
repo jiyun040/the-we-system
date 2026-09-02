@@ -24,7 +24,6 @@ EmployeeAccount _adminAccount({
   name: '테스트 관리자',
   department: '테스트부서',
   position: '관리자',
-  email: '',
   isAdmin: true,
   canChangeAdminOtp: canChangeAdminOtp,
 );

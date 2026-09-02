@@ -463,7 +463,6 @@ EmployeeAccount _account(Map<String, dynamic> data) => EmployeeAccount(
   name: data['name']?.toString() ?? '',
   department: data['department']?.toString() ?? '',
   position: data['position']?.toString() ?? '',
-  email: data['email']?.toString() ?? '',
   hireDate: data['hireDate']?.toString() ?? '',
   isAdmin: data['isAdmin'] == true,
   canChangeAdminOtp: data['canChangeAdminOtp'] == true,

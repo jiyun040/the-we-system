@@ -11,7 +11,6 @@ const _account = EmployeeAccount(
   name: '테스트 직원',
   department: '테스트부서',
   position: '사원',
-  email: 'employee@example.com',
   hireDate: '2020-01-01',
   annualLeaveDays: 20,
   monthlyLeaveDays: 6,
@@ -29,7 +28,6 @@ EmployeeAccount _directoryAccount({
   name: name,
   department: department,
   position: position,
-  email: '$id@example.com',
 );
 
 void main() {
@@ -87,6 +85,7 @@ void main() {
       find.byKey(const ValueKey('employee-id-edit-field')),
     );
     expect(idField.controller?.text, 'employee-test');
+    expect(find.text('이메일'), findsNothing);
     expect(find.widgetWithText(TextField, '입사일'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('employee-leave-field-연차 개수')),
@@ -161,6 +160,7 @@ void main() {
 
     await tester.tap(find.byKey(const ValueKey('employee-filter-department')));
     await tester.pumpAndSettle();
+    expect(find.byType(DropdownMenu<String>), findsOneWidget);
     expect(find.byKey(const ValueKey('employee-row-staff')), findsOneWidget);
     expect(find.byKey(const ValueKey('employee-row-director')), findsNothing);
     expect(

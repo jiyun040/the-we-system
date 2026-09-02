@@ -16,7 +16,6 @@ EmployeeAccount _account({
   name: name,
   department: department,
   position: position,
-  email: '',
 );
 
 void main() {

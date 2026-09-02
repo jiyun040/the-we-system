@@ -22,7 +22,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       final current = currentDashboardState;
       if (current == null ||
           current.currentUser?.canAccessAdminMode != true ||
-          (current.adminOtpEnabled && !await api.verifyAdminOtp(otp))) {
+          !await api.verifyAdminOtp(otp)) {
         return false;
       }
       setApprovalDashboardState(
@@ -143,7 +143,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String hireDate,
     String? id,
     String? name,
-    String? email,
     String? password,
     bool? isAdmin,
     String? annualLeaveDays,
@@ -158,14 +157,12 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (account == null) return '수정할 직원을 찾지 못했습니다.';
     final normalizedId = (id ?? account.id).trim();
     final normalizedName = (name ?? account.name).trim();
-    final normalizedEmail = (email ?? account.email).trim();
     final normalizedDepartment = department.trim();
     final normalizedPosition = position.trim();
     final normalizedHireDate = hireDate.trim();
     if ([
       normalizedId,
       normalizedName,
-      normalizedEmail,
       normalizedDepartment,
       normalizedPosition,
       normalizedHireDate,
@@ -199,13 +196,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         (remainingLeaveDays != null && !_validLeaveDays(remainingDays))) {
       return '연차, 월차, 잔여 개수는 0일 이상 365일 이하로 입력해 주세요.';
     }
-    if (current.accounts.any(
-      (item) =>
-          item.id != userId &&
-          item.email.toLowerCase() == normalizedEmail.toLowerCase(),
-    )) {
-      return '이미 사용 중인 이메일입니다.';
-    }
     final preview = account.copyWith(
       hireDate: normalizedHireDate,
       annualLeaveDays: annualDays,
@@ -223,7 +213,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         return account.copyWith(
           id: normalizedId,
           name: normalizedName,
-          email: normalizedEmail,
           department: normalizedDepartment,
           position: normalizedPosition,
           hireDate: normalizedHireDate,
@@ -310,7 +299,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       final payload = <String, dynamic>{
         'id': normalizedId,
         'name': normalizedName,
-        'email': normalizedEmail,
         'department': normalizedDepartment,
         'position': normalizedPosition,
         'hireDate': normalizedHireDate,
@@ -350,7 +338,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String name,
     required String department,
     required String position,
-    required String email,
     required String hireDate,
     required bool isAdmin,
     required String annualLeaveDays,
@@ -360,23 +347,18 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     final current = currentDashboardState;
     if (current == null) return '직원 정보를 불러오지 못했습니다.';
     final normalizedId = id.trim();
-    final normalizedEmail = email.trim();
     if ([
       normalizedId,
       password.trim(),
       name.trim(),
       department.trim(),
       position.trim(),
-      normalizedEmail,
       hireDate.trim(),
     ].any((value) => value.isEmpty)) {
       return '모든 항목을 입력해 주세요.';
     }
     if (current.accounts.any((account) => account.id == normalizedId)) {
       return '이미 사용 중인 아이디입니다.';
-    }
-    if (current.accounts.any((account) => account.email == normalizedEmail)) {
-      return '이미 사용 중인 이메일입니다.';
     }
     if (DateTime.tryParse(hireDate.trim()) == null) {
       return '입사일을 YYYY-MM-DD 형식으로 입력해 주세요.';
@@ -395,7 +377,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       name: name.trim(),
       department: department.trim(),
       position: position.trim(),
-      email: normalizedEmail,
       hireDate: hireDate.trim(),
       isAdmin: false,
       annualLeaveDays: annualDays,
@@ -414,7 +395,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         'name': name.trim(),
         'department': department.trim(),
         'position': position.trim(),
-        'email': normalizedEmail,
         'hireDate': hireDate.trim(),
         'annualLeaveDays': annualDays,
         'monthlyLeaveDays': monthlyDays,

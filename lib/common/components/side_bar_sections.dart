@@ -142,7 +142,7 @@ class SideBarBrand extends ConsumerWidget {
                 Text(
                   state?.isAdminMode == true
                       ? '관리자 모드 · 전체 관리 가능'
-                      : currentUser!.email,
+                      : currentUser!.position,
                   style: TheWeTextStyle.caption.copyWith(
                     color: state?.isAdminMode == true
                         ? TheWeColor.blue300
@@ -163,12 +163,8 @@ class SideBarBrand extends ConsumerWidget {
                           context.goNamed(AppRouteName.home);
                           return;
                         }
-                        var otp = '';
-                        if (state?.adminOtpEnabled ?? true) {
-                          final verified = await _showAdminOtpDialog(context);
-                          if (verified == null || !context.mounted) return;
-                          otp = verified;
-                        }
+                        final otp = await _showAdminOtpDialog(context);
+                        if (otp == null || !context.mounted) return;
                         final entered = await notifier.enterAdminMode(otp);
                         if (!context.mounted) return;
                         if (entered) {

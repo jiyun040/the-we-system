@@ -32,7 +32,6 @@ class EmployeeAccount {
     required this.name,
     required this.department,
     required this.position,
-    required this.email,
     this.hireDate = '2024-01-15',
     this.isAdmin = false,
     this.canChangeAdminOtp = false,
@@ -46,7 +45,6 @@ class EmployeeAccount {
   final String name;
   final String department;
   final String position;
-  final String email;
   final String hireDate;
   final bool isAdmin;
   final bool canChangeAdminOtp;
@@ -76,7 +74,6 @@ class EmployeeAccount {
     String? name,
     String? department,
     String? position,
-    String? email,
     String? hireDate,
     bool? isAdmin,
     bool? canChangeAdminOtp,
@@ -90,7 +87,6 @@ class EmployeeAccount {
       name: name ?? this.name,
       department: department ?? this.department,
       position: position ?? this.position,
-      email: email ?? this.email,
       hireDate: hireDate ?? this.hireDate,
       isAdmin: isAdmin ?? this.isAdmin,
       canChangeAdminOtp: canChangeAdminOtp ?? this.canChangeAdminOtp,

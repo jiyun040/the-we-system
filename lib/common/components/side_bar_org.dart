@@ -244,10 +244,6 @@ class _OrganizationDialog extends ConsumerWidget {
                                           value: selectedMember.id,
                                         ),
                                         _ProfileLine(
-                                          label: '이메일',
-                                          value: selectedMember.email,
-                                        ),
-                                        _ProfileLine(
                                           label: '권한',
                                           value: selectedMember.isAdmin
                                               ? '관리자'

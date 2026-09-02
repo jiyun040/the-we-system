@@ -100,30 +100,12 @@ class AdminIntegratedSettings extends ConsumerWidget {
         const SizedBox(height: 12),
         _IntegratedAppSettings(state: state),
         const SizedBox(height: 24),
-        Text('로그인·2차 인증', style: TheWeTextStyle.title),
-        const SizedBox(height: 6),
-        Text(
-          '관리자 로그인과 민감 설정의 보안 정책을 관리합니다.',
-          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
-        ),
+        _LoginSecurityHeader(account: state.currentUser),
         const SizedBox(height: 12),
         Container(
           decoration: adminSurface(),
           child: Column(
             children: [
-              _SecurityPolicyTile(
-                key: const ValueKey('security-admin-otp'),
-                icon: Icons.phonelink_lock_outlined,
-                title: '관리자 OTP 2차 인증',
-                subtitle: '관리자 로그인 및 관리자 모드 전환 시 OTP 인증을 요구합니다.',
-                value: state.adminOtpEnabled,
-                onChanged: (value) => ref
-                    .read(approvalDashboardControllerProvider.notifier)
-                    .updateSecurityPolicy(adminOtpEnabled: value),
-              ),
-              adminDivider(),
-              _AdminOtpManagementTile(account: state.currentUser),
-              adminDivider(),
               _SecurityPolicyTile(
                 key: const ValueKey('security-settings-password'),
                 icon: Icons.password_outlined,
@@ -158,45 +140,62 @@ class AdminIntegratedSettings extends ConsumerWidget {
   }
 }
 
-class _AdminOtpManagementTile extends ConsumerWidget {
-  const _AdminOtpManagementTile({required this.account});
+class _LoginSecurityHeader extends ConsumerWidget {
+  const _LoginSecurityHeader({required this.account});
 
   final EmployeeAccount? account;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final current = account;
-    final isFixed = current?.isSystemAdministrator == true;
-    return ListTile(
-      key: const ValueKey('admin-otp-management'),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      leading: const Icon(Icons.pin_outlined, color: TheWeColor.blue300),
-      title: const Text('OTP 번호 관리'),
-      subtitle: Text(
-        isFixed
-            ? '슈퍼어드민 OTP는 123456으로 고정됩니다.'
-            : current?.canChangeAdminOtp == true
-            ? '현재 OTP를 확인한 뒤 새 6자리 번호로 변경합니다.'
-            : 'OTP 변경 권한이 없습니다.',
-      ),
-      trailing: isFixed
-          ? const Chip(label: Text('123456 고정'))
-          : current?.canChangeAdminOtp == true
-          ? OutlinedButton.icon(
-              key: const ValueKey('admin-otp-change-button'),
-              onPressed: () async {
-                final changed = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => const _ChangeAdminOtpDialog(),
-                );
-                if (changed == true && context.mounted) {
-                  showTheWeSnackBar(context, message: 'OTP 번호가 변경되었습니다.');
-                }
-              },
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              label: const Text('OTP 변경'),
-            )
-          : null,
+    final changeButton = account?.canChangeAdminOtp == true
+        ? FilledButton.icon(
+            key: const ValueKey('admin-otp-change-button'),
+            onPressed: () async {
+              final changed = await showDialog<bool>(
+                context: context,
+                builder: (context) => const _ChangeAdminOtpDialog(),
+              );
+              if (changed == true && context.mounted) {
+                showTheWeSnackBar(context, message: 'OTP 번호가 변경되었습니다.');
+              }
+            },
+            icon: const Icon(Icons.pin_outlined, size: 18),
+            label: const Text('OTP 번호 변경'),
+          )
+        : null;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final description = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('로그인·2차 인증', style: TheWeTextStyle.title),
+            const SizedBox(height: 6),
+            Text(
+              '관리자 모드 진입에는 OTP 인증이 항상 필요합니다.',
+              style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+            ),
+          ],
+        );
+        if (constraints.maxWidth < 640 || changeButton == null) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              description,
+              if (changeButton != null) ...[
+                const SizedBox(height: 12),
+                changeButton,
+              ],
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: description),
+            changeButton,
+          ],
+        );
+      },
     );
   }
 }

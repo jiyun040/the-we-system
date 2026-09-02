@@ -14,7 +14,6 @@ EmployeeAccount _adminAccount({
   name: '테스트 관리자',
   department: '테스트부서',
   position: '관리자',
-  email: '',
   isAdmin: true,
   canChangeAdminOtp: canChangeAdminOtp,
 );
@@ -38,6 +37,7 @@ void main() {
     final state = signedOutApprovalState.copyWith(currentUser: account);
 
     await tester.pumpWidget(_settings(state));
+    expect(find.byKey(const ValueKey('admin-otp-management')), findsNothing);
     final changeButton = find.byKey(const ValueKey('admin-otp-change-button'));
     await tester.ensureVisible(changeButton);
     await tester.tap(changeButton);
@@ -62,7 +62,7 @@ void main() {
     expect(find.text('OTP는 숫자 6자리로 입력해 주세요.'), findsOneWidget);
   });
 
-  testWidgets('슈퍼어드민 OTP는 123456 고정으로 표시한다', (tester) async {
+  testWidgets('슈퍼어드민에게 OTP 번호 관리 행과 변경 버튼을 표시하지 않는다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1400, 2200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     final account = _adminAccount(id: 'admin', canChangeAdminOtp: false);
@@ -70,8 +70,8 @@ void main() {
 
     await tester.pumpWidget(_settings(state));
 
-    expect(find.text('슈퍼어드민 OTP는 123456으로 고정됩니다.'), findsOneWidget);
-    expect(find.text('123456 고정'), findsOneWidget);
+    expect(find.byKey(const ValueKey('admin-otp-management')), findsNothing);
+    expect(find.text('OTP 번호 관리'), findsNothing);
     expect(find.byKey(const ValueKey('admin-otp-change-button')), findsNothing);
   });
 }

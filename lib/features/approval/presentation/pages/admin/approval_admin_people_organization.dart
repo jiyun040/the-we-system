@@ -44,7 +44,6 @@ class AdminEmployeeManagement extends ConsumerWidget {
     final id = TextEditingController();
     final password = TextEditingController();
     final name = TextEditingController();
-    final email = TextEditingController();
     final department = TextEditingController(text: initialDepartment);
     final position = TextEditingController();
     final hireDate = TextEditingController(
@@ -84,12 +83,6 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     controller: password,
                     obscureText: true,
                     decoration: const InputDecoration(labelText: '초기 비밀번호'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: '이메일'),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -147,7 +140,6 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       name: name.text,
                       department: department.text,
                       position: position.text,
-                      email: email.text,
                       hireDate: hireDate.text,
                       isAdmin: false,
                       annualLeaveDays: annualLeave.text,
@@ -175,7 +167,6 @@ class AdminEmployeeManagement extends ConsumerWidget {
   ) async {
     final id = TextEditingController(text: account.id);
     final name = TextEditingController(text: account.name);
-    final email = TextEditingController(text: account.email);
     final department = TextEditingController(text: account.department);
     final position = TextEditingController(text: account.position);
     final hireDate = TextEditingController(text: account.hireDate);
@@ -213,12 +204,6 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   TextField(
                     controller: name,
                     decoration: const InputDecoration(labelText: '이름'),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: email,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: '이메일'),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -284,7 +269,6 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       userId: account.id,
                       id: id.text,
                       name: name.text,
-                      email: email.text,
                       department: department.text,
                       position: position.text,
                       hireDate: hireDate.text,
@@ -401,27 +385,16 @@ class _EmployeeManagementDirectoryState
               mode: _EmployeeDirectoryMode.name,
             ),
             if (_mode == _EmployeeDirectoryMode.department)
-              SizedBox(
+              TheWeDropdown<String>(
+                key: const ValueKey('employee-department-filter'),
                 width: mobile ? 210 : 250,
-                child: DropdownButtonFormField<String>(
-                  key: const ValueKey('employee-department-filter'),
-                  initialValue: _effectiveDepartment.isEmpty
-                      ? null
-                      : _effectiveDepartment,
-                  decoration: const InputDecoration(
-                    labelText: '부서 선택',
-                    isDense: true,
-                  ),
-                  items: widget.state.departments
-                      .map(
-                        (department) => DropdownMenuItem(
-                          value: department,
-                          child: Text(department),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _department = value),
-                ),
+                value: _effectiveDepartment.isEmpty
+                    ? null
+                    : _effectiveDepartment,
+                items: widget.state.departments,
+                labelBuilder: (department) => department,
+                hintText: '부서 선택',
+                onChanged: (value) => setState(() => _department = value),
               ),
             if (_mode == _EmployeeDirectoryMode.name)
               SizedBox(

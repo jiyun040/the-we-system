@@ -189,8 +189,6 @@ class _AdminAccessGate extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mobile = MediaQuery.sizeOf(context).width < 600;
-    final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
-    final otpEnabled = state?.adminOtpEnabled ?? true;
     return Center(
       child: Padding(
         padding: EdgeInsets.all(mobile ? 18 : 0),
@@ -215,9 +213,7 @@ class _AdminAccessGate extends ConsumerWidget {
               ),
               const SizedBox(height: 7),
               Text(
-                otpEnabled
-                    ? '관리자 권한 계정에서 OTP 인증 후 접근할 수 있습니다.'
-                    : '관리자 권한이 확인되어 바로 관리자 화면으로 이동할 수 있습니다.',
+                '관리자 권한 계정에서 OTP 인증 후 접근할 수 있습니다.',
                 textAlign: TextAlign.center,
                 style: TheWeTextStyle.caption.copyWith(
                   color: TheWeColor.black500,
@@ -226,12 +222,8 @@ class _AdminAccessGate extends ConsumerWidget {
               SizedBox(height: mobile ? 15 : 22),
               FilledButton(
                 onPressed: () async {
-                  var otp = '';
-                  if (otpEnabled) {
-                    final verified = await requestAdminOtp(context);
-                    if (verified == null) return;
-                    otp = verified;
-                  }
+                  final otp = await requestAdminOtp(context);
+                  if (otp == null) return;
                   final success = await ref
                       .read(approvalDashboardControllerProvider.notifier)
                       .enterAdminMode(otp);
@@ -246,7 +238,7 @@ class _AdminAccessGate extends ConsumerWidget {
                     );
                   }
                 },
-                child: Text(otpEnabled ? 'OTP 인증' : '관리자 화면 열기'),
+                child: const Text('OTP 인증'),
               ),
               TextButton(
                 onPressed: () => context.goNamed(AppRouteName.home),

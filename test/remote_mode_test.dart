@@ -41,7 +41,6 @@ void main() {
           name: '슈퍼어드민',
           department: '시스템관리',
           position: '시스템 관리자',
-          email: '',
           isAdmin: true,
         ),
         EmployeeAccount(
@@ -50,7 +49,6 @@ void main() {
           name: '직원',
           department: '운영팀',
           position: '사원',
-          email: '',
         ),
         EmployeeAccount(
           id: 'unassigned',
@@ -58,7 +56,6 @@ void main() {
           name: '미배정',
           department: '',
           position: '사원',
-          email: '',
         ),
       ],
       selectedOrgDepartment: '운영팀',

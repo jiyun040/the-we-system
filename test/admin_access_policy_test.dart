@@ -27,7 +27,6 @@ EmployeeAccount _account({
   name: name,
   department: department,
   position: position,
-  email: '',
   isAdmin: isAdmin,
 );
 
@@ -146,7 +145,6 @@ void main() {
       name: '지정 관리자',
       department: '테스트부서',
       position: '담당',
-      email: '',
     );
     final state = signedOutApprovalState.copyWith(
       currentUser: account,

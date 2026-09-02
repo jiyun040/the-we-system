@@ -27,7 +27,6 @@ void main() {
       name: '테스트 관리자',
       department: '테스트부서',
       position: '담당',
-      email: '',
     );
     final state = signedOutApprovalState.copyWith(
       currentUser: account,
