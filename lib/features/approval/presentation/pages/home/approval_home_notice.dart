@@ -1,4 +1,5 @@
 import 'approval_home_dependencies.dart';
+import '../../widgets/approval_notice_detail_dialog.dart';
 
 class ApprovalHomeNoticePanel extends StatelessWidget {
   const ApprovalHomeNoticePanel({super.key, required this.notices});
@@ -24,55 +25,75 @@ class ApprovalHomeNoticePanel extends StatelessWidget {
                 (notice) => Padding(
                   key: ValueKey('home-notice-${notice.id}'),
                   padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: notice.isPinned
-                          ? TheWeColor.blueSurface
-                          : TheWeColor.background,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: TheWeColor.black300.withValues(alpha: .25),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            if (notice.isPinned) ...[
-                              const Icon(
-                                Icons.push_pin_outlined,
-                                size: 16,
-                                color: TheWeColor.blue300,
-                              ),
-                              const SizedBox(width: 5),
-                            ],
-                            Expanded(
-                              child: Text(
-                                notice.title,
-                                style: TheWeTextStyle.subtitle,
-                              ),
-                            ),
-                            Text(
-                              _noticeDate(notice.createdAt),
-                              style: TheWeTextStyle.caption.copyWith(
-                                color: TheWeColor.black500,
-                              ),
-                            ),
-                          ],
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Ink(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: notice.isPinned
+                            ? TheWeColor.blueSurface
+                            : TheWeColor.background,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: TheWeColor.black300.withValues(alpha: .25),
                         ),
-                        const SizedBox(height: 7),
-                        Text(notice.content, style: TheWeTextStyle.body),
-                        const SizedBox(height: 6),
-                        Text(
-                          notice.authorName,
-                          style: TheWeTextStyle.caption.copyWith(
-                            color: TheWeColor.black500,
+                      ),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap: () =>
+                            showApprovalNoticeDetailDialog(context, notice),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  if (notice.isPinned) ...[
+                                    const Icon(
+                                      Icons.push_pin_outlined,
+                                      size: 16,
+                                      color: TheWeColor.blue300,
+                                    ),
+                                    const SizedBox(width: 5),
+                                  ],
+                                  Expanded(
+                                    child: Text(
+                                      notice.title,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TheWeTextStyle.subtitle,
+                                    ),
+                                  ),
+                                  Text(
+                                    _noticeDate(notice.createdAt),
+                                    style: TheWeTextStyle.caption.copyWith(
+                                      color: TheWeColor.black500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 7),
+                              Text(
+                                notice.content,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TheWeTextStyle.body,
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                notice.authorName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TheWeTextStyle.caption.copyWith(
+                                  color: TheWeColor.black500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

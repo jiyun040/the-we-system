@@ -1,5 +1,6 @@
 import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
+import '../../widgets/approval_notice_detail_dialog.dart';
 
 class AdminNoticeManagement extends ConsumerWidget {
   const AdminNoticeManagement({super.key, required this.state});
@@ -43,55 +44,80 @@ class AdminNoticeManagement extends ConsumerWidget {
           )
         else
           ...state.notices.map(
-            (notice) => Container(
+            (notice) => Padding(
               key: ValueKey('admin-notice-${notice.id}'),
-              width: double.infinity,
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(20),
-              decoration: adminSurface(),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (notice.isPinned) ...[
-                    const Icon(
-                      Icons.push_pin_outlined,
-                      color: TheWeColor.blue300,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(notice.title, style: TheWeTextStyle.subtitle),
-                        const SizedBox(height: 8),
-                        Text(notice.content, style: TheWeTextStyle.body),
-                        const SizedBox(height: 10),
-                        Text(
-                          '${notice.authorName} · ${_noticeDate(notice.createdAt)}',
-                          style: TheWeTextStyle.caption.copyWith(
-                            color: TheWeColor.black500,
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+                child: Ink(
+                  width: double.infinity,
+                  decoration: adminSurface(),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(18),
+                    onTap: () =>
+                        showApprovalNoticeDetailDialog(context, notice),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          if (notice.isPinned) ...[
+                            const Icon(
+                              Icons.push_pin_outlined,
+                              color: TheWeColor.blue300,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 10),
+                          ],
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  notice.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TheWeTextStyle.subtitle,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  notice.content,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TheWeTextStyle.body,
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  '${notice.authorName} · ${_noticeDate(notice.createdAt)}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TheWeTextStyle.caption.copyWith(
+                                    color: TheWeColor.black500,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                          IconButton(
+                            key: ValueKey('admin-notice-edit-${notice.id}'),
+                            onPressed: () =>
+                                _showNoticeEditor(context, ref, notice: notice),
+                            icon: const Icon(Icons.edit_outlined),
+                            tooltip: '공지 수정',
+                          ),
+                          IconButton(
+                            key: ValueKey('admin-notice-delete-${notice.id}'),
+                            onPressed: () =>
+                                _deleteNotice(context, ref, notice),
+                            icon: const Icon(Icons.delete_outline),
+                            color: TheWeColor.danger,
+                            tooltip: '공지 삭제',
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  IconButton(
-                    key: ValueKey('admin-notice-edit-${notice.id}'),
-                    onPressed: () =>
-                        _showNoticeEditor(context, ref, notice: notice),
-                    icon: const Icon(Icons.edit_outlined),
-                    tooltip: '공지 수정',
-                  ),
-                  IconButton(
-                    key: ValueKey('admin-notice-delete-${notice.id}'),
-                    onPressed: () => _deleteNotice(context, ref, notice),
-                    icon: const Icon(Icons.delete_outline),
-                    color: TheWeColor.danger,
-                    tooltip: '공지 삭제',
-                  ),
-                ],
+                ),
               ),
             ),
           ),

@@ -125,7 +125,66 @@ void main() {
     );
 
     expect(find.text('테스트 공지 제목'), findsOneWidget);
-    expect(find.text('테스트 공지 내용'), findsOneWidget);
+    final content = tester.widget<Text>(find.text('테스트 공지 내용'));
+    expect(content.maxLines, 1);
+    expect(content.overflow, TextOverflow.ellipsis);
     expect(find.byIcon(Icons.push_pin_outlined), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('home-notice-notice-test')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('notice-detail-dialog')), findsOneWidget);
+    expect(find.byKey(const ValueKey('notice-detail-content')), findsOneWidget);
+    expect(find.text('테스트 공지 내용'), findsNWidgets(2));
+  });
+
+  testWidgets('관리자 공지도 한 줄로 표시하고 클릭하면 전체 내용을 보여준다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1440, 1100);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    final manager = _adminAccount(
+      id: designatedAdminAccountId,
+      canChangeAdminOtp: true,
+    );
+    const notice = PortalNotice(
+      id: 'admin-notice-test',
+      title: '관리자 공지',
+      content: '상세 모달에서 보여줄 긴 공지 내용',
+      authorName: '김효민',
+      createdAt: '2026-09-02T10:00:00+09:00',
+      updatedAt: '2026-09-02T10:00:00+09:00',
+    );
+    final state = signedOutApprovalState.copyWith(
+      currentUser: manager,
+      accounts: [manager],
+      notices: const [notice],
+      adminMode: true,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            () => _NoticeTestController(state),
+          ),
+        ],
+        child: const MaterialApp(home: ApprovalAdminPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('공지 관리'));
+    await tester.pumpAndSettle();
+
+    final content = tester.widget<Text>(find.text('상세 모달에서 보여줄 긴 공지 내용'));
+    expect(content.maxLines, 1);
+    expect(content.overflow, TextOverflow.ellipsis);
+
+    await tester.tap(
+      find.byKey(const ValueKey('admin-notice-admin-notice-test')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('notice-detail-dialog')), findsOneWidget);
+    expect(find.byKey(const ValueKey('notice-detail-content')), findsOneWidget);
   });
 }
