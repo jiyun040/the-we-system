@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -10,6 +11,7 @@ import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
@@ -38,6 +40,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   final contentController = TextEditingController();
   String? selectedFormId;
   String? editingDocumentId;
+  String? selectedApprovalLineId;
   List<String> linkedDocuments = [];
   List<ApprovalAttachment> attachments = [];
   Map<String, String> formFields = {};
@@ -106,8 +109,17 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
               editingDocumentId = sourceDocument?.status == '작성중'
                   ? sourceDocument?.id
                   : null;
+              selectedApprovalLineId = _approvalLineIdForDocument(
+                currentTemplate,
+                initialDocument,
+                appState.accounts,
+              );
               initialized = true;
             }
+
+            final selectedApprovalLine = currentTemplate?.approvalLines
+                .where((line) => line.id == selectedApprovalLineId)
+                .firstOrNull;
 
             final draftDocument = initialDocument.copyWith(
               title: titleController.text,
@@ -125,6 +137,13 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                   initialDocument.documentLayout,
               formFields: formFields,
               lineItems: lineItems,
+              steps: appState.currentUser == null
+                  ? initialDocument.steps
+                  : buildApprovalStepsFor(
+                      appState.currentUser!,
+                      appState.accounts,
+                      approverIds: selectedApprovalLine?.userIds,
+                    ),
             );
 
             return Column(
@@ -172,6 +191,8 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                           manuallyEditedLineTotals.clear();
                           departmentVisible = true;
                           editingDocumentId = null;
+                          selectedApprovalLineId =
+                              template.approvalLines.firstOrNull?.id;
                         });
                       }
 
@@ -258,6 +279,19 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                           ),
                         ),
                       );
+                      final lineSelector =
+                          currentTemplate == null ||
+                              currentTemplate.approvalLines.isEmpty
+                          ? const SizedBox.shrink()
+                          : _DraftApprovalLineSelector(
+                              lines: currentTemplate.approvalLines,
+                              selectedLine:
+                                  selectedApprovalLine ??
+                                  currentTemplate.approvalLines.first,
+                              onChanged: (line) => setState(
+                                () => selectedApprovalLineId = line.id,
+                              ),
+                            );
 
                       if (isNarrow) {
                         return Column(
@@ -269,6 +303,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                                 alpha: 0.35,
                               ),
                             ),
+                            lineSelector,
                             Expanded(child: sheet),
                           ],
                         );
@@ -281,7 +316,14 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                             width: 1,
                             color: TheWeColor.black300.withValues(alpha: 0.35),
                           ),
-                          Expanded(child: sheet),
+                          Expanded(
+                            child: Column(
+                              children: [
+                                lineSelector,
+                                Expanded(child: sheet),
+                              ],
+                            ),
+                          ),
                         ],
                       );
                     },
@@ -347,6 +389,35 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
         state.formTemplates.first.id;
   }
 
+  String? _approvalLineIdForDocument(
+    ApprovalFormTemplate? template,
+    ApprovalDocument document,
+    List<EmployeeAccount> accounts,
+  ) {
+    if (template == null || template.approvalLines.isEmpty) return null;
+    final documentNames = document.steps
+        .skip(1)
+        .map((step) => step.name)
+        .toList();
+    for (final line in template.approvalLines) {
+      final lineNames = line.userIds
+          .map(
+            (id) =>
+                accounts.where((account) => account.id == id).firstOrNull?.name,
+          )
+          .whereType<String>()
+          .toList();
+      if (lineNames.length == documentNames.length &&
+          List.generate(
+            lineNames.length,
+            (index) => lineNames[index] == documentNames[index],
+          ).every((matches) => matches)) {
+        return line.id;
+      }
+    }
+    return template.approvalLines.first.id;
+  }
+
   Future<void> _requestApproval(ApprovalDocument document) async {
     if (document.documentLayout == ApprovalDocumentLayout.hospitality &&
         DateTime.tryParse(formFields['draftedAt']?.trim() ?? '') == null) {
@@ -377,6 +448,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
         .read(approvalDashboardControllerProvider.notifier)
         .requestApproval(
           documentId: editingDocumentId,
+          approvalLineId: selectedApprovalLineId,
           draft: ApprovalRequestDraft(
             formId: formId,
             title: titleController.text.trim(),
@@ -420,6 +492,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
           departmentVisible: departmentVisible,
           formFields: formFields,
           lineItems: lineItems,
+          approvalLineId: selectedApprovalLineId,
         );
     if (id == null || !mounted) {
       return;
@@ -531,4 +604,43 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
       }
     });
   }
+}
+
+class _DraftApprovalLineSelector extends StatelessWidget {
+  const _DraftApprovalLineSelector({
+    required this.lines,
+    required this.selectedLine,
+    required this.onChanged,
+  });
+
+  final List<ApprovalLinePreset> lines;
+  final ApprovalLinePreset selectedLine;
+  final ValueChanged<ApprovalLinePreset> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    key: const ValueKey('draft-approval-line-selector'),
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+    color: TheWeColor.blueSurface,
+    child: Row(
+      children: [
+        const Icon(Icons.account_tree_outlined, color: TheWeColor.blue300),
+        const SizedBox(width: 10),
+        Text('결재라인 선택', style: TheWeTextStyle.subtitle),
+        const SizedBox(width: 16),
+        Expanded(
+          child: TheWeDropdown<ApprovalLinePreset>(
+            key: const ValueKey('draft-approval-line-dropdown'),
+            value: selectedLine,
+            items: lines,
+            labelBuilder: (line) => line.name,
+            onChanged: (line) {
+              if (line != null) onChanged(line);
+            },
+          ),
+        ),
+      ],
+    ),
+  );
 }

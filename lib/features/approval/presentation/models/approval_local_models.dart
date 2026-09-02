@@ -98,6 +98,18 @@ class EmployeeAccount {
   }
 }
 
+class ApprovalLinePreset {
+  const ApprovalLinePreset({
+    required this.id,
+    required this.name,
+    required this.userIds,
+  });
+
+  final String id;
+  final String name;
+  final List<String> userIds;
+}
+
 class ApprovalFormTemplate {
   const ApprovalFormTemplate({
     required this.id,
@@ -114,6 +126,7 @@ class ApprovalFormTemplate {
     required this.agreement,
     this.documentLayout = ApprovalDocumentLayout.basic,
     this.lineItemRows = 8,
+    this.approvalLines = const [],
   });
 
   final String id;
@@ -130,6 +143,7 @@ class ApprovalFormTemplate {
   final String agreement;
   final String documentLayout;
   final int lineItemRows;
+  final List<ApprovalLinePreset> approvalLines;
 
   ApprovalFormTemplate copyWith({
     String? id,
@@ -146,6 +160,7 @@ class ApprovalFormTemplate {
     String? agreement,
     String? documentLayout,
     int? lineItemRows,
+    List<ApprovalLinePreset>? approvalLines,
   }) {
     return ApprovalFormTemplate(
       id: id ?? this.id,
@@ -163,6 +178,7 @@ class ApprovalFormTemplate {
       agreement: agreement ?? this.agreement,
       documentLayout: documentLayout ?? this.documentLayout,
       lineItemRows: lineItemRows ?? this.lineItemRows,
+      approvalLines: approvalLines ?? this.approvalLines,
     );
   }
 }

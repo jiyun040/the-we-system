@@ -461,6 +461,21 @@ Future<void> _showFormEditor(
   final lineItemRows = TextEditingController(
     text: '${template?.lineItemRows ?? 8}',
   );
+  final accounts =
+      ref
+          .read(approvalDashboardControllerProvider)
+          .asData
+          ?.value
+          .organizationOrderedAccounts ??
+      const <EmployeeAccount>[];
+  final approvalLines = [
+    for (final line in template?.approvalLines ?? const <ApprovalLinePreset>[])
+      _EditableApprovalLine(
+        id: line.id,
+        name: line.name,
+        userIds: [...line.userIds],
+      ),
+  ];
   var documentLayout = template?.documentLayout ?? ApprovalDocumentLayout.basic;
   var error = '';
 
@@ -527,6 +542,61 @@ Future<void> _showFormEditor(
                     ),
                   ),
                 ],
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text('결재라인', style: TheWeTextStyle.subtitle),
+                    ),
+                    OutlinedButton.icon(
+                      key: const ValueKey('form-approval-line-add'),
+                      onPressed: () => setDialogState(
+                        () => approvalLines.add(
+                          _EditableApprovalLine(
+                            id: 'line-${DateTime.now().microsecondsSinceEpoch}',
+                            name: '결재라인 ${approvalLines.length + 1}',
+                            userIds: [],
+                          ),
+                        ),
+                      ),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('라인 추가'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '양식별로 사용할 결재라인을 만들면 기안자가 기안 화면에서 선택할 수 있습니다.',
+                    style: TheWeTextStyle.caption.copyWith(
+                      color: TheWeColor.black500,
+                    ),
+                  ),
+                ),
+                for (var index = 0; index < approvalLines.length; index++) ...[
+                  const SizedBox(height: 10),
+                  _ApprovalLineEditorCard(
+                    key: ValueKey('form-approval-line-$index'),
+                    line: approvalLines[index],
+                    accounts: accounts,
+                    onChanged: () => setDialogState(() {}),
+                    onMoveUp: index == 0
+                        ? null
+                        : () => setDialogState(() {
+                            final line = approvalLines.removeAt(index);
+                            approvalLines.insert(index - 1, line);
+                          }),
+                    onMoveDown: index == approvalLines.length - 1
+                        ? null
+                        : () => setDialogState(() {
+                            final line = approvalLines.removeAt(index);
+                            approvalLines.insert(index + 1, line);
+                          }),
+                    onDelete: () =>
+                        setDialogState(() => approvalLines.removeAt(index)),
+                  ),
+                ],
                 if (error.isNotEmpty) ...[
                   const SizedBox(height: 10),
                   Align(
@@ -550,6 +620,12 @@ Future<void> _showFormEditor(
           ),
           FilledButton(
             onPressed: () {
+              if (approvalLines.any(
+                (line) => line.name.trim().isEmpty || line.userIds.isEmpty,
+              )) {
+                setDialogState(() => error = '결재라인 이름과 한 명 이상의 결재자를 선택해 주세요.');
+                return;
+              }
               final message = ref
                   .read(approvalDashboardControllerProvider.notifier)
                   .saveFormTemplate(
@@ -562,6 +638,14 @@ Future<void> _showFormEditor(
                     documentLayout: documentLayout,
                     lineItemRows:
                         int.tryParse(lineItemRows.text)?.clamp(1, 30) ?? 8,
+                    approvalLines: [
+                      for (final line in approvalLines)
+                        ApprovalLinePreset(
+                          id: line.id,
+                          name: line.name.trim(),
+                          userIds: [...line.userIds],
+                        ),
+                    ],
                   );
               if (message != null) {
                 setDialogState(() => error = message);
@@ -575,4 +659,208 @@ Future<void> _showFormEditor(
       ),
     ),
   );
+}
+
+class _EditableApprovalLine {
+  _EditableApprovalLine({
+    required this.id,
+    required this.name,
+    required this.userIds,
+  });
+
+  final String id;
+  String name;
+  List<String> userIds;
+}
+
+class _ApprovalLineEditorCard extends StatelessWidget {
+  const _ApprovalLineEditorCard({
+    super.key,
+    required this.line,
+    required this.accounts,
+    required this.onChanged,
+    required this.onMoveUp,
+    required this.onMoveDown,
+    required this.onDelete,
+  });
+
+  final _EditableApprovalLine line;
+  final List<EmployeeAccount> accounts;
+  final VoidCallback onChanged;
+  final VoidCallback? onMoveUp;
+  final VoidCallback? onMoveDown;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final names = [
+      for (final id in line.userIds)
+        accounts.where((account) => account.id == id).firstOrNull?.name ?? id,
+    ];
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: TheWeColor.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: TheWeColor.black300.withValues(alpha: .4)),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  key: ValueKey('form-approval-line-name-${line.id}'),
+                  initialValue: line.name,
+                  onChanged: (value) => line.name = value,
+                  decoration: const InputDecoration(labelText: '라인 이름'),
+                ),
+              ),
+              IconButton(
+                onPressed: onMoveUp,
+                icon: const Icon(Icons.arrow_upward),
+                tooltip: '위로',
+              ),
+              IconButton(
+                onPressed: onMoveDown,
+                icon: const Icon(Icons.arrow_downward),
+                tooltip: '아래로',
+              ),
+              IconButton(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline),
+                color: TheWeColor.danger,
+                tooltip: '라인 삭제',
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  names.isEmpty ? '결재자를 선택해 주세요.' : names.join(' → '),
+                  style: TheWeTextStyle.caption.copyWith(
+                    color: names.isEmpty
+                        ? TheWeColor.danger
+                        : TheWeColor.black500,
+                  ),
+                ),
+              ),
+              OutlinedButton(
+                key: ValueKey('form-approval-line-users-${line.id}'),
+                onPressed: () async {
+                  final selected = await showDialog<List<String>>(
+                    context: context,
+                    builder: (context) => _ApprovalLineUserPickerDialog(
+                      accounts: accounts,
+                      initialUserIds: line.userIds,
+                    ),
+                  );
+                  if (selected == null) return;
+                  line.userIds = selected;
+                  onChanged();
+                },
+                child: const Text('결재자 선택'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ApprovalLineUserPickerDialog extends StatefulWidget {
+  const _ApprovalLineUserPickerDialog({
+    required this.accounts,
+    required this.initialUserIds,
+  });
+
+  final List<EmployeeAccount> accounts;
+  final List<String> initialUserIds;
+
+  @override
+  State<_ApprovalLineUserPickerDialog> createState() =>
+      _ApprovalLineUserPickerDialogState();
+}
+
+class _ApprovalLineUserPickerDialogState
+    extends State<_ApprovalLineUserPickerDialog> {
+  late List<String> selectedUserIds = [...widget.initialUserIds];
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    key: const ValueKey('form-approval-line-user-picker'),
+    backgroundColor: TheWeColor.surfaceAlt,
+    title: const Text('결재자 선택 및 순서'),
+    content: SizedBox(
+      width: 520,
+      height: 430,
+      child: ListView(
+        children: [
+          for (final account in widget.accounts)
+            CheckboxListTile(
+              key: ValueKey('form-approval-line-user-${account.id}'),
+              value: selectedUserIds.contains(account.id),
+              title: Row(
+                children: [
+                  Expanded(child: Text('${account.name} ${account.position}')),
+                  if (selectedUserIds.contains(account.id)) ...[
+                    IconButton(
+                      onPressed: selectedUserIds.indexOf(account.id) == 0
+                          ? null
+                          : () => _move(account.id, -1),
+                      icon: const Icon(Icons.arrow_upward, size: 18),
+                    ),
+                    IconButton(
+                      onPressed:
+                          selectedUserIds.indexOf(account.id) ==
+                              selectedUserIds.length - 1
+                          ? null
+                          : () => _move(account.id, 1),
+                      icon: const Icon(Icons.arrow_downward, size: 18),
+                    ),
+                  ],
+                ],
+              ),
+              subtitle: Text(account.department),
+              secondary: selectedUserIds.contains(account.id)
+                  ? Text('${selectedUserIds.indexOf(account.id) + 1}')
+                  : null,
+              onChanged: (selected) => setState(() {
+                if (selected == true) {
+                  if (!selectedUserIds.contains(account.id)) {
+                    selectedUserIds.add(account.id);
+                  }
+                } else {
+                  selectedUserIds.remove(account.id);
+                }
+              }),
+              controlAffinity: ListTileControlAffinity.leading,
+            ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('취소'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, selectedUserIds),
+        child: const Text('적용'),
+      ),
+    ],
+  );
+
+  void _move(String userId, int offset) {
+    setState(() {
+      final current = selectedUserIds.indexOf(userId);
+      final next = current + offset;
+      if (current < 0 || next < 0 || next >= selectedUserIds.length) return;
+      selectedUserIds.removeAt(current);
+      selectedUserIds.insert(next, userId);
+    });
+  }
 }

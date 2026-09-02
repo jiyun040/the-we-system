@@ -74,7 +74,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }) async {
     final current = currentDashboardState;
     if (current?.canManageNotices != true) {
-      return 'OTP 관리자 계정만 공지사항을 관리할 수 있습니다.';
+      return '관리자 계정만 공지사항을 관리할 수 있습니다.';
     }
     final normalizedTitle = title.trim();
     final normalizedContent = content.trim();
@@ -116,7 +116,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
 
   Future<String?> deleteNotice(String noticeId) async {
     if (currentDashboardState?.canManageNotices != true) {
-      return 'OTP 관리자 계정만 공지사항을 관리할 수 있습니다.';
+      return '관리자 계정만 공지사항을 관리할 수 있습니다.';
     }
     try {
       await api.deleteNotice(noticeId);
@@ -252,6 +252,14 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
                 userId,
                 normalizedId,
               ),
+              approvalLines: [
+                for (final line in template.approvalLines)
+                  ApprovalLinePreset(
+                    id: line.id,
+                    name: line.name,
+                    userIds: _replaceUserId(line.userIds, userId, normalizedId),
+                  ),
+              ],
             ),
           )
           .toList();
@@ -447,6 +455,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String defaultContent,
     String documentLayout = ApprovalDocumentLayout.basic,
     int lineItemRows = 8,
+    List<ApprovalLinePreset> approvalLines = const [],
   }) {
     final current = currentDashboardState;
     if (current == null) return '양식 정보를 불러오지 못했습니다.';
@@ -479,6 +488,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           agreement: '',
           documentLayout: documentLayout,
           lineItemRows: lineItemRows,
+          approvalLines: approvalLines,
         ),
       );
     } else {
@@ -492,6 +502,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         defaultContent: defaultContent.trim(),
         documentLayout: documentLayout,
         lineItemRows: lineItemRows,
+        approvalLines: approvalLines,
       );
     }
     setApprovalDashboardState(
@@ -517,6 +528,10 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           'defaultContent': defaultContent.trim(),
           'documentLayout': documentLayout,
           'lineItemRows': lineItemRows,
+          'approvalLines': [
+            for (final line in approvalLines)
+              {'id': line.id, 'name': line.name, 'userIds': line.userIds},
+          ],
         },
       ),
     );
@@ -604,46 +619,47 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     );
   }
 
-  void updateDocumentCategoryAccess({
-    required String category,
-    required bool organizationWide,
-    required Set<String> userIds,
-  }) {
+  Future<String?> saveDocumentCategoryAccess({
+    required Set<String> organizationWideCategories,
+    required Map<String, Set<String>> viewerIds,
+  }) async {
     final current = currentDashboardState;
-    if (current == null ||
-        !current.formTemplates.any(
-          (template) => template.category == category,
-        )) {
-      return;
-    }
-    setApprovalDashboardState(this, (value) {
-      final wideCategories = {...value.organizationWideDocumentCategories};
-      if (organizationWide) {
-        wideCategories.add(category);
-      } else {
-        wideCategories.remove(category);
-      }
-      return value.copyWith(
-        organizationWideDocumentCategories: wideCategories,
-        documentCategoryViewerIds: {
-          ...value.documentCategoryViewerIds,
-          category: {...userIds},
-        },
-      );
-    });
-    final latest = currentDashboardState;
-    final viewerIds =
-        latest?.documentCategoryViewerIds ?? const <String, Set<String>>{};
-    syncRemote(
-      () => api.updateSettings({
-        'organizationWideDocumentCategories':
-            latest?.organizationWideDocumentCategories.toList() ?? const [],
+    if (current == null) return '결재 문서 설정을 불러오지 못했습니다.';
+    final categories = current.formTemplates
+        .map((template) => template.category)
+        .where((category) => category.isNotEmpty)
+        .toSet();
+    final normalizedWide = {
+      for (final category in organizationWideCategories)
+        if (categories.contains(category)) category,
+    };
+    final normalizedViewerIds = {
+      for (final category in categories) category: {...?viewerIds[category]},
+    };
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(
+        organizationWideDocumentCategories: normalizedWide,
+        documentCategoryViewerIds: normalizedViewerIds,
+      ),
+    );
+    try {
+      await api.updateSettings({
+        'organizationWideDocumentCategories': normalizedWide.toList(),
         'documentCategoryViewerIds': {
-          for (final entry in viewerIds.entries)
+          for (final entry in normalizedViewerIds.entries)
             entry.key: entry.value.toList(),
         },
-      }),
-    );
+      });
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(
+        error,
+        fallback: '결재 문서 열람 권한을 저장하지 못했습니다.',
+      );
+    }
   }
 
   String? setAdminPermission(String userId, bool enabled) {

@@ -29,7 +29,7 @@ EmployeeAccount _adminAccount({
 );
 
 void main() {
-  testWidgets('OTP 관리자에게만 공지 관리 메뉴와 작성 화면을 표시한다', (tester) async {
+  testWidgets('김효민 관리자에게 공지 관리 메뉴와 작성 화면을 표시한다', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1440, 1100);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -74,7 +74,7 @@ void main() {
     expect(find.text('공지 제목과 내용을 모두 입력해 주세요.'), findsOneWidget);
   });
 
-  testWidgets('슈퍼어드민에게는 공지 관리 메뉴를 표시하지 않는다', (tester) async {
+  testWidgets('슈퍼어드민에게도 공지 관리 메뉴와 작성 화면을 표시한다', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(1440, 1100);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -97,7 +97,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('공지 관리'), findsNothing);
+    expect(state.canManageNotices, isTrue);
+    expect(find.text('공지 관리'), findsOneWidget);
+    await tester.tap(find.text('공지 관리'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('admin-notice-create-button')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('등록된 공지사항을 일반 홈 화면에 표시한다', (tester) async {

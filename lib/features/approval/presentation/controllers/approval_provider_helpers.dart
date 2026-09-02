@@ -28,9 +28,18 @@ void setApprovalDashboardState(
 
 List<ApprovalStep> buildApprovalStepsFor(
   EmployeeAccount drafter,
-  List<EmployeeAccount> accounts,
-) {
-  final chain = approvalChainFor(drafter, accounts);
+  List<EmployeeAccount> accounts, {
+  List<String>? approverIds,
+}) {
+  final chain = approverIds == null
+      ? approvalChainFor(drafter, accounts)
+      : approverIds
+            .map(
+              (id) => accounts.where((account) => account.id == id).firstOrNull,
+            )
+            .whereType<EmployeeAccount>()
+            .where((account) => account.id != drafter.id)
+            .toList();
   return [
     ApprovalStep(
       name: drafter.name,

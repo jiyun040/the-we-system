@@ -52,14 +52,26 @@ class _DocumentAccessManagementState
     });
   }
 
-  void _save() {
+  Future<void> _save() async {
     final notifier = ref.read(approvalDashboardControllerProvider.notifier);
-    for (final category in categories) {
-      notifier.updateDocumentCategoryAccess(
-        category: category,
-        organizationWide: _isOrganizationWide(category),
-        userIds: draftViewerIds[category] ?? const <String>{},
+    final message = await notifier.saveDocumentCategoryAccess(
+      organizationWideCategories: {
+        for (final category in categories)
+          if (_isOrganizationWide(category)) category,
+      },
+      viewerIds: {
+        for (final category in categories)
+          category: {...?draftViewerIds[category]},
+      },
+    );
+    if (!mounted) return;
+    if (message != null) {
+      showTheWeSnackBar(
+        context,
+        message: message,
+        type: TheWeSnackBarType.error,
       );
+      return;
     }
     showTheWeSnackBar(context, message: '결재 문서 열람 권한을 저장했습니다.');
   }

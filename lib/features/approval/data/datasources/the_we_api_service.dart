@@ -488,6 +488,17 @@ ApprovalFormTemplate _formTemplate(Map<String, dynamic> data) =>
       agreement: data['agreement']?.toString() ?? '',
       documentLayout: data['documentLayout']?.toString() ?? 'basic',
       lineItemRows: _integer(data['lineItemRows'], 8),
+      approvalLines: _list(data['approvalLines'])
+          .map(_map)
+          .map(
+            (line) => ApprovalLinePreset(
+              id: line['id']?.toString() ?? '',
+              name: line['name']?.toString() ?? '',
+              userIds: _strings(line['userIds']),
+            ),
+          )
+          .where((line) => line.id.isNotEmpty && line.name.isNotEmpty)
+          .toList(),
     );
 
 LeaveRequest _leaveRequest(Map<String, dynamic> data) => LeaveRequest(

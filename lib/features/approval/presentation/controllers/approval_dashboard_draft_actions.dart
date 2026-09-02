@@ -3,7 +3,7 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardDraftActions on ApprovalDashboardController {
-  ApprovalDocument buildDraftDocument(String formId) {
+  ApprovalDocument buildDraftDocument(String formId, {String? approvalLineId}) {
     final current = currentDashboardState;
     final user = current?.currentUser;
     final template = current?.formTemplates
@@ -35,7 +35,11 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       publicReceivers: template.publicReceivers,
       documentLayout: template.documentLayout,
       lineItems: emptyApprovalLineItems(template),
-      steps: buildApprovalStepsFor(user, current.accounts),
+      steps: buildApprovalStepsFor(
+        user,
+        current.accounts,
+        approverIds: _approverIdsFor(template, approvalLineId),
+      ),
       histories: const [],
     );
   }
@@ -50,6 +54,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
     required bool departmentVisible,
     required Map<String, String> formFields,
     required List<Map<String, String>> lineItems,
+    String? approvalLineId,
   }) async {
     final current = currentDashboardState;
     final user = current?.currentUser;
@@ -80,7 +85,11 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       lineItems: lineItems,
     );
     final steps = _remoteSteps(
-      buildApprovalStepsFor(user, current.accounts),
+      buildApprovalStepsFor(
+        user,
+        current.accounts,
+        approverIds: _approverIdsFor(template, approvalLineId),
+      ),
       current.accounts,
     );
     try {
@@ -109,6 +118,7 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
   Future<String?> requestApproval({
     String? documentId,
     required ApprovalRequestDraft draft,
+    String? approvalLineId,
   }) async {
     final current = currentDashboardState;
     final user = current?.currentUser;
@@ -127,7 +137,11 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
         ? null
         : current.documents.where((item) => item.id == documentId).firstOrNull;
     final steps = _remoteSteps(
-      buildApprovalStepsFor(user, current.accounts),
+      buildApprovalStepsFor(
+        user,
+        current.accounts,
+        approverIds: _approverIdsFor(template, approvalLineId),
+      ),
       current.accounts,
     );
     try {
@@ -153,6 +167,17 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       return null;
     }
   }
+}
+
+List<String>? _approverIdsFor(
+  ApprovalFormTemplate template,
+  String? approvalLineId,
+) {
+  if (template.approvalLines.isEmpty) return null;
+  final selected = template.approvalLines
+      .where((line) => line.id == approvalLineId)
+      .firstOrNull;
+  return (selected ?? template.approvalLines.first).userIds;
 }
 
 List<Map<String, dynamic>> _remoteSteps(

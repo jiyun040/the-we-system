@@ -71,5 +71,9 @@ void main() {
       find.byKey(const ValueKey('leave-content-scroll')),
     );
     expect(leaveScroll.padding, const EdgeInsets.fromLTRB(28, 24, 28, 28));
+    final leaveContent = tester.widget<Align>(
+      find.byKey(const ValueKey('leave-content-top')),
+    );
+    expect(leaveContent.alignment, Alignment.topCenter);
   });
 }

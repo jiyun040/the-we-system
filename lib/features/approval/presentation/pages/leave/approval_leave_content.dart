@@ -21,7 +21,9 @@ class ApprovalLeaveContent extends ConsumerWidget {
           mobile ? 18 : 28,
           mobile ? 18 : 28,
         ),
-        child: Center(
+        child: Align(
+          key: const ValueKey('leave-content-top'),
+          alignment: Alignment.topCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1240),
             child: Column(

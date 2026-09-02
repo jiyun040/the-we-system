@@ -162,7 +162,9 @@ class ApprovalDashboardState {
   bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
 
   bool get canManageNotices =>
-      isAdminMode && currentUser?.canChangeAdminOtp == true;
+      isAdminMode &&
+      (currentUser?.canChangeAdminOtp == true ||
+          currentUser?.isSystemAdministrator == true);
 
   bool isAppEnabled(String appId) => enabledAppIds.contains(appId);
 

@@ -12,7 +12,7 @@ class AdminNoticeManagement extends ConsumerWidget {
       return Container(
         padding: const EdgeInsets.all(24),
         decoration: adminSurface(),
-        child: const Text('OTP 관리자 계정만 공지사항을 관리할 수 있습니다.'),
+        child: const Text('관리자 계정만 공지사항을 관리할 수 있습니다.'),
       );
     }
     return Column(

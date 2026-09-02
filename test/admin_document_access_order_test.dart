@@ -139,4 +139,50 @@ void main() {
       }
     }
   });
+
+  testWidgets('저장된 일부 사용자 설정을 다시 열어도 그대로 표시한다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    const template = ApprovalFormTemplate(
+      id: 'saved-access-form',
+      category: '지원',
+      name: '지원 양식',
+      description: '',
+      defaultTitle: '',
+      defaultContent: '',
+      receivers: [],
+      references: [],
+      viewers: [],
+      publicReceivers: [],
+      cooperationDepartment: '',
+      agreement: '',
+    );
+    final selected = _account(
+      id: 'saved-user',
+      name: '저장 사용자',
+      department: '관리부',
+      position: '이사',
+    );
+    final state = signedOutApprovalState.copyWith(
+      accounts: [selected],
+      organizationDepartments: const ['관리부'],
+      formTemplates: const [template],
+      organizationWideDocumentCategories: const {},
+      documentCategoryViewerIds: const {
+        '지원': {'saved-user'},
+      },
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AdminDocumentAccessManagement(state: state)),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('1명 선택됨'), findsOneWidget);
+    expect(find.text('저장 사용자 · 관리부'), findsOneWidget);
+  });
 }
