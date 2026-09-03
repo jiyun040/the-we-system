@@ -27,7 +27,7 @@ class _AnnualLeavePolicyEditorState
   void initState() {
     super.initState();
     controllers = {
-      for (final entry in widget.policy.entries.where((item) => item.key <= 10))
+      for (final entry in widget.policy.entries)
         entry.key: TextEditingController(text: entry.value.toString()),
     };
     monthlyLeaveController = TextEditingController(
@@ -103,28 +103,39 @@ class _AnnualLeavePolicyEditorState
             ),
           ),
           const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerRight,
+            child: OutlinedButton.icon(
+              key: const ValueKey('annual-leave-add-year'),
+              onPressed: _addPolicyYear,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('연차 구간 추가'),
+            ),
+          ),
+          const SizedBox(height: 10),
           LayoutBuilder(
             builder: (context, constraints) {
               final itemWidth = constraints.maxWidth < 600
                   ? (constraints.maxWidth - 8) / 2
                   : 150.0;
+              final years = controllers.keys.toList()..sort();
               return Wrap(
                 spacing: mobile ? 8 : 12,
                 runSpacing: mobile ? 8 : 12,
-                children: controllers.entries
+                children: years
                     .map(
-                      (entry) => SizedBox(
+                      (year) => SizedBox(
                         width: itemWidth,
                         child: TextField(
-                          key: ValueKey('annual-leave-${entry.key}'),
-                          controller: entry.value,
+                          key: ValueKey('annual-leave-$year'),
+                          controller: controllers[year],
                           keyboardType: TextInputType.number,
                           onChanged: (_) => setState(() {
                             dirty = true;
                             error = '';
                           }),
                           decoration: InputDecoration(
-                            labelText: '${entry.key}년차',
+                            labelText: '$year년',
                             suffixText: '일',
                           ),
                         ),
@@ -156,7 +167,7 @@ class _AnnualLeavePolicyEditorState
     for (final entry in controllers.entries) {
       final days = int.tryParse(entry.value.text.trim());
       if (days == null || days < 1 || days > 365) {
-        setState(() => error = '${entry.key}년차 연차 일수를 확인해 주세요.');
+        setState(() => error = '${entry.key}년 연차 일수를 확인해 주세요.');
         return;
       }
       policy[entry.key] = days;
@@ -173,5 +184,29 @@ class _AnnualLeavePolicyEditorState
       error = '';
     });
     showTheWeSnackBar(context, message: '연차 설정이 저장되었습니다.');
+  }
+
+  void _addPolicyYear() {
+    final years = controllers.keys.toList()..sort();
+    var year = 1;
+    if (years.isNotEmpty) {
+      year = years.first;
+      while (controllers.containsKey(year)) {
+        year++;
+      }
+      if (year > 99) {
+        setState(() => error = '99년까지 추가할 수 있습니다.');
+        return;
+      }
+    }
+    final previousYears = years.where((item) => item < year);
+    final previousDays = previousYears.isEmpty
+        ? 15
+        : int.tryParse(controllers[previousYears.last]!.text.trim()) ?? 15;
+    setState(() {
+      controllers[year] = TextEditingController(text: '$previousDays');
+      dirty = true;
+      error = '';
+    });
   }
 }

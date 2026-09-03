@@ -41,6 +41,7 @@ class ApprovalDashboardState {
       '협조',
     },
     this.documentCategoryViewerIds = const <String, Set<String>>{},
+    this.leaveApprovalLines = const <String, List<String>>{},
   });
 
   final List<EmployeeAccount> accounts;
@@ -71,6 +72,7 @@ class ApprovalDashboardState {
   final Set<String> disabledFormTemplateIds;
   final Set<String> organizationWideDocumentCategories;
   final Map<String, Set<String>> documentCategoryViewerIds;
+  final Map<String, List<String>> leaveApprovalLines;
 
   ApprovalDashboardState copyWith({
     List<EmployeeAccount>? accounts,
@@ -104,6 +106,7 @@ class ApprovalDashboardState {
     Set<String>? disabledFormTemplateIds,
     Set<String>? organizationWideDocumentCategories,
     Map<String, Set<String>>? documentCategoryViewerIds,
+    Map<String, List<String>>? leaveApprovalLines,
   }) {
     return ApprovalDashboardState(
       accounts: accounts ?? this.accounts,
@@ -150,6 +153,7 @@ class ApprovalDashboardState {
           this.organizationWideDocumentCategories,
       documentCategoryViewerIds:
           documentCategoryViewerIds ?? this.documentCategoryViewerIds,
+      leaveApprovalLines: leaveApprovalLines ?? this.leaveApprovalLines,
     );
   }
 
@@ -453,7 +457,7 @@ class ApprovalDashboardState {
         (now.month == hireDate.month && now.day < hireDate.day)) {
       years--;
     }
-    return (years + 1).clamp(1, 99);
+    return years.clamp(1, 99);
   }
 
   int get currentServiceYear => serviceYearFor(currentUser);
@@ -484,10 +488,15 @@ class ApprovalDashboardState {
 
   double annualLeaveDaysFor(EmployeeAccount account) =>
       account.annualLeaveDays ??
-      (annualLeaveByYear[serviceYearFor(account).clamp(1, 10)] ??
-              annualLeaveByYear[10] ??
-              19)
-          .toDouble();
+      (_annualLeaveDaysForServiceYear(serviceYearFor(account))).toDouble();
+
+  int _annualLeaveDaysForServiceYear(int serviceYear) {
+    if (annualLeaveByYear.isEmpty) return 19;
+    final years = annualLeaveByYear.keys.toList()..sort();
+    final applicable = years.where((year) => year <= serviceYear);
+    final selectedYear = applicable.isEmpty ? years.first : applicable.last;
+    return annualLeaveByYear[selectedYear] ?? 19;
+  }
 
   double monthlyLeaveDaysFor(EmployeeAccount account) =>
       account.monthlyLeaveDays ?? accruedMonthlyLeaveFor(account).toDouble();
@@ -510,7 +519,7 @@ class ApprovalDashboardState {
   String servicePeriodLabelFor(EmployeeAccount? account) =>
       isUnderOneYear(account)
       ? '${completedServiceMonthsFor(account)}개월차'
-      : '${serviceYearFor(account)}년차';
+      : '${serviceYearFor(account)}년';
 
   double get totalAnnualLeave => totalAnnualLeaveFor(currentUser);
 
@@ -549,6 +558,11 @@ class ApprovalDashboardState {
   bool canActOnLeave(LeaveRequest request) {
     final user = currentUser;
     if (user == null || request.status != '승인대기') return false;
+    if (request.approvalLine.isNotEmpty) {
+      return request.approvalLine.any(
+        (step) => step.status == '진행중' && step.userId == user.id,
+      );
+    }
     if (request.ceoStatus == '진행중') {
       return user.id == 'ceo' || user.position.contains('대표');
     }

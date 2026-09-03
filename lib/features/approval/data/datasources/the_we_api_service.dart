@@ -32,6 +32,7 @@ class RemoteBootstrapData {
     required this.enabledAppIds,
     required this.organizationWideDocumentCategories,
     required this.documentCategoryViewerIds,
+    required this.leaveApprovalLines,
   });
 
   final EmployeeAccount currentUser;
@@ -56,6 +57,7 @@ class RemoteBootstrapData {
   final Set<String> enabledAppIds;
   final Set<String> organizationWideDocumentCategories;
   final Map<String, Set<String>> documentCategoryViewerIds;
+  final Map<String, List<String>> leaveApprovalLines;
 }
 
 class TheWeApiService {
@@ -227,6 +229,7 @@ class TheWeApiService {
         settings['organizationWideDocumentCategories'],
       ).toSet(),
       documentCategoryViewerIds: _setMap(settings['documentCategoryViewerIds']),
+      leaveApprovalLines: _stringListMap(settings['leaveApprovalLines']),
     );
   });
 
@@ -457,6 +460,9 @@ Map<int, int> _intMap(dynamic value) => _map(value).map(
 Map<String, Set<String>> _setMap(dynamic value) =>
     _map(value).map((key, item) => MapEntry(key, _strings(item).toSet()));
 
+Map<String, List<String>> _stringListMap(dynamic value) =>
+    _map(value).map((key, item) => MapEntry(key, _strings(item)));
+
 EmployeeAccount _account(Map<String, dynamic> data) => EmployeeAccount(
   id: data['id']?.toString() ?? '',
   password: '',
@@ -513,6 +519,19 @@ LeaveRequest _leaveRequest(Map<String, dynamic> data) => LeaveRequest(
       ? '승인완료'
       : data['status']?.toString() ?? '승인대기',
   ceoStatus: data['ceoStatus']?.toString() ?? '진행중',
+  approvalLine: _list(data['approvalLine'])
+      .map(_map)
+      .map(
+        (step) => LeaveApprovalStep(
+          userId: step['userId']?.toString() ?? '',
+          name: step['name']?.toString() ?? '',
+          department: step['department']?.toString() ?? '',
+          position: step['position']?.toString() ?? '',
+          status: step['status']?.toString() ?? '예정',
+        ),
+      )
+      .where((step) => step.userId.isNotEmpty)
+      .toList(),
   rejectedBy: data['rejectedBy']?.toString() ?? '',
   directEntry: data['directEntry'] == true,
   registeredBy: data['registeredBy']?.toString() ?? '',

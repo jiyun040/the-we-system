@@ -28,6 +28,7 @@ class ApprovalAdminPage extends ConsumerStatefulWidget {
 class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
   int selectedIndex = 0;
   bool settingsUnlocked = false;
+  final ScrollController _pageScrollController = ScrollController();
 
   static const destinations = [
     (Icons.dashboard_outlined, '근태 관리'),
@@ -95,6 +96,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                         Expanded(
                           child: SingleChildScrollView(
                             key: ValueKey('admin-page-scroll-$selectedIndex'),
+                            controller: _pageScrollController,
                             padding: EdgeInsets.all(mobile ? 14 : 28),
                             child: Center(
                               child: ConstrainedBox(
@@ -106,7 +108,10 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                   1 => AdminDocumentAccessManagement(
                                     state: state,
                                   ),
-                                  2 => AdminEmployeeManagement(state: state),
+                                  2 => AdminEmployeeManagement(
+                                    state: state,
+                                    scrollController: _pageScrollController,
+                                  ),
                                   3 => AdminOrganizationManagement(
                                     state: state,
                                   ),
@@ -136,6 +141,12 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _pageScrollController.dispose();
+    super.dispose();
   }
 
   void _leaveAdmin() {

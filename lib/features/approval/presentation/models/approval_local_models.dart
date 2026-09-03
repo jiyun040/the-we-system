@@ -231,6 +231,31 @@ class ApprovalRequestDraft {
   final List<Map<String, String>> lineItems;
 }
 
+class LeaveApprovalStep {
+  const LeaveApprovalStep({
+    required this.userId,
+    required this.name,
+    required this.department,
+    required this.position,
+    required this.status,
+  });
+
+  final String userId;
+  final String name;
+  final String department;
+  final String position;
+  final String status;
+
+  LeaveApprovalStep copyWith({String? userId, String? status}) =>
+      LeaveApprovalStep(
+        userId: userId ?? this.userId,
+        name: name,
+        department: department,
+        position: position,
+        status: status ?? this.status,
+      );
+}
+
 class LeaveRequest {
   const LeaveRequest({
     required this.id,
@@ -242,6 +267,7 @@ class LeaveRequest {
     required this.reason,
     this.status = '승인대기',
     this.ceoStatus = '진행중',
+    this.approvalLine = const [],
     this.rejectedBy = '',
     this.directEntry = false,
     this.registeredBy = '',
@@ -256,6 +282,7 @@ class LeaveRequest {
   final String reason;
   final String status;
   final String ceoStatus;
+  final List<LeaveApprovalStep> approvalLine;
   final String rejectedBy;
   final bool directEntry;
   final String registeredBy;
@@ -264,6 +291,7 @@ class LeaveRequest {
     String? userId,
     String? status,
     String? ceoStatus,
+    List<LeaveApprovalStep>? approvalLine,
     String? rejectedBy,
     bool? directEntry,
     String? registeredBy,
@@ -277,6 +305,7 @@ class LeaveRequest {
     reason: reason,
     status: status ?? this.status,
     ceoStatus: ceoStatus ?? this.ceoStatus,
+    approvalLine: approvalLine ?? this.approvalLine,
     rejectedBy: rejectedBy ?? this.rejectedBy,
     directEntry: directEntry ?? this.directEntry,
     registeredBy: registeredBy ?? this.registeredBy,

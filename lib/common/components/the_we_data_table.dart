@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -12,6 +13,7 @@ class TheWeDataTable extends StatelessWidget {
     this.columnFlexes,
     this.minWidth = 920,
     this.onRowTaps,
+    this.verticalScrollController,
   });
 
   final List<String> headers;
@@ -19,6 +21,7 @@ class TheWeDataTable extends StatelessWidget {
   final List<double>? columnFlexes;
   final double minWidth;
   final List<VoidCallback?>? onRowTaps;
+  final ScrollController? verticalScrollController;
 
   @override
   Widget build(BuildContext context) {
@@ -38,70 +41,88 @@ class TheWeDataTable extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = math.max(constraints.maxWidth, minWidth);
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: width,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(18),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(
-                    color: TheWeColor.blue200.withValues(alpha: .58),
-                  ),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: Table(
-                  columnWidths: {
-                    for (var index = 0; index < headers.length; index++)
-                      index: FlexColumnWidth(columnFlexes?[index] ?? 1),
-                  },
-                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                  children: [
-                    TableRow(
-                      decoration: const BoxDecoration(
-                        color: TheWeColor.blueSurface,
-                      ),
-                      children: [
-                        for (var index = 0; index < headers.length; index++)
-                          _TableCell(
-                            rightBorder: index != headers.length - 1,
-                            alignment: Alignment.center,
-                            child: Text(
-                              headers[index],
-                              textAlign: TextAlign.center,
-                              style: TheWeTextStyle.body.copyWith(
-                                color: TheWeColor.black900,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                      ],
+        return Listener(
+          onPointerSignal: (event) {
+            final controller = verticalScrollController;
+            if (event is! PointerScrollEvent ||
+                controller == null ||
+                !controller.hasClients ||
+                event.scrollDelta.dy == 0) {
+              return;
+            }
+            final position = controller.position;
+            controller.jumpTo(
+              (controller.offset + event.scrollDelta.dy).clamp(
+                position.minScrollExtent,
+                position.maxScrollExtent,
+              ),
+            );
+          },
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: width,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(
+                      color: TheWeColor.blue200.withValues(alpha: .58),
                     ),
-                    for (var rowIndex = 0; rowIndex < rows.length; rowIndex++)
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Table(
+                    columnWidths: {
+                      for (var index = 0; index < headers.length; index++)
+                        index: FlexColumnWidth(columnFlexes?[index] ?? 1),
+                    },
+                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                    children: [
                       TableRow(
-                        decoration: BoxDecoration(
-                          color: rowIndex.isEven
-                              ? Colors.white
-                              : TheWeColor.blueSurface.withValues(alpha: .55),
+                        decoration: const BoxDecoration(
+                          color: TheWeColor.blueSurface,
                         ),
                         children: [
-                          for (
-                            var columnIndex = 0;
-                            columnIndex < rows[rowIndex].length;
-                            columnIndex++
-                          )
+                          for (var index = 0; index < headers.length; index++)
                             _TableCell(
-                              rightBorder:
-                                  columnIndex != rows[rowIndex].length - 1,
-                              bottomBorder: rowIndex != rows.length - 1,
-                              onTap: onRowTaps?[rowIndex],
-                              child: rows[rowIndex][columnIndex],
+                              rightBorder: index != headers.length - 1,
+                              alignment: Alignment.center,
+                              child: Text(
+                                headers[index],
+                                textAlign: TextAlign.center,
+                                style: TheWeTextStyle.body.copyWith(
+                                  color: TheWeColor.black900,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
                         ],
                       ),
-                  ],
+                      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++)
+                        TableRow(
+                          decoration: BoxDecoration(
+                            color: rowIndex.isEven
+                                ? Colors.white
+                                : TheWeColor.blueSurface.withValues(alpha: .55),
+                          ),
+                          children: [
+                            for (
+                              var columnIndex = 0;
+                              columnIndex < rows[rowIndex].length;
+                              columnIndex++
+                            )
+                              _TableCell(
+                                rightBorder:
+                                    columnIndex != rows[rowIndex].length - 1,
+                                bottomBorder: rowIndex != rows.length - 1,
+                                onTap: onRowTaps?[rowIndex],
+                                child: rows[rowIndex][columnIndex],
+                              ),
+                          ],
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),

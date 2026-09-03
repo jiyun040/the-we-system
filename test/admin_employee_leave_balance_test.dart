@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
@@ -190,5 +191,55 @@ void main() {
     expect(find.byKey(const ValueKey('employee-row-manager')), findsOneWidget);
     expect(find.byKey(const ValueKey('employee-row-staff')), findsNothing);
     expect(find.byKey(const ValueKey('employee-row-director')), findsNothing);
+  });
+
+  testWidgets('전체 직원 표 위에서 마우스 휠로 세로 스크롤한다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 500));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+    final accounts = [
+      for (var index = 0; index < 20; index++)
+        _directoryAccount(
+          id: 'scroll-staff-$index',
+          name: '직원 $index',
+          department: '관리부',
+          position: '사원',
+        ),
+    ];
+    final state = signedOutApprovalState.copyWith(
+      organizationDepartments: const ['관리부'],
+      accounts: accounts,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              controller: controller,
+              child: AdminEmployeeManagement(
+                state: state,
+                scrollController: controller,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(controller.position.maxScrollExtent, greaterThan(0));
+
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: tester.getCenter(
+          find.byKey(const ValueKey('employee-row-scroll-staff-0')),
+        ),
+        scrollDelta: const Offset(0, 280),
+      ),
+    );
+    await tester.pump();
+
+    expect(controller.offset, greaterThan(0));
   });
 }

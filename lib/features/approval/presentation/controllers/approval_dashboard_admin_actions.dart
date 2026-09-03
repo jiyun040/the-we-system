@@ -229,8 +229,27 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       final leaveRequests = value.leaveRequests
           .map(
             (request) => request.userId == userId
-                ? request.copyWith(userId: normalizedId)
-                : request,
+                ? request.copyWith(
+                    userId: normalizedId,
+                    approvalLine: [
+                      for (final step in request.approvalLine)
+                        step.copyWith(
+                          userId: step.userId == userId
+                              ? normalizedId
+                              : step.userId,
+                        ),
+                    ],
+                  )
+                : request.copyWith(
+                    approvalLine: [
+                      for (final step in request.approvalLine)
+                        step.copyWith(
+                          userId: step.userId == userId
+                              ? normalizedId
+                              : step.userId,
+                        ),
+                    ],
+                  ),
           )
           .toList();
       final templates = value.formTemplates
@@ -291,6 +310,10 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
             for (final id in entry.value) id == userId ? normalizedId : id,
           },
       };
+      final leaveApprovalLines = {
+        for (final entry in value.leaveApprovalLines.entries)
+          entry.key: _replaceUserId(entry.value, userId, normalizedId),
+      };
       return value.copyWith(
         accounts: accounts,
         currentUser: currentUser,
@@ -301,6 +324,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         formTemplates: templates,
         documents: documents,
         documentCategoryViewerIds: viewerIds,
+        leaveApprovalLines: leaveApprovalLines,
       );
     });
     syncRemote(() {
@@ -704,6 +728,10 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         selectedOrgDepartment: value.selectedOrgDepartment == currentName
             ? normalized
             : value.selectedOrgDepartment,
+        leaveApprovalLines: {
+          for (final entry in value.leaveApprovalLines.entries)
+            (entry.key == currentName ? normalized : entry.key): entry.value,
+        },
       ),
     );
     syncRemote(() => api.renameDepartment(currentName, normalized));
@@ -758,6 +786,10 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
             ? (remainingDepartments.firstOrNull ?? '')
             : value.selectedOrgDepartment,
         clearSelectedOrgUser: value.selectedOrgDepartment == name,
+        leaveApprovalLines: {
+          for (final entry in value.leaveApprovalLines.entries)
+            if (entry.key != name) entry.key: entry.value,
+        },
       ),
     );
     syncRemote(() => api.deleteDepartment(name));
@@ -809,6 +841,31 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         'monthlyLeavePerMonth': ?monthlyLeavePerMonth,
       }),
     );
+    return null;
+  }
+
+  String? updateDepartmentLeaveApprovalLine(
+    String department,
+    List<String> userIds,
+  ) {
+    final current = currentDashboardState;
+    if (current == null || !current.isAdminMode) {
+      return '관리자 모드에서만 휴가 결재라인을 수정할 수 있습니다.';
+    }
+    if (!current.departments.contains(department)) {
+      return '부서 정보를 찾지 못했습니다.';
+    }
+    final normalized = userIds
+        .where((id) => current.accounts.any((account) => account.id == id))
+        .toSet()
+        .toList();
+    if (normalized.isEmpty) return '한 명 이상의 휴가 결재자를 선택해 주세요.';
+    final updated = {...current.leaveApprovalLines, department: normalized};
+    setApprovalDashboardState(
+      this,
+      (value) => value.copyWith(leaveApprovalLines: updated),
+    );
+    syncRemote(() => api.updateSettings({'leaveApprovalLines': updated}));
     return null;
   }
 

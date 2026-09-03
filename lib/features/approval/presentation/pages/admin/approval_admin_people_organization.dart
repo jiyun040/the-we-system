@@ -2,8 +2,13 @@ import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
 
 class AdminEmployeeManagement extends ConsumerWidget {
-  const AdminEmployeeManagement({super.key, required this.state});
+  const AdminEmployeeManagement({
+    super.key,
+    required this.state,
+    this.scrollController,
+  });
   final ApprovalDashboardState state;
+  final ScrollController? scrollController;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mobile = MediaQuery.sizeOf(context).width < 700;
@@ -30,6 +35,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
         const SizedBox(height: 14),
         _EmployeeManagementDirectory(
           state: state,
+          scrollController: scrollController,
           onEdit: (account) => _editEmployee(context, ref, account),
         ),
       ],
@@ -299,10 +305,12 @@ class _EmployeeManagementDirectory extends StatefulWidget {
   const _EmployeeManagementDirectory({
     required this.state,
     required this.onEdit,
+    this.scrollController,
   });
 
   final ApprovalDashboardState state;
   final ValueChanged<EmployeeAccount> onEdit;
+  final ScrollController? scrollController;
 
   @override
   State<_EmployeeManagementDirectory> createState() =>
@@ -444,6 +452,7 @@ class _EmployeeManagementDirectoryState
           )
         else
           TheWeDataTable(
+            verticalScrollController: widget.scrollController,
             headers: const [
               '이름/아이디',
               '부서',

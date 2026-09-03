@@ -4,6 +4,7 @@ import 'approval_admin_dependencies.dart';
 import 'approval_admin_annual_leave_policy.dart';
 import 'approval_admin_apps_forms.dart';
 import 'approval_admin_direct_leave.dart';
+import 'approval_admin_leave_approval_lines.dart';
 import 'approval_admin_people_organization.dart';
 
 class AdminSettingsPasswordGate extends ConsumerStatefulWidget {
@@ -128,6 +129,15 @@ class AdminIntegratedSettings extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         _AdminPermissionSettings(state: state),
+        const SizedBox(height: 24),
+        Text('부서별 휴가 결재라인', style: TheWeTextStyle.title),
+        const SizedBox(height: 6),
+        Text(
+          '부서별 휴가 결재 순서를 설정합니다. 마지막 결재자가 최종 승인자입니다.',
+          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 12),
+        AdminDepartmentLeaveApprovalLines(state: state),
         const SizedBox(height: 24),
         Text('근속연수별 연차 설정', style: TheWeTextStyle.title),
         const SizedBox(height: 12),

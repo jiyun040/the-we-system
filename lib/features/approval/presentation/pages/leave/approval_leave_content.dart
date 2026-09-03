@@ -389,7 +389,20 @@ class ApprovalLeaveContent extends ConsumerWidget {
     BuildContext context,
     LeaveRequest request,
   ) {
-    final approver = state.accounts.where((item) => item.isAdmin).firstOrNull;
+    final legacyApprover = state.accounts
+        .where((item) => item.id == 'ceo' || item.position.contains('대표'))
+        .firstOrNull;
+    final approvalLine = request.approvalLine.isEmpty
+        ? [
+            LeaveApprovalStep(
+              userId: legacyApprover?.id ?? 'ceo',
+              name: legacyApprover?.name ?? '-',
+              department: legacyApprover?.department ?? '',
+              position: legacyApprover?.position ?? '대표',
+              status: request.ceoStatus,
+            ),
+          ]
+        : request.approvalLine;
     return showDialog<void>(
       context: context,
       builder: (context) => AlertDialog(
@@ -411,14 +424,19 @@ class ApprovalLeaveContent extends ConsumerWidget {
                 style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
               ),
               const SizedBox(height: 20),
-              ApprovalLeaveProgressRow(
-                role: approver?.position ?? '결재자',
-                name: approver?.name ?? '-',
-                status: request.ceoStatus,
-              ),
+              for (var index = 0; index < approvalLine.length; index++) ...[
+                ApprovalLeaveProgressRow(
+                  role:
+                      '${approvalLine[index].position.isEmpty ? '결재자' : approvalLine[index].position}${index == approvalLine.length - 1 ? ' · 최종 승인' : ''}',
+                  name: approvalLine[index].name,
+                  status: approvalLine[index].status,
+                ),
+                if (index != approvalLine.length - 1)
+                  const SizedBox(height: 10),
+              ],
               const SizedBox(height: 14),
               Text(
-                '신청 즉시 대표 결재함으로 전달됩니다.',
+                '신청자의 부서에 설정된 휴가 결재라인 순서대로 전달됩니다.',
                 style: TheWeTextStyle.caption.copyWith(
                   color: TheWeColor.black500,
                 ),

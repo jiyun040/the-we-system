@@ -163,5 +163,6 @@ ApprovalDashboardState _remoteState(
     organizationWideDocumentCategories:
         remote.organizationWideDocumentCategories,
     documentCategoryViewerIds: remote.documentCategoryViewerIds,
+    leaveApprovalLines: remote.leaveApprovalLines,
   );
 }
