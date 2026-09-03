@@ -487,7 +487,6 @@ class ApprovalDashboardState {
       completedServiceMonthsFor(account) * monthlyLeavePerMonth;
 
   double annualLeaveDaysFor(EmployeeAccount account) =>
-      account.annualLeaveDays ??
       (_annualLeaveDaysForServiceYear(serviceYearFor(account))).toDouble();
 
   int _annualLeaveDaysForServiceYear(int serviceYear) {

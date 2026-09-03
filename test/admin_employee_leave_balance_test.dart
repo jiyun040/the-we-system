@@ -32,9 +32,10 @@ EmployeeAccount _directoryAccount({
 );
 
 void main() {
-  test('관리자가 입력한 연차와 보정값에서 승인·대기 휴가를 차감한다', () {
+  test('근속연수 설정 연차와 보정값에서 승인·대기 휴가를 차감한다', () {
     final state = signedOutApprovalState.copyWith(
       accounts: const [_account],
+      annualLeaveByYear: const {1: 15, 5: 18},
       leaveRequests: const [
         LeaveRequest(
           id: 'approved-leave',
@@ -58,9 +59,9 @@ void main() {
       ],
     );
 
-    expect(state.annualLeaveDaysFor(_account), 20);
+    expect(state.annualLeaveDaysFor(_account), 18);
     expect(state.monthlyLeaveDaysFor(_account), 6);
-    expect(state.remainingAnnualLeaveFor(_account), 17);
+    expect(state.remainingAnnualLeaveFor(_account), 15);
   });
 
   testWidgets('직원 수정 화면에서 아이디와 입사일·휴가 개수를 편집한다', (tester) async {
@@ -75,14 +76,22 @@ void main() {
       ProviderScope(
         child: MaterialApp(
           home: Scaffold(
-            body: SingleChildScrollView(
-              child: AdminEmployeeManagement(state: state),
+            body: Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: 1320,
+                child: SingleChildScrollView(
+                  child: AdminEmployeeManagement(state: state),
+                ),
+              ),
             ),
           ),
         ),
       ),
     );
-    await tester.tap(find.byTooltip('계정 수정'));
+    final editButton = find.byTooltip('계정 수정');
+    expect(tester.getRect(editButton).right, lessThanOrEqualTo(1440));
+    await tester.tap(editButton);
     await tester.pumpAndSettle();
 
     final idField = tester.widget<TextField>(
@@ -113,9 +122,10 @@ void main() {
     final remainingField = tester.widget<TextField>(
       find.byKey(const ValueKey('employee-leave-field-잔여 개수')),
     );
-    expect(annualField.controller?.text, '20');
+    expect(annualField.controller?.text, '18');
+    expect(annualField.readOnly, isTrue);
     expect(monthlyField.controller?.text, '6');
-    expect(remainingField.controller?.text, '22');
+    expect(remainingField.controller?.text, '20');
 
     final now = DateTime.now();
     final fiveYearsAgo = DateTime(now.year - 5, now.month, now.day);

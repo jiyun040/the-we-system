@@ -126,7 +126,12 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _leaveDaysField(annualLeave, '연차 개수'),
+                  _leaveDaysField(
+                    annualLeave,
+                    '연차 개수',
+                    readOnly: true,
+                    helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
+                  ),
                   const SizedBox(height: 10),
                   _leaveDaysField(monthlyLeave, '월차 개수'),
                   const SizedBox(height: 10),
@@ -259,7 +264,12 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  _leaveDaysField(annualLeave, '연차 개수'),
+                  _leaveDaysField(
+                    annualLeave,
+                    '연차 개수',
+                    readOnly: true,
+                    helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
+                  ),
                   const SizedBox(height: 10),
                   _leaveDaysField(monthlyLeave, '월차 개수'),
                   const SizedBox(height: 10),
@@ -492,8 +502,19 @@ class _EmployeeManagementDirectoryState
               '권한',
               '관리',
             ],
-            columnFlexes: const [1.6, 1.15, .9, 1.15, .8, .8, .8, .8, .85, .65],
-            minWidth: 1400,
+            columnFlexes: const [
+              1.45,
+              1.0,
+              .75,
+              1.0,
+              .65,
+              .6,
+              .6,
+              .65,
+              .75,
+              .55,
+            ],
+            minWidth: 1200,
             rows: accounts.map((account) => _employeeRow(account)).toList(),
           ),
       ],
@@ -667,13 +688,22 @@ class _EmployeeCard extends StatelessWidget {
   );
 }
 
-Widget _leaveDaysField(TextEditingController controller, String label) =>
-    TextField(
-      key: ValueKey('employee-leave-field-$label'),
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(labelText: label, suffixText: '일'),
-    );
+Widget _leaveDaysField(
+  TextEditingController controller,
+  String label, {
+  bool readOnly = false,
+  String? helperText,
+}) => TextField(
+  key: ValueKey('employee-leave-field-$label'),
+  controller: controller,
+  readOnly: readOnly,
+  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+  decoration: InputDecoration(
+    labelText: label,
+    suffixText: '일',
+    helperText: helperText,
+  ),
+);
 
 String _leaveNumber(double value) => value == value.roundToDouble()
     ? value.toInt().toString()
