@@ -1,5 +1,6 @@
 import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
+import 'approval_admin_leave_approval_lines.dart';
 
 class AdminAppManagement extends ConsumerWidget {
   const AdminAppManagement({super.key, required this.state});
@@ -82,6 +83,21 @@ class AdminAppManagement extends ConsumerWidget {
                           ),
                         ),
                       ],
+                      if (app.$1 == PortalAppId.leave) ...[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                showAdminLeaveApprovalLineManagementDialog(
+                                  context,
+                                  state,
+                                ),
+                            icon: const Icon(Icons.account_tree_outlined),
+                            label: const Text('휴가 결재라인 관리'),
+                          ),
+                        ),
+                      ],
                     ],
                   )
                 : Row(
@@ -107,6 +123,17 @@ class AdminAppManagement extends ConsumerWidget {
                           onPressed: () =>
                               showAdminFormManagementDialog(context, ref),
                           child: const Text('양식 관리'),
+                        ),
+                      ],
+                      if (app.$1 == PortalAppId.leave) ...[
+                        const SizedBox(width: 10),
+                        OutlinedButton(
+                          onPressed: () =>
+                              showAdminLeaveApprovalLineManagementDialog(
+                                context,
+                                state,
+                              ),
+                          child: const Text('휴가 결재라인 관리'),
                         ),
                       ],
                     ],

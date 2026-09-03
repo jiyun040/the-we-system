@@ -130,15 +130,6 @@ class AdminIntegratedSettings extends ConsumerWidget {
         const SizedBox(height: 12),
         _AdminPermissionSettings(state: state),
         const SizedBox(height: 24),
-        Text('부서별 휴가 결재라인', style: TheWeTextStyle.title),
-        const SizedBox(height: 6),
-        Text(
-          '부서별 휴가 결재 순서를 설정합니다. 마지막 결재자가 최종 승인자입니다.',
-          style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
-        ),
-        const SizedBox(height: 12),
-        AdminDepartmentLeaveApprovalLines(state: state),
-        const SizedBox(height: 24),
         Text('근속연수별 연차 설정', style: TheWeTextStyle.title),
         const SizedBox(height: 12),
         AdminAnnualLeavePolicyEditor(
@@ -643,6 +634,24 @@ class _IntegratedAppSettings extends ConsumerWidget {
                         showAdminFormManagementDialog(context, ref),
                     icon: const Icon(Icons.description_outlined, size: 18),
                     label: const Text('전자결재 양식 관리'),
+                  ),
+                ),
+              ),
+            if (apps[index].$1 == PortalAppId.leave)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: OutlinedButton.icon(
+                    key: const ValueKey(
+                      'integrated-leave-approval-line-management',
+                    ),
+                    onPressed: () => showAdminLeaveApprovalLineManagementDialog(
+                      context,
+                      state,
+                    ),
+                    icon: const Icon(Icons.account_tree_outlined, size: 18),
+                    label: const Text('휴가 결재라인 관리'),
                   ),
                 ),
               ),

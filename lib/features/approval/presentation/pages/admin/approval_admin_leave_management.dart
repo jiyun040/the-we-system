@@ -355,7 +355,7 @@ class _EmployeeLeaveBrowserDialogState
   }
 }
 
-class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
+class _EmployeeLeaveDirectoryDialog extends StatefulWidget {
   const _EmployeeLeaveDirectoryDialog({
     required this.state,
     required this.onSelected,
@@ -365,9 +365,24 @@ class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
   final ValueChanged<EmployeeAccount> onSelected;
 
   @override
+  State<_EmployeeLeaveDirectoryDialog> createState() =>
+      _EmployeeLeaveDirectoryDialogState();
+}
+
+class _EmployeeLeaveDirectoryDialogState
+    extends State<_EmployeeLeaveDirectoryDialog> {
+  final _verticalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _verticalScrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final mobile = MediaQuery.sizeOf(context).width < 700;
-    final orderedAccounts = state.organizationOrderedAccounts;
+    final orderedAccounts = widget.state.organizationOrderedAccounts;
     return Dialog(
       backgroundColor: TheWeColor.surfaceAlt,
       insetPadding: EdgeInsets.all(mobile ? 12 : 32),
@@ -412,35 +427,51 @@ class _EmployeeLeaveDirectoryDialog extends StatelessWidget {
                               '${account.position} · ${account.department}',
                             ),
                             trailing: Text(
-                              '${state.isUnderOneYear(account) ? '월차' : '연차'} 잔여 ${adminLeaveDays(state.remainingAnnualLeaveFor(account))}',
+                              '${widget.state.isUnderOneYear(account) ? '월차' : '연차'} 잔여 ${adminLeaveDays(widget.state.remainingAnnualLeaveFor(account))}',
                             ),
-                            onTap: () => onSelected(account),
+                            onTap: () => widget.onSelected(account),
                           );
                         },
                       )
-                    : TheWeDataTable(
-                        headers: const ['이름', '직급', '부서', '연차 현황'],
-                        columnFlexes: const [1.4, 1.1, 1.5, 2.4],
-                        minWidth: 860,
-                        rows: orderedAccounts.map((account) {
-                          final total = state.totalAnnualLeaveFor(account);
-                          final used = state.usedAnnualLeaveFor(account.id);
-                          final pending = state.pendingAnnualLeaveFor(
-                            account.id,
-                          );
-                          return <Widget>[
-                            TextButton(
-                              onPressed: () => onSelected(account),
-                              child: Text(account.name),
-                            ),
-                            Text(account.position),
-                            Text(account.department),
-                            Text(
-                              '${state.isUnderOneYear(account) ? '월차' : '연차'} ${adminLeaveDays(total)} · 사용 ${adminLeaveDays(used)} · 대기 ${adminLeaveDays(pending)} · 잔여 ${adminLeaveDays(state.remainingAnnualLeaveFor(account))}',
-                              textAlign: TextAlign.center,
-                            ),
-                          ];
-                        }).toList(),
+                    : Scrollbar(
+                        controller: _verticalScrollController,
+                        thumbVisibility: true,
+                        notificationPredicate: (notification) =>
+                            notification.depth == 0,
+                        child: SingleChildScrollView(
+                          key: const ValueKey(
+                            'employee-leave-directory-scroll',
+                          ),
+                          controller: _verticalScrollController,
+                          child: TheWeDataTable(
+                            verticalScrollController: _verticalScrollController,
+                            headers: const ['이름', '직급', '부서', '연차 현황'],
+                            columnFlexes: const [1.4, 1.1, 1.5, 2.4],
+                            minWidth: 860,
+                            rows: orderedAccounts.map((account) {
+                              final total = widget.state.totalAnnualLeaveFor(
+                                account,
+                              );
+                              final used = widget.state.usedAnnualLeaveFor(
+                                account.id,
+                              );
+                              final pending = widget.state
+                                  .pendingAnnualLeaveFor(account.id);
+                              return <Widget>[
+                                TextButton(
+                                  onPressed: () => widget.onSelected(account),
+                                  child: Text(account.name),
+                                ),
+                                Text(account.position),
+                                Text(account.department),
+                                Text(
+                                  '${widget.state.isUnderOneYear(account) ? '월차' : '연차'} ${adminLeaveDays(total)} · 사용 ${adminLeaveDays(used)} · 대기 ${adminLeaveDays(pending)} · 잔여 ${adminLeaveDays(widget.state.remainingAnnualLeaveFor(account))}',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ];
+                            }).toList(),
+                          ),
+                        ),
                       ),
               ),
             ],

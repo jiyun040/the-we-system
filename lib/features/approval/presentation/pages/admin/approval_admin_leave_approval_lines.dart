@@ -1,27 +1,127 @@
 import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
 
+Future<void> showAdminLeaveApprovalLineManagementDialog(
+  BuildContext context,
+  ApprovalDashboardState state,
+) async {
+  final mobile = MediaQuery.sizeOf(context).width < 600;
+  if (mobile) {
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      showDragHandle: true,
+      backgroundColor: TheWeColor.background,
+      builder: (sheetContext) => FractionallySizedBox(
+        key: const ValueKey('mobile-leave-approval-line-sheet'),
+        heightFactor: .76,
+        child: _LeaveApprovalLineManagementContent(
+          state: state,
+          mobile: true,
+          onClose: () => Navigator.pop(sheetContext),
+        ),
+      ),
+    );
+    return;
+  }
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      key: const ValueKey('leave-approval-line-management-dialog'),
+      backgroundColor: TheWeColor.background,
+      child: SizedBox(
+        width: 820,
+        height: 640,
+        child: _LeaveApprovalLineManagementContent(
+          state: state,
+          mobile: false,
+          onClose: () => Navigator.pop(dialogContext),
+        ),
+      ),
+    ),
+  );
+}
+
+class _LeaveApprovalLineManagementContent extends StatelessWidget {
+  const _LeaveApprovalLineManagementContent({
+    required this.state,
+    required this.mobile,
+    required this.onClose,
+  });
+
+  final ApprovalDashboardState state;
+  final bool mobile;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: EdgeInsets.fromLTRB(
+      mobile ? 16 : 24,
+      mobile ? 4 : 24,
+      mobile ? 16 : 24,
+      mobile ? 16 : 24,
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '부서별 휴가 결재라인 관리',
+                style: TheWeTextStyle.title.copyWith(
+                  fontSize: mobile ? 20 : null,
+                ),
+              ),
+            ),
+            IconButton(
+              onPressed: onClose,
+              icon: const Icon(Icons.close),
+              tooltip: '닫기',
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '부서별 휴가 결재 순서를 설정합니다. 마지막 결재자가 최종 승인자입니다.',
+          style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: SingleChildScrollView(
+            child: AdminDepartmentLeaveApprovalLines(state: state),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class AdminDepartmentLeaveApprovalLines extends ConsumerWidget {
   const AdminDepartmentLeaveApprovalLines({super.key, required this.state});
 
   final ApprovalDashboardState state;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Container(
-    decoration: adminSurface(),
-    clipBehavior: Clip.antiAlias,
-    child: Column(
-      children: [
-        for (var index = 0; index < state.departments.length; index++) ...[
-          _DepartmentLeaveApprovalLineTile(
-            state: state,
-            department: state.departments[index],
-          ),
-          if (index != state.departments.length - 1) adminDivider(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final departments = state.departments;
+    return Container(
+      decoration: adminSurface(),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var index = 0; index < departments.length; index++) ...[
+            _DepartmentLeaveApprovalLineTile(
+              state: state,
+              department: departments[index],
+            ),
+            if (index != departments.length - 1) adminDivider(),
+          ],
         ],
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _DepartmentLeaveApprovalLineTile extends ConsumerWidget {
@@ -85,7 +185,7 @@ class _DepartmentLeaveApprovalLineTile extends ConsumerWidget {
               )
               .nonNulls
               .toList();
-          final unselectedAccounts = state.accounts
+          final unselectedAccounts = state.organizationOrderedAccounts
               .where((account) => !selectedIds.contains(account.id))
               .toList();
           return TheWeModalSurface(
