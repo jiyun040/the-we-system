@@ -32,6 +32,80 @@ EmployeeAccount _directoryAccount({
 );
 
 void main() {
+  test('1년 미만 직원은 연차 없이 월차만 집계한다', () {
+    final now = DateTime.now();
+    final account = EmployeeAccount(
+      id: 'new-employee',
+      password: '',
+      name: '신입 직원',
+      department: '관리부',
+      position: '사원',
+      hireDate: '${now.year}-01-01',
+    );
+    final state = signedOutApprovalState.copyWith(
+      accounts: [account],
+      annualLeaveByYear: const {1: 15},
+      monthlyLeavePerMonth: 1,
+    );
+
+    expect(state.isUnderOneYear(account), isTrue);
+    expect(state.annualLeaveDaysFor(account), 0);
+    expect(state.totalAnnualLeaveFor(account), now.month - 1);
+    expect(state.servicePeriodLabelFor(account), '0년 ${now.month - 1}개월차');
+  });
+
+  test('근속기간은 년과 개월을 함께 표시한다', () {
+    final now = DateTime.now();
+    final hireDate = DateTime(now.year - 2, now.month - 3, now.day);
+    final account = EmployeeAccount(
+      id: 'experienced-employee',
+      password: '',
+      name: '경력 직원',
+      department: '관리부',
+      position: '대리',
+      hireDate:
+          '${hireDate.year}-'
+          '${hireDate.month.toString().padLeft(2, '0')}-'
+          '${hireDate.day.toString().padLeft(2, '0')}',
+    );
+    final state = signedOutApprovalState.copyWith(accounts: [account]);
+
+    expect(state.servicePeriodLabelFor(account), '2년 3개월차');
+  });
+
+  test('새해에는 전년도 사용 연차를 차감하지 않는다', () {
+    final year = DateTime.now().year;
+    final state = signedOutApprovalState.copyWith(
+      accounts: const [_account],
+      annualLeaveByYear: const {1: 15, 5: 18},
+      leaveRequests: [
+        LeaveRequest(
+          id: 'last-year-approved',
+          userId: _account.id,
+          type: '연차',
+          startDate: '${year - 1}-12-31',
+          endDate: '${year - 1}-12-31',
+          days: 5,
+          reason: '전년도 사용',
+          status: '승인완료',
+        ),
+        LeaveRequest(
+          id: 'this-year-approved',
+          userId: _account.id,
+          type: '연차',
+          startDate: '$year-01-01',
+          endDate: '$year-01-01',
+          days: 1,
+          reason: '금년도 사용',
+          status: '승인완료',
+        ),
+      ],
+    );
+
+    expect(state.usedAnnualLeaveFor(_account.id), 1);
+    expect(state.remainingAnnualLeaveFor(_account), 17);
+  });
+
   test('잔여 연차는 근속연수 설정값에서 승인·대기 휴가만 차감한다', () {
     final state = signedOutApprovalState.copyWith(
       accounts: const [_account],
@@ -232,6 +306,32 @@ void main() {
     expect(find.byKey(const ValueKey('employee-row-manager')), findsOneWidget);
     expect(find.byKey(const ValueKey('employee-row-staff')), findsNothing);
     expect(find.byKey(const ValueKey('employee-row-director')), findsNothing);
+  });
+
+  testWidgets('1년 미만 직원 수정 화면에는 연차 입력란을 표시하지 않는다', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(1200, 1000));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final account = _account.copyWith(hireDate: '${DateTime.now().year}-01-01');
+    final state = signedOutApprovalState.copyWith(accounts: [account]);
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: Scaffold(body: AdminEmployeeManagement(state: state)),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byTooltip('계정 수정'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('employee-leave-field-연차 개수')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(const ValueKey('employee-leave-field-월차 개수')),
+      findsOneWidget,
+    );
   });
 
   testWidgets('전체 직원 표 위에서 마우스 휠로 세로 스크롤한다', (tester) async {

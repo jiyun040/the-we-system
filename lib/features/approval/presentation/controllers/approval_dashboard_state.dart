@@ -475,19 +475,24 @@ class ApprovalDashboardState {
   }
 
   int completedServiceMonthsFor(EmployeeAccount? account) {
+    return totalCompletedServiceMonthsFor(account).clamp(0, 11);
+  }
+
+  int totalCompletedServiceMonthsFor(EmployeeAccount? account) {
     final hireDate = DateTime.tryParse(account?.hireDate ?? '');
     if (hireDate == null) return 0;
     final now = DateTime.now();
     var months = (now.year - hireDate.year) * 12 + now.month - hireDate.month;
     if (now.day < hireDate.day) months--;
-    return months.clamp(0, 11);
+    return months.clamp(0, 1188);
   }
 
   int accruedMonthlyLeaveFor(EmployeeAccount? account) =>
       completedServiceMonthsFor(account) * monthlyLeavePerMonth;
 
-  double annualLeaveDaysFor(EmployeeAccount account) =>
-      (_annualLeaveDaysForServiceYear(serviceYearFor(account))).toDouble();
+  double annualLeaveDaysFor(EmployeeAccount account) => isUnderOneYear(account)
+      ? 0
+      : (_annualLeaveDaysForServiceYear(serviceYearFor(account))).toDouble();
 
   int _annualLeaveDaysForServiceYear(int serviceYear) {
     if (annualLeaveByYear.isEmpty) return 19;
@@ -515,19 +520,23 @@ class ApprovalDashboardState {
   String leaveRemainingLabelFor(EmployeeAccount? account) =>
       isUnderOneYear(account) ? '잔여 월차' : '잔여 연차';
 
-  String servicePeriodLabelFor(EmployeeAccount? account) =>
-      isUnderOneYear(account)
-      ? '${completedServiceMonthsFor(account)}개월차'
-      : '${serviceYearFor(account)}년';
+  String servicePeriodLabelFor(EmployeeAccount? account) {
+    final totalMonths = totalCompletedServiceMonthsFor(account);
+    return '${totalMonths ~/ 12}년 ${totalMonths % 12}개월차';
+  }
 
   double get totalAnnualLeave => totalAnnualLeaveFor(currentUser);
 
   double usedAnnualLeaveFor(String userId) => leaveRequestsFor(userId)
-      .where((request) => request.status == '승인완료')
+      .where(
+        (request) => request.status == '승인완료' && _isCurrentLeaveYear(request),
+      )
       .fold(0, (sum, request) => sum + request.days);
 
   double pendingAnnualLeaveFor(String userId) => leaveRequestsFor(userId)
-      .where((request) => request.status == '승인대기')
+      .where(
+        (request) => request.status == '승인대기' && _isCurrentLeaveYear(request),
+      )
       .fold(0, (sum, request) => sum + request.days);
 
   double remainingAnnualLeaveFor(EmployeeAccount account) =>
@@ -538,12 +547,19 @@ class ApprovalDashboardState {
           .toDouble();
 
   double get usedAnnualLeave => currentUserLeaveRequests
-      .where((request) => request.status == '승인완료')
+      .where(
+        (request) => request.status == '승인완료' && _isCurrentLeaveYear(request),
+      )
       .fold(0, (sum, request) => sum + request.days);
 
   double get pendingAnnualLeave => currentUserLeaveRequests
-      .where((request) => request.status == '승인대기')
+      .where(
+        (request) => request.status == '승인대기' && _isCurrentLeaveYear(request),
+      )
       .fold(0, (sum, request) => sum + request.days);
+
+  bool _isCurrentLeaveYear(LeaveRequest request) =>
+      DateTime.tryParse(request.startDate)?.year == DateTime.now().year;
 
   double get remainingAnnualLeave =>
       (totalAnnualLeave - usedAnnualLeave - pendingAnnualLeave)

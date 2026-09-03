@@ -57,9 +57,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
     final hireDate = TextEditingController(
       text: DateTime.now().toIso8601String().substring(0, 10),
     );
-    final annualLeave = TextEditingController(
-      text: (state.annualLeaveByYear[1] ?? 15).toString(),
-    );
+    final annualLeave = TextEditingController(text: '0');
     final monthlyLeave = TextEditingController(text: '0');
     final remainingLeave = TextEditingController(text: '0');
     var error = '';
@@ -125,13 +123,15 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       helperText: _automaticLeaveSummary(state, hireDate.text),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  _leaveDaysField(
-                    annualLeave,
-                    '연차 개수',
-                    readOnly: true,
-                    helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
-                  ),
+                  if (_showsAnnualLeave(state, hireDate.text)) ...[
+                    const SizedBox(height: 10),
+                    _leaveDaysField(
+                      annualLeave,
+                      '연차 개수',
+                      readOnly: true,
+                      helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   _leaveDaysField(monthlyLeave, '월차 개수'),
                   const SizedBox(height: 10),
@@ -268,13 +268,15 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       helperText: _automaticLeaveSummary(state, hireDate.text),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  _leaveDaysField(
-                    annualLeave,
-                    '연차 개수',
-                    readOnly: true,
-                    helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
-                  ),
+                  if (_showsAnnualLeave(state, hireDate.text)) ...[
+                    const SizedBox(height: 10),
+                    _leaveDaysField(
+                      annualLeave,
+                      '연차 개수',
+                      readOnly: true,
+                      helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
+                    ),
+                  ],
                   const SizedBox(height: 10),
                   _leaveDaysField(monthlyLeave, '월차 개수'),
                   const SizedBox(height: 10),
@@ -560,7 +562,11 @@ class _EmployeeManagementDirectoryState
     Text(account.position),
     Text(account.hireDate),
     Text(widget.state.servicePeriodLabelFor(account)),
-    Text(adminLeaveDays(widget.state.annualLeaveDaysFor(account))),
+    Text(
+      widget.state.isUnderOneYear(account)
+          ? '-'
+          : adminLeaveDays(widget.state.annualLeaveDaysFor(account)),
+    ),
     Text(adminLeaveDays(widget.state.monthlyLeaveDaysFor(account))),
     Text(adminLeaveDays(widget.state.remainingAnnualLeaveFor(account))),
     Align(
@@ -673,12 +679,13 @@ class _EmployeeCard extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(
-              child: _EmployeeInfo(
-                label: '연차',
-                value: adminLeaveDays(state.annualLeaveDaysFor(account)),
+            if (!state.isUnderOneYear(account))
+              Expanded(
+                child: _EmployeeInfo(
+                  label: '연차',
+                  value: adminLeaveDays(state.annualLeaveDaysFor(account)),
+                ),
               ),
-            ),
             Expanded(
               child: _EmployeeInfo(
                 label: '월차',
@@ -759,6 +766,11 @@ bool _isCompleteHireDate(String value) {
   if (parsed == null || value.length != 10) return false;
   final today = DateUtils.dateOnly(DateTime.now());
   return !parsed.isAfter(today);
+}
+
+bool _showsAnnualLeave(ApprovalDashboardState state, String hireDate) {
+  final preview = _automaticLeavePreview(hireDate);
+  return preview != null && !state.isUnderOneYear(preview);
 }
 
 String _automaticLeaveSummary(ApprovalDashboardState state, String hireDate) {
