@@ -518,7 +518,7 @@ class _EmployeeManagementDirectoryState
               1.45,
               1.0,
               .75,
-              1.0,
+              .75,
               .65,
               .6,
               .6,
