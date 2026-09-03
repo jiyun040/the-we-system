@@ -135,7 +135,12 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   const SizedBox(height: 10),
                   _leaveDaysField(monthlyLeave, '월차 개수'),
                   const SizedBox(height: 10),
-                  _leaveDaysField(remainingLeave, '잔여 개수'),
+                  _leaveDaysField(
+                    remainingLeave,
+                    '잔여 개수',
+                    readOnly: true,
+                    helperText: '자동 연차에서 사용·승인대기 수량을 차감해 계산됩니다.',
+                  ),
                   if (error.isNotEmpty)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -273,7 +278,12 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   const SizedBox(height: 10),
                   _leaveDaysField(monthlyLeave, '월차 개수'),
                   const SizedBox(height: 10),
-                  _leaveDaysField(remainingLeave, '잔여 개수'),
+                  _leaveDaysField(
+                    remainingLeave,
+                    '잔여 개수',
+                    readOnly: true,
+                    helperText: '자동 연차에서 사용·승인대기 수량을 차감해 계산됩니다.',
+                  ),
                   const SizedBox(height: 10),
                   TextField(
                     controller: password,

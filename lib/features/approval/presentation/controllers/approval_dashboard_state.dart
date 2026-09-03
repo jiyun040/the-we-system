@@ -533,8 +533,7 @@ class ApprovalDashboardState {
   double remainingAnnualLeaveFor(EmployeeAccount account) =>
       (totalAnnualLeaveFor(account) -
               usedAnnualLeaveFor(account.id) -
-              pendingAnnualLeaveFor(account.id) +
-              account.leaveBalanceAdjustment)
+              pendingAnnualLeaveFor(account.id))
           .clamp(0, 365)
           .toDouble();
 
@@ -547,10 +546,7 @@ class ApprovalDashboardState {
       .fold(0, (sum, request) => sum + request.days);
 
   double get remainingAnnualLeave =>
-      (totalAnnualLeave -
-              usedAnnualLeave -
-              pendingAnnualLeave +
-              (currentUser?.leaveBalanceAdjustment ?? 0))
+      (totalAnnualLeave - usedAnnualLeave - pendingAnnualLeave)
           .clamp(0, 365)
           .toDouble();
 

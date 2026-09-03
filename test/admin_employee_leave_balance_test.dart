@@ -32,7 +32,7 @@ EmployeeAccount _directoryAccount({
 );
 
 void main() {
-  test('근속연수 설정 연차와 보정값에서 승인·대기 휴가를 차감한다', () {
+  test('잔여 연차는 근속연수 설정값에서 승인·대기 휴가만 차감한다', () {
     final state = signedOutApprovalState.copyWith(
       accounts: const [_account],
       annualLeaveByYear: const {1: 15, 5: 18},
@@ -61,7 +61,7 @@ void main() {
 
     expect(state.annualLeaveDaysFor(_account), 18);
     expect(state.monthlyLeaveDaysFor(_account), 6);
-    expect(state.remainingAnnualLeaveFor(_account), 15);
+    expect(state.remainingAnnualLeaveFor(_account), 13);
   });
 
   testWidgets('직원 수정 화면에서 아이디와 입사일·휴가 개수를 편집한다', (tester) async {
@@ -125,7 +125,8 @@ void main() {
     expect(annualField.controller?.text, '18');
     expect(annualField.readOnly, isTrue);
     expect(monthlyField.controller?.text, '6');
-    expect(remainingField.controller?.text, '20');
+    expect(remainingField.controller?.text, '18');
+    expect(remainingField.readOnly, isTrue);
 
     final now = DateTime.now();
     final fiveYearsAgo = DateTime(now.year - 5, now.month, now.day);
