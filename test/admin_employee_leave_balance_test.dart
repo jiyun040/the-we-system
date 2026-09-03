@@ -66,7 +66,10 @@ void main() {
   testWidgets('직원 수정 화면에서 아이디와 입사일·휴가 개수를 편집한다', (tester) async {
     await tester.binding.setSurfaceSize(const Size(1440, 1200));
     addTearDown(() => tester.binding.setSurfaceSize(null));
-    final state = signedOutApprovalState.copyWith(accounts: const [_account]);
+    final state = signedOutApprovalState.copyWith(
+      accounts: const [_account],
+      annualLeaveByYear: const {1: 15, 5: 18},
+    );
 
     await tester.pumpWidget(
       ProviderScope(
@@ -113,6 +116,33 @@ void main() {
     expect(annualField.controller?.text, '20');
     expect(monthlyField.controller?.text, '6');
     expect(remainingField.controller?.text, '22');
+
+    final now = DateTime.now();
+    final fiveYearsAgo = DateTime(now.year - 5, now.month, now.day);
+    final numericHireDate =
+        '${fiveYearsAgo.year}'
+        '${fiveYearsAgo.month.toString().padLeft(2, '0')}'
+        '${fiveYearsAgo.day.toString().padLeft(2, '0')}';
+    final formattedHireDate =
+        '${fiveYearsAgo.year}-'
+        '${fiveYearsAgo.month.toString().padLeft(2, '0')}-'
+        '${fiveYearsAgo.day.toString().padLeft(2, '0')}';
+    final hireDateField = tester.widget<TextField>(
+      find.byKey(const ValueKey('employee-hire-date-field')),
+    );
+    expect(hireDateField.readOnly, isFalse);
+    expect(hireDateField.keyboardType, TextInputType.number);
+    await tester.enterText(
+      find.byKey(const ValueKey('employee-hire-date-field')),
+      numericHireDate,
+    );
+    await tester.pump();
+
+    expect(hireDateField.controller?.text, formattedHireDate);
+    expect(annualField.controller?.text, '18');
+    expect(monthlyField.controller?.text, '0');
+    expect(remainingField.controller?.text, '18');
+    expect(find.textContaining('근속 5년'), findsOneWidget);
   });
 
   testWidgets('사원관리 필터는 전체 직급순·부서별·이름순으로 표시한다', (tester) async {

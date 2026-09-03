@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
 
@@ -103,12 +105,24 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   TextField(
+                    key: const ValueKey('employee-hire-date-field'),
                     controller: hireDate,
-                    readOnly: true,
-                    onTap: () => _selectHireDate(context, hireDate),
-                    decoration: const InputDecoration(
+                    keyboardType: TextInputType.number,
+                    inputFormatters: const [_HireDateInputFormatter()],
+                    onChanged: (_) {
+                      _applyAutomaticLeaveForHireDate(
+                        state: state,
+                        hireDate: hireDate.text,
+                        annualLeave: annualLeave,
+                        monthlyLeave: monthlyLeave,
+                        remainingLeave: remainingLeave,
+                      );
+                      setDialogState(() {});
+                    },
+                    decoration: InputDecoration(
                       labelText: '입사일',
-                      suffixIcon: Icon(Icons.calendar_month_outlined),
+                      hintText: 'YYYY-MM-DD',
+                      helperText: _automaticLeaveSummary(state, hireDate.text),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -223,12 +237,25 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   TextField(
+                    key: const ValueKey('employee-hire-date-field'),
                     controller: hireDate,
-                    readOnly: true,
-                    onTap: () => _selectHireDate(context, hireDate),
-                    decoration: const InputDecoration(
+                    keyboardType: TextInputType.number,
+                    inputFormatters: const [_HireDateInputFormatter()],
+                    onChanged: (_) {
+                      _applyAutomaticLeaveForHireDate(
+                        state: state,
+                        hireDate: hireDate.text,
+                        annualLeave: annualLeave,
+                        monthlyLeave: monthlyLeave,
+                        remainingLeave: remainingLeave,
+                        userId: account.id,
+                      );
+                      setDialogState(() {});
+                    },
+                    decoration: InputDecoration(
                       labelText: '입사일',
-                      suffixIcon: Icon(Icons.calendar_month_outlined),
+                      hintText: 'YYYY-MM-DD',
+                      helperText: _automaticLeaveSummary(state, hireDate.text),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -458,14 +485,15 @@ class _EmployeeManagementDirectoryState
               '부서',
               '직위',
               '입사일',
+              '근속',
               '연차',
               '월차',
               '잔여',
               '권한',
               '관리',
             ],
-            columnFlexes: const [1.6, 1.15, .9, 1.15, .8, .8, .8, .85, .65],
-            minWidth: 1320,
+            columnFlexes: const [1.6, 1.15, .9, 1.15, .8, .8, .8, .8, .85, .65],
+            minWidth: 1400,
             rows: accounts.map((account) => _employeeRow(account)).toList(),
           ),
       ],
@@ -500,6 +528,7 @@ class _EmployeeManagementDirectoryState
     Text(account.department),
     Text(account.position),
     Text(account.hireDate),
+    Text(widget.state.servicePeriodLabelFor(account)),
     Text(adminLeaveDays(widget.state.annualLeaveDaysFor(account))),
     Text(adminLeaveDays(widget.state.monthlyLeaveDaysFor(account))),
     Text(adminLeaveDays(widget.state.remainingAnnualLeaveFor(account))),
@@ -602,6 +631,12 @@ class _EmployeeCard extends StatelessWidget {
             Expanded(
               child: _EmployeeInfo(label: '입사일', value: account.hireDate),
             ),
+            Expanded(
+              child: _EmployeeInfo(
+                label: '근속',
+                value: state.servicePeriodLabelFor(account),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -644,6 +679,79 @@ String _leaveNumber(double value) => value == value.roundToDouble()
     ? value.toInt().toString()
     : value.toStringAsFixed(1);
 
+class _HireDateInputFormatter extends TextInputFormatter {
+  const _HireDateInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.length > 8) digits = digits.substring(0, 8);
+    final buffer = StringBuffer();
+    for (var index = 0; index < digits.length; index++) {
+      if (index == 4 || index == 6) buffer.write('-');
+      buffer.write(digits[index]);
+    }
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
+}
+
+EmployeeAccount? _automaticLeavePreview(String hireDate) {
+  if (!_isCompleteHireDate(hireDate)) return null;
+  return EmployeeAccount(
+    id: 'leave-preview',
+    password: '',
+    name: '',
+    department: '',
+    position: '',
+    hireDate: hireDate,
+  );
+}
+
+bool _isCompleteHireDate(String value) {
+  final parsed = DateTime.tryParse(value);
+  if (parsed == null || value.length != 10) return false;
+  final today = DateUtils.dateOnly(DateTime.now());
+  return !parsed.isAfter(today);
+}
+
+String _automaticLeaveSummary(ApprovalDashboardState state, String hireDate) {
+  final preview = _automaticLeavePreview(hireDate);
+  if (preview == null) return '숫자 8자리를 입력하면 연차가 자동 계산됩니다.';
+  final entitlement = state.totalAnnualLeaveFor(preview);
+  return '근속 ${state.servicePeriodLabelFor(preview)} · '
+      '${state.leaveEntitlementLabelFor(preview)} ${adminLeaveDays(entitlement)} 자동 집계';
+}
+
+void _applyAutomaticLeaveForHireDate({
+  required ApprovalDashboardState state,
+  required String hireDate,
+  required TextEditingController annualLeave,
+  required TextEditingController monthlyLeave,
+  required TextEditingController remainingLeave,
+  String? userId,
+}) {
+  final preview = _automaticLeavePreview(hireDate);
+  if (preview == null) return;
+  final annual = state.annualLeaveDaysFor(preview);
+  final monthly = state.isUnderOneYear(preview)
+      ? state.monthlyLeaveDaysFor(preview)
+      : 0.0;
+  final entitlement = state.totalAnnualLeaveFor(preview);
+  final used = userId == null ? 0.0 : state.usedAnnualLeaveFor(userId);
+  final pending = userId == null ? 0.0 : state.pendingAnnualLeaveFor(userId);
+  final remaining = (entitlement - used - pending).clamp(0.0, 365.0).toDouble();
+  annualLeave.text = _leaveNumber(annual);
+  monthlyLeave.text = _leaveNumber(monthly);
+  remainingLeave.text = _leaveNumber(remaining);
+}
+
 class _EmployeeInfo extends StatelessWidget {
   const _EmployeeInfo({required this.label, required this.value});
 
@@ -668,28 +776,6 @@ class _EmployeeInfo extends StatelessWidget {
     ],
   );
 }
-
-Future<void> _selectHireDate(
-  BuildContext context,
-  TextEditingController controller,
-) async {
-  final initialDate = DateTime.tryParse(controller.text) ?? DateTime.now();
-  final selected = await _showHireDatePicker(context, initialDate);
-  if (selected == null) return;
-  controller.text = selected.toIso8601String().substring(0, 10);
-}
-
-Future<DateTime?> _showHireDatePicker(
-  BuildContext context,
-  DateTime initialDate,
-) => showTheWeDatePicker(
-  context,
-  initialDate: initialDate,
-  firstDate: DateTime(1950),
-  lastDate: DateTime.now(),
-  title: '입사일 선택',
-  dialogKey: const ValueKey('hire-date-picker'),
-);
 
 class AdminOrganizationManagement extends ConsumerWidget {
   const AdminOrganizationManagement({super.key, required this.state});
