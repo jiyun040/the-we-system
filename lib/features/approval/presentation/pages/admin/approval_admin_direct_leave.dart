@@ -26,9 +26,10 @@ Future<void> showAdminDirectLeaveDialog(
   final types = isMonthly
       ? const ['월차', '반차', '경조 휴가', '휴가']
       : const ['연차', '반차', '경조 휴가', '휴가'];
-  var type = types.first;
-  var start = DateTime.now();
-  var end = start;
+  final selection = LeaveDateSelection(
+    type: types.first,
+    startDate: DateTime.now(),
+  );
   var reason = '';
   var error = '';
 
@@ -36,14 +37,15 @@ Future<void> showAdminDirectLeaveDialog(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setDialogState) {
-        final halfDay = type == '반차';
         final stackDates = MediaQuery.sizeOf(context).width < 600;
 
         Future<void> pickDate(bool startDate) async {
           final picked = await showTheWeDatePicker(
             context,
-            initialDate: startDate ? start : end,
-            firstDate: DateTime(2000),
+            initialDate: startDate
+                ? selection.startDate
+                : selection.endDate,
+            firstDate: startDate ? DateTime(2000) : selection.startDate,
             lastDate: DateTime(DateTime.now().year + 2, 12, 31),
             title: startDate ? '휴가 시작일 선택' : '휴가 종료일 선택',
             dialogKey: const ValueKey('admin-leave-date-picker'),
@@ -52,10 +54,9 @@ Future<void> showAdminDirectLeaveDialog(
           setDialogState(() {
             error = '';
             if (startDate) {
-              start = picked;
-              if (end.isBefore(start) || halfDay) end = start;
+              selection.selectStartDate(picked);
             } else {
-              end = picked;
+              selection.selectEndDate(picked);
             }
           });
         }
@@ -78,16 +79,24 @@ Future<void> showAdminDirectLeaveDialog(
                   ),
                   const SizedBox(height: 14),
                   TheWeDropdown<String>(
-                    value: type,
+                    value: selection.type,
                     width: double.infinity,
                     items: types,
                     labelBuilder: (value) => value,
                     onChanged: (value) => setDialogState(() {
-                      type = value ?? types.first;
-                      if (type == '반차') end = start;
+                      selection.selectType(value ?? types.first);
                       error = '';
                     }),
                   ),
+                  if (selection.isHalfDay) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '반차는 0.5일로 차감됩니다.',
+                      style: TheWeTextStyle.caption.copyWith(
+                        color: TheWeColor.blue300,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   if (stackDates)
                     Column(
@@ -102,7 +111,7 @@ Future<void> showAdminDirectLeaveDialog(
                             onPressed: () => pickDate(true),
                             icon: const Icon(Icons.event_outlined),
                             label: Text(
-                              '시작일  ${DateFormat('yyyy-MM-dd').format(start)}',
+                              '시작일  ${DateFormat('yyyy-MM-dd').format(selection.startDate)}',
                               maxLines: 1,
                             ),
                             style: OutlinedButton.styleFrom(
@@ -123,10 +132,12 @@ Future<void> showAdminDirectLeaveDialog(
                           width: double.infinity,
                           child: OutlinedButton.icon(
                             key: const ValueKey('admin-direct-end-date-button'),
-                            onPressed: halfDay ? null : () => pickDate(false),
+                            onPressed: selection.isHalfDay
+                                ? null
+                                : () => pickDate(false),
                             icon: const Icon(Icons.event_outlined),
                             label: Text(
-                              '종료일  ${DateFormat('yyyy-MM-dd').format(end)}',
+                              '종료일  ${DateFormat('yyyy-MM-dd').format(selection.endDate)}',
                               maxLines: 1,
                             ),
                             style: OutlinedButton.styleFrom(
@@ -148,7 +159,11 @@ Future<void> showAdminDirectLeaveDialog(
                             ),
                             onPressed: () => pickDate(true),
                             icon: const Icon(Icons.event_outlined),
-                            label: Text(DateFormat('yyyy-MM-dd').format(start)),
+                            label: Text(
+                              DateFormat(
+                                'yyyy-MM-dd',
+                              ).format(selection.startDate),
+                            ),
                           ),
                         ),
                         const Padding(
@@ -158,9 +173,13 @@ Future<void> showAdminDirectLeaveDialog(
                         Expanded(
                           child: OutlinedButton.icon(
                             key: const ValueKey('admin-direct-end-date-button'),
-                            onPressed: halfDay ? null : () => pickDate(false),
+                            onPressed: selection.isHalfDay
+                                ? null
+                                : () => pickDate(false),
                             icon: const Icon(Icons.event_outlined),
-                            label: Text(DateFormat('yyyy-MM-dd').format(end)),
+                            label: Text(
+                              DateFormat('yyyy-MM-dd').format(selection.endDate),
+                            ),
                           ),
                         ),
                       ],
@@ -201,7 +220,7 @@ Future<void> showAdminDirectLeaveDialog(
             FilledButton(
               key: const ValueKey('admin-direct-leave-submit'),
               onPressed: () {
-                final days = halfDay ? .5 : end.difference(start).inDays + 1.0;
+                final days = selection.days;
                 if (reason.trim().isEmpty) {
                   setDialogState(() => error = '관리자 등록 사유를 입력해 주세요.');
                   return;
@@ -216,11 +235,13 @@ Future<void> showAdminDirectLeaveDialog(
                 Navigator.pop(
                   context,
                   _AdminDirectLeaveDraft(
-                    type: type,
-                    startDate: DateFormat('yyyy-MM-dd').format(start),
+                    type: selection.type,
+                    startDate: DateFormat(
+                      'yyyy-MM-dd',
+                    ).format(selection.startDate),
                     endDate: DateFormat(
                       'yyyy-MM-dd',
-                    ).format(halfDay ? start : end),
+                    ).format(selection.endDate),
                     days: days,
                     reason: reason.trim(),
                   ),

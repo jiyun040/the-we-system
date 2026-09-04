@@ -1,5 +1,7 @@
 import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 
+import '../pages/admin/approval_admin_dependencies.dart';
+
 const designatedAdminAccountId = 'we81048';
 const designatedAdminName = '김효민';
 const designatedAdminDepartment = '경리부';
@@ -254,6 +256,50 @@ class LeaveApprovalStep {
         position: position,
         status: status ?? this.status,
       );
+}
+
+class LeaveDateSelection {
+  LeaveDateSelection({required this.type, required DateTime startDate})
+    : startDate = DateUtils.dateOnly(startDate),
+      endDate = DateUtils.dateOnly(startDate);
+
+  String type;
+  DateTime startDate;
+  DateTime endDate;
+  bool _endDateWasEdited = false;
+
+  bool get isHalfDay => type == '반차';
+
+  double get days => isHalfDay
+      ? .5
+      : endDate.difference(startDate).inDays + 1.0;
+
+  void selectType(String value) {
+    type = value;
+    if (isHalfDay) {
+      endDate = startDate;
+      _endDateWasEdited = false;
+    }
+  }
+
+  void selectStartDate(DateTime value) {
+    startDate = DateUtils.dateOnly(value);
+    if (isHalfDay || !_endDateWasEdited || endDate.isBefore(startDate)) {
+      endDate = startDate;
+      _endDateWasEdited = false;
+    }
+  }
+
+  void selectEndDate(DateTime value) {
+    final normalized = DateUtils.dateOnly(value);
+    if (normalized.isBefore(startDate)) {
+      endDate = startDate;
+      _endDateWasEdited = false;
+      return;
+    }
+    endDate = normalized;
+    _endDateWasEdited = true;
+  }
 }
 
 class LeaveRequest {

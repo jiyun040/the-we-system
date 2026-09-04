@@ -194,10 +194,10 @@ class ApprovalLeaveContent extends ConsumerWidget {
     final leaveTypes = isMonthlyLeave
         ? const ['월차', '반차', '경조 휴가', '휴가']
         : const ['연차', '반차', '경조 휴가', '휴가'];
-    var type = leaveTypes.first;
-    var start = DateTime.now().add(const Duration(days: 1));
-    var end = start;
-    var halfDay = false;
+    final selection = LeaveDateSelection(
+      type: leaveTypes.first,
+      startDate: DateTime.now().add(const Duration(days: 1)),
+    );
     var reasonError = '';
     var requestError = '';
     final submitted = await showDialog<bool>(
@@ -208,8 +208,10 @@ class ApprovalLeaveContent extends ConsumerWidget {
           Future<void> pickDate(bool isStart) async {
             final picked = await showTheWeDatePicker(
               context,
-              initialDate: isStart ? start : end,
-              firstDate: DateTime.now(),
+              initialDate: isStart
+                  ? selection.startDate
+                  : selection.endDate,
+              firstDate: isStart ? DateTime.now() : selection.startDate,
               lastDate: DateTime(DateTime.now().year + 2),
               title: isStart ? '휴가 시작일 선택' : '휴가 종료일 선택',
               dialogKey: const ValueKey('leave-date-picker'),
@@ -218,10 +220,9 @@ class ApprovalLeaveContent extends ConsumerWidget {
             setDialogState(() {
               requestError = '';
               if (isStart) {
-                start = picked;
-                if (end.isBefore(start)) end = start;
+                selection.selectStartDate(picked);
               } else {
-                end = picked;
+                selection.selectEndDate(picked);
               }
             });
           }
@@ -251,16 +252,27 @@ class ApprovalLeaveContent extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     TheWeDropdown<String>(
-                      value: type,
+                      value: selection.type,
                       width: double.infinity,
                       items: leaveTypes,
                       labelBuilder: (value) => value,
                       onChanged: (value) => setDialogState(() {
-                        type = value ?? leaveTypes.first;
-                        halfDay = type == '반차';
+                        selection.selectType(value ?? leaveTypes.first);
                         requestError = '';
                       }),
                     ),
+                    if (selection.isHalfDay) ...[
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          '반차는 0.5일로 차감됩니다.',
+                          style: TheWeTextStyle.caption.copyWith(
+                            color: TheWeColor.blue300,
+                          ),
+                        ),
+                      ),
+                    ],
                     if (requestError.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Align(
@@ -280,7 +292,7 @@ class ApprovalLeaveContent extends ConsumerWidget {
                           ApprovalLeaveDateButton(
                             key: const ValueKey('leave-start-date-button'),
                             label: '시작일',
-                            date: start,
+                            date: selection.startDate,
                             onPressed: () => pickDate(true),
                           ),
                           const Padding(
@@ -294,8 +306,10 @@ class ApprovalLeaveContent extends ConsumerWidget {
                           ApprovalLeaveDateButton(
                             key: const ValueKey('leave-end-date-button'),
                             label: '종료일',
-                            date: end,
-                            onPressed: halfDay ? null : () => pickDate(false),
+                            date: selection.endDate,
+                            onPressed: selection.isHalfDay
+                                ? null
+                                : () => pickDate(false),
                           ),
                         ],
                       )
@@ -305,7 +319,7 @@ class ApprovalLeaveContent extends ConsumerWidget {
                           Expanded(
                             child: ApprovalLeaveDateButton(
                               key: const ValueKey('leave-start-date-button'),
-                              date: start,
+                              date: selection.startDate,
                               onPressed: () => pickDate(true),
                             ),
                           ),
@@ -316,8 +330,10 @@ class ApprovalLeaveContent extends ConsumerWidget {
                           Expanded(
                             child: ApprovalLeaveDateButton(
                               key: const ValueKey('leave-end-date-button'),
-                              date: end,
-                              onPressed: halfDay ? null : () => pickDate(false),
+                              date: selection.endDate,
+                              onPressed: selection.isHalfDay
+                                  ? null
+                                  : () => pickDate(false),
                             ),
                           ),
                         ],
@@ -352,9 +368,7 @@ class ApprovalLeaveContent extends ConsumerWidget {
                     setDialogState(() => reasonError = '신청 사유를 입력해 주세요.');
                     return;
                   }
-                  final requestedDays = halfDay
-                      ? .5
-                      : end.difference(start).inDays + 1.0;
+                  final requestedDays = selection.days;
                   if (requestedDays > state.remainingAnnualLeave) {
                     setDialogState(
                       () => requestError =
@@ -372,14 +386,13 @@ class ApprovalLeaveContent extends ConsumerWidget {
       ),
     );
     if (submitted != true || !context.mounted) return;
-    final days = halfDay ? .5 : end.difference(start).inDays + 1.0;
     ref
         .read(approvalDashboardControllerProvider.notifier)
         .requestLeave(
-          type: type,
-          startDate: DateFormat('yyyy-MM-dd').format(start),
-          endDate: DateFormat('yyyy-MM-dd').format(halfDay ? start : end),
-          days: days,
+          type: selection.type,
+          startDate: DateFormat('yyyy-MM-dd').format(selection.startDate),
+          endDate: DateFormat('yyyy-MM-dd').format(selection.endDate),
+          days: selection.days,
           reason: reason.text.trim(),
         );
     showTheWeSnackBar(context, message: '휴가 신청이 등록되었습니다.');
