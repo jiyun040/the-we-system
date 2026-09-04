@@ -7,6 +7,7 @@ import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApprovalLoginPage extends ConsumerStatefulWidget {
   const ApprovalLoginPage({super.key});
@@ -19,8 +20,43 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
   final idController = TextEditingController();
   final passwordController = TextEditingController();
   final passwordFocusNode = FocusNode();
+
   bool showPassword = false;
   bool isLoggingIn = false;
+
+  bool rememberId = false;
+
+  static const String _rememberIdKey = 'remember_login_id';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedId();
+  }
+
+  Future<void> _loadSavedId() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedId = prefs.getString(_rememberIdKey);
+
+    if (!mounted) return;
+
+    if (savedId != null && savedId.isNotEmpty) {
+      setState(() {
+        idController.text = savedId;
+        rememberId = true;
+      });
+    }
+  }
+
+  Future<void> _saveLoginId(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (rememberId) {
+      await prefs.setString(_rememberIdKey, id);
+    } else {
+      await prefs.remove(_rememberIdKey);
+    }
+  }
 
   @override
   void dispose() {
@@ -33,20 +69,30 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
   Future<void> _login() async {
     if (isLoggingIn) return;
 
-    final notifier = ref.read(approvalDashboardControllerProvider.notifier);
+    final notifier =
+    ref.read(approvalDashboardControllerProvider.notifier);
+
     final id = idController.text.trim();
     final password = passwordController.text.trim();
+
     if (id.isEmpty || password.isEmpty) {
       notifier.setLoginError('아이디와 비밀번호를 모두 입력해 주세요.');
       return;
     }
 
     setState(() => isLoggingIn = true);
+
     final success = await notifier.login(id, password);
 
     if (!mounted) return;
+
     setState(() => isLoggingIn = false);
+
     if (success) {
+      await _saveLoginId(id);
+
+      if (!mounted) return;
+
       TextInput.finishAutofillContext(shouldSave: true);
       context.goNamed(AppRouteName.home);
     }
@@ -54,7 +100,8 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
+    final state =
+        ref.watch(approvalDashboardControllerProvider).asData?.value;
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
@@ -81,15 +128,29 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('로그인', style: TheWeTextStyle.pageTitle),
+                    Text(
+                      '로그인',
+                      style: TheWeTextStyle.pageTitle,
+                    ),
+
                     const SizedBox(height: 24),
-                    Text('아이디', style: TheWeTextStyle.body),
+
+                    Text(
+                      '아이디',
+                      style: TheWeTextStyle.body,
+                    ),
+
                     const SizedBox(height: 8),
+
                     CustomTextFormField(
                       controller: idController,
-                      autofillHints: const [AutofillHints.username],
+                      autofillHints: const [
+                        AutofillHints.username,
+                      ],
                       keyboardType: TextInputType.text,
-                      style: TheWeTextStyle.body.copyWith(fontSize: 16),
+                      style: TheWeTextStyle.body.copyWith(
+                        fontSize: 16,
+                      ),
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(
@@ -98,19 +159,34 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         ),
                       ),
                       onChanged: (_) => ref
-                          .read(approvalDashboardControllerProvider.notifier)
+                          .read(
+                        approvalDashboardControllerProvider.notifier,
+                      )
                           .clearLoginError(),
-                      onFieldSubmitted: (_) => passwordFocusNode.requestFocus(),
+                      onFieldSubmitted: (_) {
+                        passwordFocusNode.requestFocus();
+                      },
                     ),
+
                     const SizedBox(height: 16),
-                    Text('비밀번호', style: TheWeTextStyle.body),
+
+                    Text(
+                      '비밀번호',
+                      style: TheWeTextStyle.body,
+                    ),
+
                     const SizedBox(height: 8),
+
                     CustomTextFormField(
                       controller: passwordController,
                       focusNode: passwordFocusNode,
-                      autofillHints: const [AutofillHints.password],
+                      autofillHints: const [
+                        AutofillHints.password,
+                      ],
                       keyboardType: TextInputType.visiblePassword,
-                      style: TheWeTextStyle.body.copyWith(fontSize: 16),
+                      style: TheWeTextStyle.body.copyWith(
+                        fontSize: 16,
+                      ),
                       obscureText: !showPassword,
                       textInputAction: TextInputAction.done,
                       decoration: InputDecoration(
@@ -120,7 +196,9 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         ),
                         suffixIcon: IconButton(
                           onPressed: () {
-                            setState(() => showPassword = !showPassword);
+                            setState(() {
+                              showPassword = !showPassword;
+                            });
                           },
                           icon: Icon(
                             showPassword
@@ -130,11 +208,46 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         ),
                       ),
                       onChanged: (_) => ref
-                          .read(approvalDashboardControllerProvider.notifier)
+                          .read(
+                        approvalDashboardControllerProvider.notifier,
+                      )
                           .clearLoginError(),
                       onFieldSubmitted: (_) => _login(),
                     ),
+
+                    const SizedBox(height: 8),
+
+                    Row(
+                      children: [
+                        SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: Checkbox(
+                            value: rememberId,
+                            onChanged: (value) {
+                              setState(() {
+                                rememberId = value ?? false;
+                              });
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              rememberId = !rememberId;
+                            });
+                          },
+                          child: Text(
+                            '아이디 저장',
+                            style: TheWeTextStyle.body,
+                          ),
+                        ),
+                      ],
+                    ),
+
                     const SizedBox(height: 10),
+
                     if (state?.loginError.isNotEmpty ?? false)
                       Container(
                         key: const Key('login-error-message'),
@@ -147,11 +260,14 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                           color: TheWeColor.dangerSurface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: TheWeColor.danger.withValues(alpha: 0.28),
+                            color: TheWeColor.danger.withValues(
+                              alpha: 0.28,
+                            ),
                           ),
                         ),
                         child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
                           children: [
                             const Icon(
                               Icons.error_outline_rounded,
@@ -162,7 +278,8 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                             Expanded(
                               child: Text(
                                 state!.loginError,
-                                style: TheWeTextStyle.body.copyWith(
+                                style:
+                                TheWeTextStyle.body.copyWith(
                                   color: TheWeColor.danger,
                                   fontWeight: FontWeight.w700,
                                   height: 1.4,
@@ -172,34 +289,45 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                           ],
                         ),
                       ),
+
                     const SizedBox(height: 18),
+
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: FilledButton(
-                        onPressed: isLoggingIn ? null : _login,
+                        onPressed:
+                        isLoggingIn ? null : _login,
                         style: FilledButton.styleFrom(
-                          backgroundColor: TheWeColor.black900,
+                          backgroundColor:
+                          TheWeColor.black900,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius:
+                            BorderRadius.circular(12),
                           ),
                         ),
                         child: Text(
                           '로그인',
-                          style: TheWeTextStyle.subtitle.copyWith(
+                          style:
+                          TheWeTextStyle.subtitle.copyWith(
                             color: Colors.white,
                           ),
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 10),
+
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => context.pushNamed(AppRouteName.signup),
+                        onPressed: () => context.pushNamed(
+                          AppRouteName.signup,
+                        ),
                         child: Text(
                           '회원가입',
-                          style: TheWeTextStyle.body.copyWith(
+                          style:
+                          TheWeTextStyle.body.copyWith(
                             color: TheWeColor.blue300,
                             fontWeight: FontWeight.w700,
                           ),
