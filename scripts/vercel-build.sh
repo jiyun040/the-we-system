@@ -3,7 +3,7 @@ set -euo pipefail
 
 FLUTTER_DIR=".vercel/flutter"
 FLUTTER_BIN="$FLUTTER_DIR/bin/flutter"
-FLUTTER_VERSION="${FLUTTER_VERSION:-3.47.2}"
+FLUTTER_VERSION="${FLUTTER_VERSION:-3.44.1}"
 : "${API_BASE_URL:?API_BASE_URL must point to the Django /api/v1 endpoint}"
 
 if [ ! -d "$FLUTTER_DIR" ]; then
