@@ -8,12 +8,16 @@ class AdminEmployeeLeaveOverviewDialog extends StatelessWidget {
     required this.account,
     required this.onBack,
     required this.onDirectLeave,
+    required this.onEditLeave,
+    required this.onDeleteLeave,
   });
 
   final ApprovalDashboardState state;
   final EmployeeAccount account;
   final VoidCallback onBack;
   final VoidCallback onDirectLeave;
+  final ValueChanged<LeaveRequest> onEditLeave;
+  final ValueChanged<LeaveRequest> onDeleteLeave;
 
   @override
   Widget build(BuildContext context) {
@@ -128,6 +132,32 @@ class AdminEmployeeLeaveOverviewDialog extends StatelessWidget {
                                           ),
                                           const Spacer(),
                                           Text(adminLeaveDays(request.days)),
+                                          const SizedBox(width: 4),
+                                          IconButton(
+                                            key: ValueKey(
+                                              'employee-leave-edit-${request.id}',
+                                            ),
+                                            onPressed: () =>
+                                                onEditLeave(request),
+                                            tooltip: '휴가 내역 수정',
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                              size: 19,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            key: ValueKey(
+                                              'employee-leave-delete-${request.id}',
+                                            ),
+                                            onPressed: () =>
+                                                onDeleteLeave(request),
+                                            tooltip: '휴가 내역 삭제',
+                                            color: TheWeColor.danger,
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                              size: 19,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                       const SizedBox(height: 8),
@@ -181,6 +211,30 @@ class AdminEmployeeLeaveOverviewDialog extends StatelessWidget {
                                         ),
                                       ),
                                       Text(adminLeaveDays(request.days)),
+                                      const SizedBox(width: 6),
+                                      IconButton(
+                                        key: ValueKey(
+                                          'employee-leave-edit-${request.id}',
+                                        ),
+                                        onPressed: () => onEditLeave(request),
+                                        tooltip: '휴가 내역 수정',
+                                        icon: const Icon(
+                                          Icons.edit_outlined,
+                                          size: 20,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        key: ValueKey(
+                                          'employee-leave-delete-${request.id}',
+                                        ),
+                                        onPressed: () => onDeleteLeave(request),
+                                        tooltip: '휴가 내역 삭제',
+                                        color: TheWeColor.danger,
+                                        icon: const Icon(
+                                          Icons.delete_outline,
+                                          size: 20,
+                                        ),
+                                      ),
                                     ],
                                   ),
                           );

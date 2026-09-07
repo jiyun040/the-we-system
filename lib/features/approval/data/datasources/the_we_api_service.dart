@@ -308,6 +308,30 @@ class TheWeApiService {
     );
   });
 
+  Future<void> updateLeave({
+    required String id,
+    required String type,
+    required String startDate,
+    required String endDate,
+    required double days,
+    required String reason,
+  }) => _guard(() async {
+    await _dio.patch<Map<String, dynamic>>(
+      '/leave/requests/$id',
+      data: {
+        'type': type,
+        'startDate': startDate,
+        'endDate': endDate,
+        'days': days,
+        'reason': reason,
+      },
+    );
+  });
+
+  Future<void> deleteLeave(String id) => _guard(() async {
+    await _dio.delete<Map<String, dynamic>>('/leave/requests/$id');
+  });
+
   Future<void> actOnLeave(String id, {required bool approve}) =>
       _guard(() async {
         await _dio.post<Map<String, dynamic>>(

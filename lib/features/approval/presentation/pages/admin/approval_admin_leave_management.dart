@@ -351,7 +351,38 @@ class _EmployeeLeaveBrowserDialogState
       account: account,
       onBack: () => setState(() => selected = null),
       onDirectLeave: () => showAdminDirectLeaveDialog(context, ref, account),
+      onEditLeave: (request) =>
+          showAdminEditLeaveDialog(context, ref, account, request),
+      onDeleteLeave: (request) => _deleteLeave(context, request),
     );
+  }
+
+  Future<void> _deleteLeave(BuildContext context, LeaveRequest request) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => TheWeConfirmDialog(
+        title: '휴가 내역을 삭제할까요?',
+        message: '삭제하면 해당 휴가의 사용 일수가 잔여 휴가에 다시 반영됩니다.',
+        primaryLabel: '삭제',
+        primaryColor: TheWeColor.danger,
+        onPrimaryPressed: () => Navigator.pop(dialogContext, true),
+        onSecondaryPressed: () => Navigator.pop(dialogContext, false),
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final message = await ref
+        .read(approvalDashboardControllerProvider.notifier)
+        .deleteLeaveForEmployee(request.id);
+    if (!context.mounted) return;
+    if (message == null) {
+      showTheWeSnackBar(context, message: '휴가 내역이 삭제되었습니다.');
+    } else {
+      showTheWeSnackBar(
+        context,
+        message: message,
+        type: TheWeSnackBarType.error,
+      );
+    }
   }
 }
 

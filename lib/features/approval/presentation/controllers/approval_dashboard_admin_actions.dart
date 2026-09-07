@@ -912,6 +912,82 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     return null;
   }
 
+  Future<String?> updateLeaveForEmployee({
+    required String requestId,
+    required String type,
+    required String startDate,
+    required String endDate,
+    required double days,
+    required String reason,
+  }) async {
+    final current = currentDashboardState;
+    if (current == null || !current.isAdminMode) {
+      return '관리자 모드에서만 휴가 내역을 수정할 수 있습니다.';
+    }
+    final request = current.leaveRequests
+        .where((item) => item.id == requestId)
+        .firstOrNull;
+    if (request == null) return '수정할 휴가 내역을 찾을 수 없습니다.';
+    final account = current.accounts
+        .where((item) => item.id == request.userId)
+        .firstOrNull;
+    if (account == null) return '직원 정보를 찾을 수 없습니다.';
+    final parsedStart = DateTime.tryParse(startDate);
+    final parsedEnd = DateTime.tryParse(endDate);
+    if (parsedStart == null ||
+        parsedEnd == null ||
+        parsedEnd.isBefore(parsedStart)) {
+      return '휴가 날짜를 확인해 주세요.';
+    }
+    if (type.trim().isEmpty || days <= 0) return '휴가 종류와 일수를 확인해 주세요.';
+    if (reason.trim().isEmpty) return '수정 사유를 입력해 주세요.';
+    var available = current.remainingAnnualLeaveFor(account);
+    final currentYear = DateTime.now().year;
+    final requestYear = DateTime.tryParse(request.startDate)?.year;
+    if (requestYear == currentYear &&
+        (request.status == '승인완료' || request.status == '승인대기')) {
+      available += request.days;
+    }
+    if (parsedStart.year == currentYear && days > available) {
+      return '잔여 휴가 ${available.toStringAsFixed(available == available.roundToDouble() ? 0 : 1)}일을 초과했습니다.';
+    }
+    try {
+      await api.updateLeave(
+        id: requestId,
+        type: type.trim(),
+        startDate: startDate,
+        endDate: endDate,
+        days: days,
+        reason: reason.trim(),
+      );
+      await reloadRemoteState(adminMode: true);
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(error, fallback: '휴가 내역을 수정하지 못했습니다.');
+    }
+  }
+
+  Future<String?> deleteLeaveForEmployee(String requestId) async {
+    final current = currentDashboardState;
+    if (current == null || !current.isAdminMode) {
+      return '관리자 모드에서만 휴가 내역을 삭제할 수 있습니다.';
+    }
+    if (!current.leaveRequests.any((request) => request.id == requestId)) {
+      return '삭제할 휴가 내역을 찾을 수 없습니다.';
+    }
+    try {
+      await api.deleteLeave(requestId);
+      await reloadRemoteState(adminMode: true);
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(error, fallback: '휴가 내역을 삭제하지 못했습니다.');
+    }
+  }
+
   void requestLeave({
     required String type,
     required String startDate,

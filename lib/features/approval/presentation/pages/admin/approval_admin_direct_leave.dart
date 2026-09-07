@@ -20,17 +20,50 @@ Future<void> showAdminDirectLeaveDialog(
   BuildContext context,
   WidgetRef ref,
   EmployeeAccount account,
-) async {
+) => _showAdminLeaveEditorDialog(context, ref, account);
+
+Future<void> showAdminEditLeaveDialog(
+  BuildContext context,
+  WidgetRef ref,
+  EmployeeAccount account,
+  LeaveRequest request,
+) => _showAdminLeaveEditorDialog(
+  context,
+  ref,
+  account,
+  existingRequest: request,
+);
+
+Future<void> _showAdminLeaveEditorDialog(
+  BuildContext context,
+  WidgetRef ref,
+  EmployeeAccount account, {
+  LeaveRequest? existingRequest,
+}) async {
   final current = ref.read(approvalDashboardControllerProvider).requireValue;
   final isMonthly = current.isUnderOneYear(account);
-  final types = isMonthly
-      ? const ['월차', '반차', '경조 휴가', '휴가']
-      : const ['연차', '반차', '경조 휴가', '휴가'];
+  final types = <String>[
+    ...(isMonthly
+        ? const ['월차', '반차', '경조 휴가', '휴가']
+        : const ['연차', '반차', '경조 휴가', '휴가']),
+  ];
+  if (existingRequest != null && !types.contains(existingRequest.type)) {
+    types.add(existingRequest.type);
+  }
+  final initialStart =
+      DateTime.tryParse(existingRequest?.startDate ?? '') ?? DateTime.now();
   final selection = LeaveDateSelection(
-    type: types.first,
-    startDate: DateTime.now(),
+    type: existingRequest?.type ?? types.first,
+    startDate: initialStart,
   );
-  var reason = '';
+  if (existingRequest != null && !selection.isHalfDay) {
+    selection.selectEndDate(
+      DateTime.tryParse(existingRequest.endDate) ?? initialStart,
+    );
+  }
+  final reasonController = TextEditingController(
+    text: existingRequest?.reason ?? '',
+  );
   var error = '';
 
   final draft = await showDialog<_AdminDirectLeaveDraft>(
@@ -42,9 +75,7 @@ Future<void> showAdminDirectLeaveDialog(
         Future<void> pickDate(bool startDate) async {
           final picked = await showTheWeDatePicker(
             context,
-            initialDate: startDate
-                ? selection.startDate
-                : selection.endDate,
+            initialDate: startDate ? selection.startDate : selection.endDate,
             firstDate: startDate ? DateTime(2000) : selection.startDate,
             lastDate: DateTime(DateTime.now().year + 2, 12, 31),
             title: startDate ? '휴가 시작일 선택' : '휴가 종료일 선택',
@@ -63,7 +94,11 @@ Future<void> showAdminDirectLeaveDialog(
 
         return AlertDialog(
           backgroundColor: TheWeColor.surfaceAlt,
-          title: Text('${account.name} 휴가 직접 등록'),
+          title: Text(
+            existingRequest == null
+                ? '${account.name} 휴가 직접 등록'
+                : '${account.name} 휴가 내역 수정',
+          ),
           content: SizedBox(
             width: 520,
             child: SingleChildScrollView(
@@ -72,7 +107,9 @@ Future<void> showAdminDirectLeaveDialog(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '별도 결재 없이 즉시 승인 완료 처리되며 잔여 휴가에서 차감됩니다.',
+                    existingRequest == null
+                        ? '별도 결재 없이 즉시 승인 완료 처리되며 잔여 휴가에서 차감됩니다.'
+                        : '수정한 날짜와 일수는 잔여 휴가에 즉시 다시 집계됩니다.',
                     style: TheWeTextStyle.caption.copyWith(
                       color: TheWeColor.black500,
                     ),
@@ -178,7 +215,9 @@ Future<void> showAdminDirectLeaveDialog(
                                 : () => pickDate(false),
                             icon: const Icon(Icons.event_outlined),
                             label: Text(
-                              DateFormat('yyyy-MM-dd').format(selection.endDate),
+                              DateFormat(
+                                'yyyy-MM-dd',
+                              ).format(selection.endDate),
                             ),
                           ),
                         ),
@@ -187,16 +226,20 @@ Future<void> showAdminDirectLeaveDialog(
                   const SizedBox(height: 12),
                   TextField(
                     key: const ValueKey('admin-direct-leave-reason'),
+                    controller: reasonController,
                     maxLines: 3,
-                    onChanged: (value) {
-                      reason = value;
+                    onChanged: (_) {
                       if (error.isNotEmpty) {
                         setDialogState(() => error = '');
                       }
                     },
-                    decoration: const InputDecoration(
-                      labelText: '관리자 등록 사유 (필수)',
-                      hintText: '결재 없이 반영하는 사유를 입력하세요.',
+                    decoration: InputDecoration(
+                      labelText: existingRequest == null
+                          ? '관리자 등록 사유 (필수)'
+                          : '수정 사유 (필수)',
+                      hintText: existingRequest == null
+                          ? '결재 없이 반영하는 사유를 입력하세요.'
+                          : '휴가 내역을 수정하는 사유를 입력하세요.',
                     ),
                   ),
                   if (error.isNotEmpty) ...[
@@ -221,14 +264,28 @@ Future<void> showAdminDirectLeaveDialog(
               key: const ValueKey('admin-direct-leave-submit'),
               onPressed: () {
                 final days = selection.days;
-                if (reason.trim().isEmpty) {
-                  setDialogState(() => error = '관리자 등록 사유를 입력해 주세요.');
+                if (reasonController.text.trim().isEmpty) {
+                  setDialogState(
+                    () => error = existingRequest == null
+                        ? '관리자 등록 사유를 입력해 주세요.'
+                        : '수정 사유를 입력해 주세요.',
+                  );
                   return;
                 }
-                if (days > current.remainingAnnualLeaveFor(account)) {
+                final restorableDays =
+                    existingRequest != null &&
+                        (existingRequest.status == '승인완료' ||
+                            existingRequest.status == '승인대기') &&
+                        DateTime.tryParse(existingRequest.startDate)?.year ==
+                            DateTime.now().year
+                    ? existingRequest.days
+                    : 0.0;
+                final available =
+                    current.remainingAnnualLeaveFor(account) + restorableDays;
+                if (selection.startDate.year == DateTime.now().year &&
+                    days > available) {
                   setDialogState(
-                    () => error =
-                        '잔여 휴가 ${adminLeaveDays(current.remainingAnnualLeaveFor(account))}를 초과했습니다.',
+                    () => error = '잔여 휴가 ${adminLeaveDays(available)}를 초과했습니다.',
                   );
                   return;
                 }
@@ -239,37 +296,49 @@ Future<void> showAdminDirectLeaveDialog(
                     startDate: DateFormat(
                       'yyyy-MM-dd',
                     ).format(selection.startDate),
-                    endDate: DateFormat(
-                      'yyyy-MM-dd',
-                    ).format(selection.endDate),
+                    endDate: DateFormat('yyyy-MM-dd').format(selection.endDate),
                     days: days,
-                    reason: reason.trim(),
+                    reason: reasonController.text.trim(),
                   ),
                 );
               },
-              child: const Text('즉시 반영'),
+              child: Text(existingRequest == null ? '즉시 반영' : '수정 저장'),
             ),
           ],
         );
       },
     ),
   );
+  reasonController.dispose();
   if (draft == null || !context.mounted) return;
-  final message = ref
-      .read(approvalDashboardControllerProvider.notifier)
-      .addLeaveForEmployee(
-        userId: account.id,
-        type: draft.type,
-        startDate: draft.startDate,
-        endDate: draft.endDate,
-        days: draft.days,
-        reason: draft.reason,
-      );
+  final controller = ref.read(approvalDashboardControllerProvider.notifier);
+  final message = existingRequest == null
+      ? controller.addLeaveForEmployee(
+          userId: account.id,
+          type: draft.type,
+          startDate: draft.startDate,
+          endDate: draft.endDate,
+          days: draft.days,
+          reason: draft.reason,
+        )
+      : await controller.updateLeaveForEmployee(
+          requestId: existingRequest.id,
+          type: draft.type,
+          startDate: draft.startDate,
+          endDate: draft.endDate,
+          days: draft.days,
+          reason: draft.reason,
+        );
   if (!context.mounted) return;
   if (message != null) {
     showTheWeSnackBar(context, message: message, type: TheWeSnackBarType.error);
   } else {
-    showTheWeSnackBar(context, message: '${account.name}님의 휴가가 즉시 반영되었습니다.');
+    showTheWeSnackBar(
+      context,
+      message: existingRequest == null
+          ? '${account.name}님의 휴가가 즉시 반영되었습니다.'
+          : '${account.name}님의 휴가 내역이 수정되었습니다.',
+    );
   }
 }
 
