@@ -224,10 +224,11 @@ void main() {
     await container.read(dismissedRejectedApprovalAlertsProvider.future);
     await container.read(acknowledgedRejectedDocumentsProvider.future);
 
-    await container
+    final persistence = container
         .read(dismissedRejectedApprovalAlertsProvider.notifier)
         .acknowledge(rejected);
 
+    // 로컬 저장 완료를 기다리지 않아도 X 클릭 즉시 알림 상태가 제거되어야 한다.
     expect(
       container.read(dismissedRejectedApprovalAlertsProvider).requireValue,
       contains(rejectedApprovalEventKey(rejected)),
@@ -236,6 +237,7 @@ void main() {
       container.read(acknowledgedRejectedDocumentsProvider).requireValue,
       isEmpty,
     );
+    await persistence;
   });
 
   test('기안자의 반려 문서만 알림 대상으로 선별한다', () {

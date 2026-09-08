@@ -69,18 +69,22 @@ abstract class _RejectedApprovalEventController
         .currentUser
         ?.id;
     if (userId == null || userId.isEmpty) return;
+    final eventKey = rejectedApprovalEventKey(document);
+    final updated = {...?state.asData?.value, eventKey};
+
+    // 알림은 클릭 즉시 화면에서 제거하고, 영구 저장은 뒤에서 완료한다.
+    state = AsyncData(updated);
+
     final preferences = await SharedPreferences.getInstance();
-    final updated = {
+    final persisted = {
       ...?preferences.getStringList(
         _rejectedApprovalPreferenceKey(preferencePrefix, userId),
       ),
-      ...?state.asData?.value,
-      rejectedApprovalEventKey(document),
+      ...updated,
     };
-    state = AsyncData(updated);
     await preferences.setStringList(
       _rejectedApprovalPreferenceKey(preferencePrefix, userId),
-      updated.toList(),
+      persisted.toList(),
     );
   }
 }
