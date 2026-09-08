@@ -182,10 +182,14 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
   );
   widgets.addAll([
     pw.SizedBox(height: 18),
-    pw.Text(
-      '위 금액을 청구하오니 결재하여 주시기 바랍니다.',
-      style: const pw.TextStyle(color: PdfColors.black, fontSize: 10),
-      textAlign: pw.TextAlign.center,
+    pw.Container(
+      width: double.infinity,
+      alignment: pw.Alignment.center,
+      child: pw.Text(
+        '위 금액을 청구하오니 결재하여 주시기 바랍니다.',
+        style: const pw.TextStyle(color: PdfColors.black, fontSize: 10),
+        textAlign: pw.TextAlign.center,
+      ),
     ),
     pw.SizedBox(height: 18),
     pw.Text(
@@ -206,14 +210,16 @@ pw.Widget _approvalLine(List<ApprovalStep> steps) => pw.Column(
     _sectionHeader('결재 라인'),
     pw.Row(
       children: steps.take(4).map((step) {
-        final result = step.status == '완료'
+        final approved = step.status == '완료';
+        final rejected = step.status == '반려';
+        final result = approved
             ? '승인'
-            : step.status == '반려'
+            : rejected
             ? '반려'
             : step.status;
         return pw.Expanded(
           child: pw.Container(
-            height: 72,
+            height: 82,
             decoration: pw.BoxDecoration(
               border: pw.Border.all(color: PdfColors.black, width: .8),
             ),
@@ -227,18 +233,21 @@ pw.Widget _approvalLine(List<ApprovalStep> steps) => pw.Column(
                     fontSize: 8,
                   ),
                 ),
+                if (approved || rejected)
+                  _approvalStamp(result, rejected: rejected)
+                else
+                  pw.Text(
+                    result,
+                    style: const pw.TextStyle(
+                      color: PdfColors.black,
+                      fontSize: 8,
+                    ),
+                  ),
                 pw.Text(
                   step.name,
                   style: const pw.TextStyle(
                     color: PdfColors.black,
                     fontSize: 9,
-                  ),
-                ),
-                pw.Text(
-                  result,
-                  style: const pw.TextStyle(
-                    color: PdfColors.black,
-                    fontSize: 8,
                   ),
                 ),
               ],
@@ -249,6 +258,27 @@ pw.Widget _approvalLine(List<ApprovalStep> steps) => pw.Column(
     ),
   ],
 );
+
+pw.Widget _approvalStamp(String label, {required bool rejected}) {
+  final color = rejected ? PdfColors.red800 : PdfColors.red600;
+  return pw.Container(
+    width: 30,
+    height: 30,
+    alignment: pw.Alignment.center,
+    decoration: pw.BoxDecoration(
+      shape: pw.BoxShape.circle,
+      border: pw.Border.all(color: color, width: 1.5),
+    ),
+    child: pw.Text(
+      label,
+      style: pw.TextStyle(
+        color: color,
+        fontSize: 7,
+        fontWeight: pw.FontWeight.bold,
+      ),
+    ),
+  );
+}
 
 pw.Widget _infoTable(List<(String, String)> rows) =>
     pw.Column(children: rows.map((row) => _wideRow(row.$1, row.$2)).toList());
