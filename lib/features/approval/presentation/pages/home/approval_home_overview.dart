@@ -4,13 +4,13 @@ import 'approval_home_notice.dart';
 import 'approval_home_processing.dart';
 import 'approval_home_trend.dart';
 
-class ApprovalHomeOverview extends StatelessWidget {
+class ApprovalHomeOverview extends ConsumerWidget {
   const ApprovalHomeOverview({super.key, required this.state});
 
   final ApprovalDashboardState state;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final accountCount = state.accounts.length;
     final now = DateTime.now();
     final joinerCount = state.accounts.where((item) {
@@ -86,7 +86,20 @@ class ApprovalHomeOverview extends StatelessWidget {
             ),
           ],
         );
-        final processingDocuments = state.dashboard.processingDocuments;
+        final acknowledgedRejections = ref
+            .watch(acknowledgedRejectedDocumentsProvider)
+            .asData
+            ?.value;
+        final processingDocuments = state.dashboard.processingDocuments
+            .where(
+              (document) =>
+                  document.status != '반려' ||
+                  acknowledgedRejections == null ||
+                  !acknowledgedRejections.contains(
+                    rejectedApprovalEventKey(document),
+                  ),
+            )
+            .toList();
         final rightChild = Column(
           children: [
             _PortalSurface(
@@ -99,6 +112,14 @@ class ApprovalHomeOverview extends StatelessWidget {
                 child: ApprovalDraftProgressSection(
                   documents: processingDocuments.take(5).toList(),
                   totalCount: processingDocuments.length,
+                  onAcknowledgeRejected: (document) async {
+                    await ref
+                        .read(acknowledgedRejectedDocumentsProvider.notifier)
+                        .acknowledge(document);
+                    await ref
+                        .read(dismissedRejectedApprovalAlertsProvider.notifier)
+                        .acknowledge(document);
+                  },
                 ),
               ),
             ],

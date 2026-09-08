@@ -167,10 +167,12 @@ class ApprovalDraftProgressSection extends StatelessWidget {
     super.key,
     required this.documents,
     required this.totalCount,
+    required this.onAcknowledgeRejected,
   });
 
   final List<ApprovalDocument> documents;
   final int totalCount;
+  final ValueChanged<ApprovalDocument> onAcknowledgeRejected;
 
   @override
   Widget build(BuildContext context) {
@@ -227,6 +229,19 @@ class ApprovalDraftProgressSection extends StatelessWidget {
                             AppRouteName.detail,
                             pathParameters: {'id': document.id},
                           ),
+                          actions: document.status == '반려'
+                              ? [
+                                  FilledButton.icon(
+                                    key: ValueKey(
+                                      'acknowledge-rejected-document-${document.id}',
+                                    ),
+                                    onPressed: () =>
+                                        onAcknowledgeRejected(document),
+                                    icon: const Icon(Icons.check, size: 17),
+                                    label: const Text('확인'),
+                                  ),
+                                ]
+                              : const [],
                         ),
                       ),
                     )
@@ -254,7 +269,10 @@ class ApprovalDraftProgressSection extends StatelessWidget {
                     children: [
                       const _DraftProgressHeader(),
                       ...documents.map(
-                        (document) => _DraftProgressRow(document: document),
+                        (document) => _DraftProgressRow(
+                          document: document,
+                          onAcknowledgeRejected: onAcknowledgeRejected,
+                        ),
                       ),
                     ],
                   ),
@@ -287,7 +305,7 @@ class _DraftProgressHeader extends StatelessWidget {
           _DraftProgressCell('긴급', flex: 1, header: true),
           _DraftProgressCell('제목', flex: 6, header: true),
           _DraftProgressCell('첨부', flex: 1, header: true),
-          _DraftProgressCell('결재상태', flex: 2, header: true),
+          _DraftProgressCell('결재상태 / 확인', flex: 3, header: true),
         ],
       ),
     );
@@ -295,9 +313,13 @@ class _DraftProgressHeader extends StatelessWidget {
 }
 
 class _DraftProgressRow extends StatelessWidget {
-  const _DraftProgressRow({required this.document});
+  const _DraftProgressRow({
+    required this.document,
+    required this.onAcknowledgeRejected,
+  });
 
   final ApprovalDocument document;
+  final ValueChanged<ApprovalDocument> onAcknowledgeRejected;
 
   @override
   Widget build(BuildContext context) {
@@ -347,25 +369,46 @@ class _DraftProgressRow extends StatelessWidget {
               ),
             ),
             Expanded(
-              flex: 2,
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: TheWeColor.green.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    document.status,
-                    style: TheWeTextStyle.caption.copyWith(
-                      color: TheWeColor.green,
+              flex: 3,
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          (document.status == '반려'
+                                  ? TheWeColor.pink
+                                  : TheWeColor.green)
+                              .withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      document.status,
+                      style: TheWeTextStyle.caption.copyWith(
+                        color: document.status == '반려'
+                            ? TheWeColor.pink
+                            : TheWeColor.green,
+                      ),
                     ),
                   ),
-                ),
+                  if (document.status == '반려') ...[
+                    const SizedBox(width: 6),
+                    TextButton(
+                      key: ValueKey(
+                        'acknowledge-rejected-document-${document.id}',
+                      ),
+                      onPressed: () => onAcknowledgeRejected(document),
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size(48, 32),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      child: const Text('확인'),
+                    ),
+                  ],
+                ],
               ),
             ),
           ],

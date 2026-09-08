@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/data/datasources/the_we_api_service.dart';
@@ -28,6 +29,92 @@ final approvalOperationErrorProvider =
     NotifierProvider<ApprovalOperationErrorController, String?>(
       ApprovalOperationErrorController.new,
     );
+
+final acknowledgedRejectedDocumentsProvider =
+    AsyncNotifierProvider<AcknowledgedRejectedDocumentsController, Set<String>>(
+      AcknowledgedRejectedDocumentsController.new,
+    );
+
+final dismissedRejectedApprovalAlertsProvider =
+    AsyncNotifierProvider<
+      DismissedRejectedApprovalAlertsController,
+      Set<String>
+    >(DismissedRejectedApprovalAlertsController.new);
+
+abstract class _RejectedApprovalEventController
+    extends AsyncNotifier<Set<String>> {
+  String get preferencePrefix;
+
+  @override
+  Future<Set<String>> build() async {
+    final userId = ref.watch(
+      approvalDashboardControllerProvider.select(
+        (dashboard) => dashboard.asData?.value.currentUser?.id,
+      ),
+    );
+    if (userId == null || userId.isEmpty) return const {};
+    final preferences = await SharedPreferences.getInstance();
+    return {
+      ...?preferences.getStringList(
+        _rejectedApprovalPreferenceKey(preferencePrefix, userId),
+      ),
+    };
+  }
+
+  Future<void> acknowledge(ApprovalDocument document) async {
+    final userId = ref
+        .read(approvalDashboardControllerProvider)
+        .asData
+        ?.value
+        .currentUser
+        ?.id;
+    if (userId == null || userId.isEmpty) return;
+    final preferences = await SharedPreferences.getInstance();
+    final updated = {
+      ...?preferences.getStringList(
+        _rejectedApprovalPreferenceKey(preferencePrefix, userId),
+      ),
+      ...?state.asData?.value,
+      rejectedApprovalEventKey(document),
+    };
+    state = AsyncData(updated);
+    await preferences.setStringList(
+      _rejectedApprovalPreferenceKey(preferencePrefix, userId),
+      updated.toList(),
+    );
+  }
+}
+
+class AcknowledgedRejectedDocumentsController
+    extends _RejectedApprovalEventController {
+  @override
+  String get preferencePrefix => 'acknowledged_rejected_documents';
+}
+
+class DismissedRejectedApprovalAlertsController
+    extends _RejectedApprovalEventController {
+  @override
+  String get preferencePrefix => 'dismissed_rejected_approval_alerts';
+}
+
+String _rejectedApprovalPreferenceKey(String prefix, String userId) =>
+    '${prefix}_$userId';
+
+String rejectedApprovalEventKey(ApprovalDocument document) {
+  final rejectedStep = document.steps
+      .where((step) => step.status == '반려')
+      .lastOrNull;
+  final rejectionHistory = document.histories
+      .where(
+        (history) =>
+            history.category.contains('반려') ||
+            history.description.contains('반려'),
+      )
+      .lastOrNull;
+  final eventId =
+      rejectedStep?.approvedAt ?? rejectionHistory?.id ?? document.draftedAt;
+  return '${document.id}:$eventId';
+}
 
 class ApprovalOperationErrorController extends Notifier<String?> {
   @override

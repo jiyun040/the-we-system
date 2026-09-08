@@ -13,7 +13,6 @@ import 'package:the_we_system/core/platform/app_zoom_wheel_bridge.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -73,9 +72,6 @@ class _AppInteractionLayer extends ConsumerStatefulWidget {
 class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
   late final AppZoomWheelDisposer _removeWebZoomWheelHandler;
   late final Timer _backgroundRefreshTimer;
-  String? _loadedRejectedAlertsForUserId;
-  String? _loadingRejectedAlertsForUserId;
-  Set<String> _dismissedRejectedAlerts = const {};
 
   @override
   void initState() {
@@ -122,14 +118,16 @@ class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
         .watch(approvalDashboardControllerProvider)
         .asData
         ?.value;
-    final userId = dashboardState?.currentUser?.id;
-    _ensureRejectedAlertsLoaded(userId);
+    final acknowledgementState = ref.watch(
+      dismissedRejectedApprovalAlertsProvider,
+    );
+    final acknowledgedRejections = acknowledgementState.asData?.value;
     final rejectedDocuments =
-        userId != null && _loadedRejectedAlertsForUserId == userId
-        ? dashboardState!.rejectedAuthoredDocuments
+        dashboardState != null && acknowledgedRejections != null
+        ? dashboardState.rejectedAuthoredDocuments
               .where(
-                (document) => !_dismissedRejectedAlerts.contains(
-                  _rejectedApprovalEventKey(document),
+                (document) => !acknowledgedRejections.contains(
+                  rejectedApprovalEventKey(document),
                 ),
               )
               .toList()
@@ -166,79 +164,15 @@ class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
                   AppRouteName.detail,
                   pathParameters: {'id': rejectedDocuments.first.id},
                 ),
-                onDismiss: () =>
-                    _dismissRejectedAlert(userId!, rejectedDocuments.first),
+                onDismiss: () => ref
+                    .read(dismissedRejectedApprovalAlertsProvider.notifier)
+                    .acknowledge(rejectedDocuments.first),
               ),
             ),
         ],
       ),
     );
   }
-
-  void _ensureRejectedAlertsLoaded(String? userId) {
-    if (userId == null ||
-        userId == _loadedRejectedAlertsForUserId ||
-        userId == _loadingRejectedAlertsForUserId) {
-      return;
-    }
-    _loadingRejectedAlertsForUserId = userId;
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final preferences = await SharedPreferences.getInstance();
-      final dismissed = preferences.getStringList(
-        _rejectedAlertPreferenceKey(userId),
-      );
-      if (!mounted ||
-          ref
-                  .read(approvalDashboardControllerProvider)
-                  .asData
-                  ?.value
-                  .currentUser
-                  ?.id !=
-              userId) {
-        return;
-      }
-      setState(() {
-        _loadedRejectedAlertsForUserId = userId;
-        _loadingRejectedAlertsForUserId = null;
-        _dismissedRejectedAlerts = {...?dismissed};
-      });
-    });
-  }
-
-  Future<void> _dismissRejectedAlert(
-    String userId,
-    ApprovalDocument document,
-  ) async {
-    final updated = {
-      ..._dismissedRejectedAlerts,
-      _rejectedApprovalEventKey(document),
-    };
-    setState(() => _dismissedRejectedAlerts = updated);
-    final preferences = await SharedPreferences.getInstance();
-    await preferences.setStringList(
-      _rejectedAlertPreferenceKey(userId),
-      updated.toList(),
-    );
-  }
-}
-
-String _rejectedAlertPreferenceKey(String userId) =>
-    'dismissed_rejected_approval_alerts_$userId';
-
-String _rejectedApprovalEventKey(ApprovalDocument document) {
-  final rejectedStep = document.steps
-      .where((step) => step.status == '반려')
-      .lastOrNull;
-  final rejectionHistory = document.histories
-      .where(
-        (history) =>
-            history.category.contains('반려') ||
-            history.description.contains('반려'),
-      )
-      .lastOrNull;
-  final eventId =
-      rejectedStep?.approvedAt ?? rejectionHistory?.id ?? document.draftedAt;
-  return '${document.id}:$eventId';
 }
 
 class AppZoomViewport extends StatelessWidget {

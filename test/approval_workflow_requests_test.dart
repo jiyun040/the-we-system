@@ -1,6 +1,8 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:the_we_system/common/components/rejected_approval_alert.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
@@ -8,6 +10,16 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/pages/approval/approval_detail_panels.dart';
 import 'package:the_we_system/features/approval/presentation/pages/approval/approval_draft_sheet.dart';
+import 'package:the_we_system/features/approval/presentation/pages/home/approval_home_overview.dart';
+
+class _WorkflowRequestController extends ApprovalDashboardController {
+  _WorkflowRequestController(this.initialState);
+
+  final ApprovalDashboardState initialState;
+
+  @override
+  Future<ApprovalDashboardState> build() async => initialState;
+}
 
 const _employee = EmployeeAccount(
   id: 'employee',
@@ -150,6 +162,80 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('rejected-approval-dismiss')));
     expect(opened, isTrue);
     expect(dismissed, isTrue);
+  });
+
+  testWidgets('반려 문서를 확인하면 기안 진행 목록에서 숨긴다', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final rejected = _submittedDocument.copyWith(status: '반려');
+    final state = signedOutApprovalState.copyWith(
+      currentUser: _employee,
+      accounts: const [_employee, _technologyManager],
+      documents: [rejected],
+      enabledAppIds: const {'approval'},
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            () => _WorkflowRequestController(state),
+          ),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: ApprovalHomeOverview(state: state),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final confirmButton = find.byKey(
+      const ValueKey('acknowledge-rejected-document-APP-SUBMITTED'),
+    );
+    expect(confirmButton, findsOneWidget);
+    await tester.ensureVisible(confirmButton);
+    await tester.tap(confirmButton);
+    await tester.pumpAndSettle();
+
+    expect(confirmButton, findsNothing);
+    expect(find.text('상신한 문서'), findsNothing);
+  });
+
+  test('상단 배너 X는 알림만 닫고 기안 진행 문서는 유지한다', () async {
+    SharedPreferences.setMockInitialValues({});
+    final rejected = _submittedDocument.copyWith(status: '반려');
+    final dashboardState = signedOutApprovalState.copyWith(
+      currentUser: _employee,
+      accounts: const [_employee, _technologyManager],
+      documents: [rejected],
+    );
+    final container = ProviderContainer(
+      overrides: [
+        approvalDashboardControllerProvider.overrideWith(
+          () => _WorkflowRequestController(dashboardState),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    await container.read(approvalDashboardControllerProvider.future);
+    await container.read(dismissedRejectedApprovalAlertsProvider.future);
+    await container.read(acknowledgedRejectedDocumentsProvider.future);
+
+    await container
+        .read(dismissedRejectedApprovalAlertsProvider.notifier)
+        .acknowledge(rejected);
+
+    expect(
+      container.read(dismissedRejectedApprovalAlertsProvider).requireValue,
+      contains(rejectedApprovalEventKey(rejected)),
+    );
+    expect(
+      container.read(acknowledgedRejectedDocumentsProvider).requireValue,
+      isEmpty,
+    );
   });
 
   test('기안자의 반려 문서만 알림 대상으로 선별한다', () {
