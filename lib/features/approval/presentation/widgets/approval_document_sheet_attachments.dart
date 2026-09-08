@@ -93,69 +93,150 @@ Future<void> _showAttachmentPreview(
 ) async {
   await showDialog<void>(
     context: context,
-    builder: (dialogContext) {
-      final size = MediaQuery.sizeOf(dialogContext);
-      final compact = size.width < 520;
-      return Dialog(
-        insetPadding: EdgeInsets.all(compact ? 10 : 28),
-        backgroundColor: TheWeColor.white,
-        surfaceTintColor: TheWeColor.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: SizedBox(
-          width: compact ? size.width : 1000,
-          height: compact ? size.height * .88 : size.height * .9,
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  compact ? 14 : 22,
-                  12,
-                  compact ? 8 : 14,
-                  10,
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.picture_as_pdf_outlined,
-                      color: TheWeColor.danger,
+    builder: (dialogContext) =>
+        _AttachmentPreviewDialog(attachment: attachment),
+  );
+}
+
+class _AttachmentPreviewDialog extends StatefulWidget {
+  const _AttachmentPreviewDialog({required this.attachment});
+
+  final ApprovalAttachment attachment;
+
+  @override
+  State<_AttachmentPreviewDialog> createState() =>
+      _AttachmentPreviewDialogState();
+}
+
+class _AttachmentPreviewDialogState extends State<_AttachmentPreviewDialog> {
+  final PdfViewerController _controller = PdfViewerController();
+
+  Future<void> _fitWidth() async {
+    if (!_controller.isReady) return;
+    await _controller.goTo(
+      _controller.calcMatrixFitWidthForPage(
+        pageNumber: _controller.pageNumber ?? 1,
+      ),
+    );
+  }
+
+  Future<void> _fitPage() async {
+    if (!_controller.isReady) return;
+    await _controller.goTo(
+      _controller.calcMatrixForFit(pageNumber: _controller.pageNumber ?? 1),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+    final compact = size.width < 760;
+    return Dialog(
+      insetPadding: EdgeInsets.all(compact ? 8 : 24),
+      clipBehavior: Clip.antiAlias,
+      backgroundColor: TheWeColor.white,
+      surfaceTintColor: TheWeColor.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: SizedBox(
+        width: compact ? double.infinity : (size.width - 48).clamp(0.0, 1280.0),
+        height: compact ? size.height * .94 : size.height * .92,
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 12 : 20,
+                10,
+                compact ? 4 : 10,
+                8,
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.picture_as_pdf_outlined,
+                    color: TheWeColor.danger,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.attachment.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TheWeTextStyle.subtitle,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        attachment.name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TheWeTextStyle.subtitle,
-                      ),
+                  ),
+                  if (!compact) ...[
+                    TextButton.icon(
+                      key: const ValueKey('attachment-preview-fit-width'),
+                      onPressed: _fitWidth,
+                      icon: const Icon(Icons.fit_screen_outlined, size: 18),
+                      label: const Text('너비 맞춤'),
                     ),
-                    IconButton(
-                      tooltip: '닫기',
-                      onPressed: () => Navigator.of(dialogContext).pop(),
-                      icon: const Icon(Icons.close),
+                    TextButton.icon(
+                      key: const ValueKey('attachment-preview-fit-page'),
+                      onPressed: _fitPage,
+                      icon: const Icon(Icons.fullscreen_outlined, size: 18),
+                      label: const Text('한 페이지'),
                     ),
                   ],
-                ),
+                  IconButton(
+                    tooltip: '축소',
+                    onPressed: _controller.zoomDown,
+                    icon: const Icon(Icons.zoom_out),
+                  ),
+                  IconButton(
+                    tooltip: '확대',
+                    onPressed: _controller.zoomUp,
+                    icon: const Icon(Icons.zoom_in),
+                  ),
+                  IconButton(
+                    tooltip: '닫기',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
               ),
-              Divider(
-                height: 1,
-                color: TheWeColor.black300.withValues(alpha: .5),
-              ),
-              Expanded(
-                child: ColoredBox(
-                  color: TheWeColor.background,
-                  child: PdfViewer.data(
-                    attachment.bytes,
-                    sourceName:
-                        '${attachment.name}-${attachment.base64Data.hashCode}',
+            ),
+            Divider(
+              height: 1,
+              color: TheWeColor.black300.withValues(alpha: .5),
+            ),
+            Expanded(
+              child: ColoredBox(
+                color: TheWeColor.background,
+                child: PdfViewer.data(
+                  widget.attachment.bytes,
+                  sourceName:
+                      '${widget.attachment.name}-${widget.attachment.base64Data.hashCode}',
+                  controller: _controller,
+                  params: PdfViewerParams(
+                    margin: compact ? 8 : 20,
+                    backgroundColor: TheWeColor.background,
+                    pageAnchor: PdfPageAnchor.topCenter,
+                    underflowAnchor: PdfPageAnchor.topCenter,
+                    panAxis: PanAxis.free,
+                    scrollByMouseWheel: .65,
+                    interactionDelegateProvider:
+                        const PdfViewerScrollInteractionDelegateProviderPhysics(
+                          panFriction: 16,
+                        ),
+                    onViewerReady: (document, controller) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted || !controller.isReady) return;
+                        controller.goTo(
+                          controller.calcMatrixFitWidthForPage(pageNumber: 1),
+                          duration: Duration.zero,
+                        );
+                      });
+                    },
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      );
-    },
-  );
+      ),
+    );
+  }
 }
 
 Future<void> _downloadAttachment(

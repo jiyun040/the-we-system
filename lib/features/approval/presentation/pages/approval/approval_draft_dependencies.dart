@@ -1,4 +1,5 @@
 export 'package:file_selector/file_selector.dart';
+export 'package:desktop_drop/desktop_drop.dart';
 export 'package:flutter/material.dart';
 export 'package:flutter_riverpod/flutter_riverpod.dart';
 export 'package:go_router/go_router.dart';

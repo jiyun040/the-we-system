@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,10 +7,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:the_we_system/common/components/the_we_snack_bar.dart';
+import 'package:the_we_system/common/components/rejected_approval_alert.dart';
 import 'package:the_we_system/common/theme/the_we_theme.dart';
 import 'package:the_we_system/core/platform/app_zoom_wheel_bridge.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,6 +72,10 @@ class _AppInteractionLayer extends ConsumerStatefulWidget {
 
 class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
   late final AppZoomWheelDisposer _removeWebZoomWheelHandler;
+  late final Timer _backgroundRefreshTimer;
+  String? _loadedRejectedAlertsForUserId;
+  String? _loadingRejectedAlertsForUserId;
+  Set<String> _dismissedRejectedAlerts = const {};
 
   @override
   void initState() {
@@ -75,11 +84,22 @@ class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
       if (!mounted) return;
       ref.read(approvalDashboardControllerProvider.notifier).adjustZoom(delta);
     });
+    _backgroundRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      final dashboardState = ref
+          .read(approvalDashboardControllerProvider)
+          .asData
+          ?.value;
+      if (dashboardState?.isAuthenticated != true) return;
+      ref
+          .read(approvalDashboardControllerProvider.notifier)
+          .refreshInBackground();
+    });
   }
 
   @override
   void dispose() {
     _removeWebZoomWheelHandler();
+    _backgroundRefreshTimer.cancel();
     super.dispose();
   }
 
@@ -98,6 +118,23 @@ class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
       });
     });
 
+    final dashboardState = ref
+        .watch(approvalDashboardControllerProvider)
+        .asData
+        ?.value;
+    final userId = dashboardState?.currentUser?.id;
+    _ensureRejectedAlertsLoaded(userId);
+    final rejectedDocuments =
+        userId != null && _loadedRejectedAlertsForUserId == userId
+        ? dashboardState!.rejectedAuthoredDocuments
+              .where(
+                (document) => !_dismissedRejectedAlerts.contains(
+                  _rejectedApprovalEventKey(document),
+                ),
+              )
+              .toList()
+        : const <ApprovalDocument>[];
+
     return Listener(
       onPointerSignal: (event) {
         final keyboard = HardwareKeyboard.instance;
@@ -111,13 +148,97 @@ class _AppInteractionLayerState extends ConsumerState<_AppInteractionLayer> {
               .adjustZoom(event.scrollDelta.dy > 0 ? -0.05 : 0.05);
         }
       },
-      child: AppZoomViewport(
-        zoom: widget.zoom,
-        mediaQuery: widget.mediaQuery,
-        child: widget.child,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          AppZoomViewport(
+            zoom: widget.zoom,
+            mediaQuery: widget.mediaQuery,
+            child: widget.child,
+          ),
+          if (rejectedDocuments.isNotEmpty)
+            Align(
+              alignment: Alignment.topRight,
+              child: RejectedApprovalAlert(
+                document: rejectedDocuments.first,
+                pendingCount: rejectedDocuments.length,
+                onOpen: () => appRouter.goNamed(
+                  AppRouteName.detail,
+                  pathParameters: {'id': rejectedDocuments.first.id},
+                ),
+                onDismiss: () =>
+                    _dismissRejectedAlert(userId!, rejectedDocuments.first),
+              ),
+            ),
+        ],
       ),
     );
   }
+
+  void _ensureRejectedAlertsLoaded(String? userId) {
+    if (userId == null ||
+        userId == _loadedRejectedAlertsForUserId ||
+        userId == _loadingRejectedAlertsForUserId) {
+      return;
+    }
+    _loadingRejectedAlertsForUserId = userId;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final preferences = await SharedPreferences.getInstance();
+      final dismissed = preferences.getStringList(
+        _rejectedAlertPreferenceKey(userId),
+      );
+      if (!mounted ||
+          ref
+                  .read(approvalDashboardControllerProvider)
+                  .asData
+                  ?.value
+                  .currentUser
+                  ?.id !=
+              userId) {
+        return;
+      }
+      setState(() {
+        _loadedRejectedAlertsForUserId = userId;
+        _loadingRejectedAlertsForUserId = null;
+        _dismissedRejectedAlerts = {...?dismissed};
+      });
+    });
+  }
+
+  Future<void> _dismissRejectedAlert(
+    String userId,
+    ApprovalDocument document,
+  ) async {
+    final updated = {
+      ..._dismissedRejectedAlerts,
+      _rejectedApprovalEventKey(document),
+    };
+    setState(() => _dismissedRejectedAlerts = updated);
+    final preferences = await SharedPreferences.getInstance();
+    await preferences.setStringList(
+      _rejectedAlertPreferenceKey(userId),
+      updated.toList(),
+    );
+  }
+}
+
+String _rejectedAlertPreferenceKey(String userId) =>
+    'dismissed_rejected_approval_alerts_$userId';
+
+String _rejectedApprovalEventKey(ApprovalDocument document) {
+  final rejectedStep = document.steps
+      .where((step) => step.status == '반려')
+      .lastOrNull;
+  final rejectionHistory = document.histories
+      .where(
+        (history) =>
+            history.category.contains('반려') ||
+            history.description.contains('반려'),
+      )
+      .lastOrNull;
+  final eventId =
+      rejectedStep?.approvedAt ?? rejectionHistory?.id ?? document.draftedAt;
+  return '${document.id}:$eventId';
 }
 
 class AppZoomViewport extends StatelessWidget {

@@ -256,6 +256,18 @@ class ApprovalDashboardState {
         .toList();
   }
 
+  List<ApprovalDocument> get rejectedAuthoredDocuments {
+    final user = currentUser;
+    if (user == null) return const [];
+    return documents
+        .where(
+          (document) =>
+              document.drafter == user.name && document.status == '반려',
+        )
+        .toList()
+      ..sort((left, right) => right.draftedAt.compareTo(left.draftedAt));
+  }
+
   List<ApprovalDocument> get sharedDraftDocuments {
     return [...visibleDocuments]
       ..sort((a, b) => b.draftedAt.compareTo(a.draftedAt));
@@ -428,6 +440,19 @@ class ApprovalDashboardState {
     final id = currentUser?.id;
     if (id == null) return const [];
     return leaveRequests.where((request) => request.userId == id).toList();
+  }
+
+  List<EmployeeAccount> get currentUserLeaveApprovers {
+    final user = currentUser;
+    if (user == null) return const [];
+    final userIds = leaveApprovalLines[user.department.trim()] ?? const [];
+    return userIds
+        .map(
+          (userId) =>
+              accounts.where((account) => account.id == userId).firstOrNull,
+        )
+        .nonNulls
+        .toList();
   }
 
   List<LeaveRequest> get pendingLeaveRequests =>

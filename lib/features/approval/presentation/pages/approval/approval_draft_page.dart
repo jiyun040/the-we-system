@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -218,6 +221,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                             titleController: titleController,
                             contentController: contentController,
                             onAddAttachment: _addAttachmentFile,
+                            onDropAttachments: _addAttachmentFiles,
                             onAddLinkedDocument: () =>
                                 _addLinkedDocument(appState),
                             onRemoveLinkedDocument: (item) {
@@ -558,31 +562,88 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
       return;
     }
 
-    final bytes = await file.readAsBytes();
-    if (bytes.isEmpty || !mounted) {
-      if (mounted) {
-        showTheWeSnackBar(
-          context,
-          message: '빈 파일은 첨부할 수 없습니다.',
-          type: TheWeSnackBarType.error,
-        );
+    await _addAttachmentFiles([file]);
+  }
+
+  Future<void> _addAttachmentFiles(List<XFile> files) async {
+    final accepted = <ApprovalAttachment>[];
+    var rejectedCount = 0;
+    var emptyCount = 0;
+    var unreadableCount = 0;
+
+    for (final file in files) {
+      final isPdf =
+          file.name.toLowerCase().endsWith('.pdf') ||
+          file.mimeType == 'application/pdf';
+      if (!isPdf) {
+        rejectedCount++;
+        continue;
       }
-      return;
+
+      Uint8List bytes;
+      try {
+        bytes = await _readAttachmentBytes(file);
+      } catch (_) {
+        unreadableCount++;
+        continue;
+      }
+      if (bytes.isEmpty) {
+        emptyCount++;
+        continue;
+      }
+
+      accepted.add(
+        ApprovalAttachment.fromBytes(
+          name: file.name,
+          mimeType: 'application/pdf',
+          bytes: bytes,
+        ),
+      );
     }
 
-    final attachment = ApprovalAttachment.fromBytes(
-      name: file.name,
-      mimeType: file.mimeType ?? 'application/pdf',
-      bytes: bytes,
-    );
+    if (!mounted) return;
 
-    setState(() {
-      attachments = [
-        for (final current in attachments)
-          if (current.name != attachment.name) current,
-        attachment,
-      ];
-    });
+    if (accepted.isNotEmpty) {
+      final acceptedNames = accepted.map((item) => item.name).toSet();
+      setState(() {
+        attachments = [
+          for (final current in attachments)
+            if (!acceptedNames.contains(current.name)) current,
+          ...accepted,
+        ];
+      });
+    }
+
+    if (rejectedCount > 0 || emptyCount > 0 || unreadableCount > 0) {
+      final reasons = [
+        if (rejectedCount > 0) 'PDF가 아닌 파일 $rejectedCount개',
+        if (emptyCount > 0) '빈 파일 $emptyCount개',
+        if (unreadableCount > 0) '읽을 수 없는 파일 $unreadableCount개',
+      ].join(', ');
+      showTheWeSnackBar(
+        context,
+        message: '$reasons는 첨부하지 않았습니다.',
+        type: TheWeSnackBarType.error,
+      );
+    }
+  }
+
+  Future<Uint8List> _readAttachmentBytes(XFile file) async {
+    final bookmark = file is DropItem ? file.extraAppleBookmark : null;
+    var securityAccessStarted = false;
+    try {
+      if (bookmark != null && bookmark.isNotEmpty) {
+        securityAccessStarted = await DesktopDrop.instance
+            .startAccessingSecurityScopedResource(bookmark: bookmark);
+      }
+      return await file.readAsBytes();
+    } finally {
+      if (securityAccessStarted && bookmark != null) {
+        await DesktopDrop.instance.stopAccessingSecurityScopedResource(
+          bookmark: bookmark,
+        );
+      }
+    }
   }
 
   Future<void> _addLinkedDocument(ApprovalDashboardState appState) async {

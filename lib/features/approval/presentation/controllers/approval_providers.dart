@@ -106,6 +106,32 @@ class ApprovalDashboardController
     }
   }
 
+  Future<void> refreshInBackground() async {
+    if (currentDashboardState?.isAuthenticated != true) return;
+    try {
+      final remote = await api.fetchBootstrap();
+      final current = currentDashboardState;
+      if (current == null || !current.isAuthenticated) return;
+      final remoteDocumentIds = remote.documents
+          .map((document) => document.id)
+          .toSet();
+      final documents = [
+        ...remote.documents,
+        ...current.documents.where(
+          (document) => !remoteDocumentIds.contains(document.id),
+        ),
+      ]..sort((left, right) => right.draftedAt.compareTo(left.draftedAt));
+      emitDashboardState(
+        current.copyWith(
+          documents: documents,
+          restrictedDocumentIds: remote.restrictedDocumentIds,
+        ),
+      );
+    } catch (_) {
+      // A background notification check must not interrupt the active screen.
+    }
+  }
+
   @override
   Future<ApprovalDashboardState> build() async {
     if (!await api.hasStoredToken()) return signedOutApprovalState;

@@ -39,30 +39,35 @@ class ApprovalToolbarButton extends StatelessWidget {
 }
 
 class ApprovalRightPanel extends StatelessWidget {
-  const ApprovalRightPanel({super.key, required this.document});
+  const ApprovalRightPanel({
+    super.key,
+    required this.document,
+    this.showApprovalLine = true,
+  });
 
   final ApprovalDocument document;
+  final bool showApprovalLine;
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: showApprovalLine ? 4 : 3,
       child: Column(
         children: [
           TabBar(
             labelColor: TheWeColor.black900,
             indicatorColor: TheWeColor.black900,
-            tabs: const [
-              Tab(text: '결재선'),
-              Tab(text: '문서정보'),
-              Tab(text: '변경이력'),
-              Tab(text: '열람'),
+            tabs: [
+              if (showApprovalLine) const Tab(text: '결재선'),
+              const Tab(text: '문서정보'),
+              const Tab(text: '변경이력'),
+              const Tab(text: '열람'),
             ],
           ),
           Expanded(
             child: TabBarView(
               children: [
-                _ApprovalLineTab(steps: document.steps),
+                if (showApprovalLine) _ApprovalLineTab(steps: document.steps),
                 _DocumentInfoTab(document: document),
                 _HistoryTab(histories: document.histories),
                 _ViewerTab(document: document),

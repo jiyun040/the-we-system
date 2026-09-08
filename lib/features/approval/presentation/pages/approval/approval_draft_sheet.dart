@@ -10,6 +10,7 @@ class ApprovalEditableDraftSheet extends StatelessWidget {
     required this.titleController,
     required this.contentController,
     required this.onAddAttachment,
+    required this.onDropAttachments,
     required this.onAddLinkedDocument,
     required this.onRemoveLinkedDocument,
     required this.onRemoveAttachment,
@@ -23,6 +24,7 @@ class ApprovalEditableDraftSheet extends StatelessWidget {
   final TextEditingController titleController;
   final TextEditingController contentController;
   final VoidCallback onAddAttachment;
+  final Future<void> Function(List<XFile> files) onDropAttachments;
   final VoidCallback onAddLinkedDocument;
   final ValueChanged<String> onRemoveLinkedDocument;
   final ValueChanged<ApprovalAttachment> onRemoveAttachment;
@@ -151,79 +153,142 @@ class ApprovalEditableDraftSheet extends StatelessWidget {
           const SizedBox(height: 18),
           Text('첨부 / 연결 문서', style: TheWeTextStyle.title),
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: TheWeColor.black300.withValues(alpha: 0.5),
-              ),
-              borderRadius: BorderRadius.circular(8),
-              color: const Color(0xFFFBFCFE),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          _AttachmentDropArea(
+            attachments: document.attachments,
+            linkedDocuments: document.linkedDocuments,
+            onAddAttachment: onAddAttachment,
+            onDropAttachments: onDropAttachments,
+            onAddLinkedDocument: onAddLinkedDocument,
+            onRemoveAttachment: onRemoveAttachment,
+            onRemoveLinkedDocument: onRemoveLinkedDocument,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AttachmentDropArea extends StatefulWidget {
+  const _AttachmentDropArea({
+    required this.attachments,
+    required this.linkedDocuments,
+    required this.onAddAttachment,
+    required this.onDropAttachments,
+    required this.onAddLinkedDocument,
+    required this.onRemoveAttachment,
+    required this.onRemoveLinkedDocument,
+  });
+
+  final List<ApprovalAttachment> attachments;
+  final List<String> linkedDocuments;
+  final VoidCallback onAddAttachment;
+  final Future<void> Function(List<XFile> files) onDropAttachments;
+  final VoidCallback onAddLinkedDocument;
+  final ValueChanged<ApprovalAttachment> onRemoveAttachment;
+  final ValueChanged<String> onRemoveLinkedDocument;
+
+  @override
+  State<_AttachmentDropArea> createState() => _AttachmentDropAreaState();
+}
+
+class _AttachmentDropAreaState extends State<_AttachmentDropArea> {
+  bool _dragging = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return DropTarget(
+      key: const ValueKey('approval-attachment-drop-target'),
+      onDragEntered: (_) => setState(() => _dragging = true),
+      onDragExited: (_) => setState(() => _dragging = false),
+      onDragDone: (details) async {
+        setState(() => _dragging = false);
+        await widget.onDropAttachments(details.files);
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: _dragging
+                ? TheWeColor.blue300
+                : TheWeColor.black300.withValues(alpha: 0.5),
+            width: _dragging ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: _dragging ? TheWeColor.blueSurface : const Color(0xFFFBFCFE),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
+                OutlinedButton.icon(
+                  onPressed: widget.onAddAttachment,
+                  icon: const Icon(Icons.attach_file, size: 18),
+                  label: const Text('파일 첨부'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: widget.onAddLinkedDocument,
+                  icon: const Icon(Icons.link_outlined, size: 18),
+                  label: const Text('연결 문서'),
+                ),
+                Text(
+                  _dragging
+                      ? '여기에 놓으면 PDF가 첨부됩니다.'
+                      : 'PDF 파일을 이 영역으로 드래그해도 됩니다.',
+                  style: TheWeTextStyle.caption.copyWith(
+                    color: _dragging ? TheWeColor.blue300 : TheWeColor.black500,
+                    fontWeight: _dragging ? FontWeight.w700 : FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (widget.attachments.isEmpty && widget.linkedDocuments.isEmpty)
+              Text('첨부된 문서가 없습니다.', style: TheWeTextStyle.body)
+            else ...[
+              if (widget.attachments.isNotEmpty)
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: onAddAttachment,
-                      icon: const Icon(Icons.attach_file, size: 18),
-                      label: const Text('파일 첨부'),
-                    ),
-                    OutlinedButton.icon(
-                      onPressed: onAddLinkedDocument,
-                      icon: const Icon(Icons.link_outlined, size: 18),
-                      label: const Text('연결 문서'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                if (document.attachments.isEmpty &&
-                    document.linkedDocuments.isEmpty)
-                  Text('첨부된 문서가 없습니다.', style: TheWeTextStyle.body)
-                else ...[
-                  if (document.attachments.isNotEmpty)
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: document.attachments
-                          .map(
-                            (attachment) => InputChip(
-                              avatar: const Icon(
-                                Icons.picture_as_pdf_outlined,
-                                size: 18,
-                              ),
-                              label: Text(
-                                attachment.name,
-                                style: TheWeTextStyle.caption,
-                              ),
-                              onDeleted: () => onRemoveAttachment(attachment),
-                            ),
-                          )
-                          .toList(),
-                    ),
-                  if (document.attachments.isNotEmpty &&
-                      document.linkedDocuments.isNotEmpty)
-                    const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: document.linkedDocuments
-                        .map(
-                          (item) => InputChip(
-                            label: Text(item, style: TheWeTextStyle.caption),
-                            onDeleted: () => onRemoveLinkedDocument(item),
+                  children: widget.attachments
+                      .map(
+                        (attachment) => InputChip(
+                          avatar: const Icon(
+                            Icons.picture_as_pdf_outlined,
+                            size: 18,
                           ),
-                        )
-                        .toList(),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
+                          label: Text(
+                            attachment.name,
+                            style: TheWeTextStyle.caption,
+                          ),
+                          onDeleted: () =>
+                              widget.onRemoveAttachment(attachment),
+                        ),
+                      )
+                      .toList(),
+                ),
+              if (widget.attachments.isNotEmpty &&
+                  widget.linkedDocuments.isNotEmpty)
+                const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: widget.linkedDocuments
+                    .map(
+                      (item) => InputChip(
+                        label: Text(item, style: TheWeTextStyle.caption),
+                        onDeleted: () => widget.onRemoveLinkedDocument(item),
+                      ),
+                    )
+                    .toList(),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

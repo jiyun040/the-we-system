@@ -100,6 +100,7 @@ class _DetailContent extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 940;
+              final showApprovalLine = document.status == '작성중';
               final sheetBody = Padding(
                 padding: EdgeInsets.all(isNarrow ? 16 : 28),
                 child: Center(child: ApprovalDocumentSheet(document: document)),
@@ -121,7 +122,10 @@ class _DetailContent extends StatelessWidget {
                         : BorderSide.none,
                   ),
                 ),
-                child: ApprovalRightPanel(document: document),
+                child: ApprovalRightPanel(
+                  document: document,
+                  showApprovalLine: showApprovalLine,
+                ),
               );
 
               if (isNarrow) {
