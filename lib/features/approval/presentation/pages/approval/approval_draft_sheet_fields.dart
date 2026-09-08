@@ -13,36 +13,52 @@ class ApprovalDraftManualDateRow extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      const SizedBox(
-        width: 104,
-        child: ApprovalPdfTableCell(text: '기 안 일', header: true),
-      ),
-      Expanded(
-        child: SizedBox(
-          height: 48,
-          child: TextFormField(
-            key: const ValueKey('hospitality-drafted-at'),
-            initialValue: value,
-            onChanged: onChanged,
-            keyboardType: TextInputType.datetime,
-            inputFormatters: const [ApprovalDateInputFormatter()],
-            style: TheWeTextStyle.body.copyWith(fontSize: 15),
-            decoration: const InputDecoration(
-              hintText: 'YYYY-MM-DD',
-              contentPadding: EdgeInsets.symmetric(horizontal: 12),
-              filled: false,
-              border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              disabledBorder: InputBorder.none,
+  Widget build(BuildContext context) {
+    final compact = MediaQuery.sizeOf(context).width < 520;
+
+    return Container(
+      key: const ValueKey('hospitality-drafted-at-row'),
+      decoration: BoxDecoration(border: Border.all(color: TheWeColor.black900)),
+      child: Row(
+        children: [
+          Container(
+            width: compact ? 82 : 110,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            color: TheWeColor.black300.withValues(alpha: 0.18),
+            child: Text(
+              '기 안 일',
+              style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
             ),
           ),
-        ),
+          Expanded(
+            child: TextFormField(
+              key: const ValueKey('hospitality-drafted-at'),
+              initialValue: value,
+              onChanged: onChanged,
+              keyboardType: TextInputType.datetime,
+              inputFormatters: const [ApprovalDateInputFormatter()],
+              style: TheWeTextStyle.body.copyWith(fontSize: 16),
+              decoration: const InputDecoration(
+                hintText: 'YYYY-MM-DD',
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                filled: false,
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                focusedErrorBorder: InputBorder.none,
+              ),
+            ),
+          ),
+        ],
       ),
-    ],
-  );
+    );
+  }
 }
 
 class ApprovalMobileLineItemEditor extends StatelessWidget {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
+import 'package:the_we_system/features/approval/presentation/pages/approval/approval_draft_sheet_fields.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_pdf.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
@@ -108,6 +109,31 @@ void main() {
     final opinionField = tester.widget<EditableText>(find.byType(EditableText));
     expect(opinionField.style.fontSize, 16);
     expect(opinionField.style.height, 1.5);
+  });
+
+  testWidgets('기업업무추진비 지출결의서 기안일을 공통 정보 박스 규격으로 표시한다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ApprovalDraftManualDateRow(
+            value: '2026-09-08',
+            onChanged: (_) {},
+          ),
+        ),
+      ),
+    );
+
+    final row = tester.widget<Container>(
+      find.byKey(const ValueKey('hospitality-drafted-at-row')),
+    );
+    final decoration = row.decoration! as BoxDecoration;
+
+    expect(decoration.border, isA<Border>());
+    expect(
+      find.byKey(const ValueKey('hospitality-drafted-at')),
+      findsOneWidget,
+    );
+    expect(find.text('기 안 일'), findsOneWidget);
   });
 
   testWidgets('상신 문서는 추가 결재 정보 없이 빈 표 행까지 유지한다', (tester) async {
