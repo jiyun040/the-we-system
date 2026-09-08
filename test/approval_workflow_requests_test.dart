@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:the_we_system/common/components/rejected_approval_alert.dart';
+import 'package:the_we_system/main.dart' as application;
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
@@ -162,6 +163,37 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('rejected-approval-dismiss')));
     expect(opened, isTrue);
     expect(dismissed, isTrue);
+  });
+
+  testWidgets('상단 반려 알림 X를 누르면 전체 알림이 즉시 사라진다', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    final rejected = _submittedDocument.copyWith(status: '반려');
+    final dashboardState = signedOutApprovalState.copyWith(
+      currentUser: _employee,
+      accounts: const [_employee, _technologyManager],
+      documents: [rejected],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            () => _WorkflowRequestController(dashboardState),
+          ),
+        ],
+        child: const application.MyApp(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final alert = find.byKey(const ValueKey('rejected-approval-alert'));
+    expect(alert, findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('rejected-approval-dismiss')));
+    await tester.pump();
+
+    expect(alert, findsNothing);
+    expect(find.text('결재 문서가 반려됐습니다'), findsNothing);
   });
 
   testWidgets('반려 문서를 확인하면 기안 진행 목록에서 숨긴다', (tester) async {

@@ -87,11 +87,14 @@ class RejectedApprovalAlert extends StatelessWidget {
                   ],
                 ),
               ),
-              IconButton(
-                key: const ValueKey('rejected-approval-dismiss'),
-                tooltip: '이 알림 확인',
-                onPressed: onDismiss,
-                icon: const Icon(Icons.close, size: 19),
+              Semantics(
+                button: true,
+                label: '반려 알림 닫기',
+                child: IconButton(
+                  key: const ValueKey('rejected-approval-dismiss'),
+                  onPressed: onDismiss,
+                  icon: const Icon(Icons.close, size: 19),
+                ),
               ),
             ],
           ),
