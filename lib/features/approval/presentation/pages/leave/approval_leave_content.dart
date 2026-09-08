@@ -126,8 +126,6 @@ class ApprovalLeaveContent extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _CurrentDepartmentApprovalLine(state: state),
-                const SizedBox(height: 24),
                 Text('휴가 신청 내역', style: TheWeTextStyle.title),
                 const SizedBox(height: 12),
                 if (state.currentUserLeaveRequests.isEmpty)
@@ -461,83 +459,6 @@ class ApprovalLeaveContent extends ConsumerWidget {
           FilledButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('확인'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CurrentDepartmentApprovalLine extends StatelessWidget {
-  const _CurrentDepartmentApprovalLine({required this.state});
-
-  final ApprovalDashboardState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final department = state.currentUser?.department.trim() ?? '';
-    final approvers = state.currentUserLeaveApprovers;
-    return Container(
-      key: const ValueKey('current-department-leave-approval-line'),
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: approvalLeaveSurfaceDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.account_tree_outlined,
-                size: 21,
-                color: TheWeColor.blue300,
-              ),
-              const SizedBox(width: 8),
-              Text('내 휴가 결재라인', style: TheWeTextStyle.subtitle),
-              const SizedBox(width: 8),
-              Text(
-                department,
-                style: TheWeTextStyle.caption.copyWith(
-                  color: TheWeColor.black500,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          if (approvers.isEmpty)
-            Text(
-              '설정된 팀 결재라인이 없습니다. 관리자에게 문의해 주세요.',
-              style: TheWeTextStyle.body.copyWith(color: TheWeColor.danger),
-            )
-          else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              children: [
-                for (var index = 0; index < approvers.length; index++) ...[
-                  Chip(
-                    key: ValueKey(
-                      'current-leave-approver-${approvers[index].id}',
-                    ),
-                    avatar: CircleAvatar(child: Text('${index + 1}')),
-                    label: Text(
-                      '${approvers[index].name} ${approvers[index].position}',
-                    ),
-                  ),
-                  if (index != approvers.length - 1)
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 18,
-                      color: TheWeColor.black500,
-                    ),
-                ],
-              ],
-            ),
-          const SizedBox(height: 6),
-          Text(
-            '휴가 신청에만 적용되며, 관리자가 $department 팀에 설정한 순서입니다.',
-            style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
           ),
         ],
       ),

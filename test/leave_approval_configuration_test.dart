@@ -8,6 +8,7 @@ import 'package:the_we_system/features/approval/presentation/pages/admin/approva
 import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_leave_approval_lines.dart';
 import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_leave_management.dart';
 import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_settings.dart';
+import 'package:the_we_system/features/approval/presentation/pages/leave/approval_leave_content.dart';
 
 class _LeaveConfigurationController extends ApprovalDashboardController {
   _LeaveConfigurationController(this.initialState);
@@ -130,6 +131,36 @@ void main() {
     expect(find.text('1'), findsOneWidget);
     expect(find.text('2'), findsOneWidget);
     expect(find.textContaining('최종 승인'), findsOneWidget);
+  });
+
+  testWidgets('일반 계정의 휴가 화면에는 결재라인을 노출하지 않는다', (tester) async {
+    const employee = EmployeeAccount(
+      id: 'employee',
+      password: '',
+      name: '김사원',
+      department: '관리부',
+      position: '사원',
+    );
+    final state = signedOutApprovalState.copyWith(
+      currentUser: employee,
+      accounts: const [employee, _manager, _ceo],
+      leaveApprovalLines: const {
+        '관리부': ['manager', 'ceo'],
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: ApprovalLeaveContent(state: state)),
+      ),
+    );
+
+    expect(find.text('내 휴가 결재라인'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('current-department-leave-approval-line')),
+      findsNothing,
+    );
+    expect(find.text('휴가 신청 내역'), findsOneWidget);
   });
 
   testWidgets('APP 설정의 휴가 항목에서 결재라인 관리 화면을 연다', (tester) async {
