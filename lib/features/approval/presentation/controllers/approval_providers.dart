@@ -143,9 +143,10 @@ final approvalDocumentProvider = Provider.family<ApprovalDocument?, String>((
     return null;
   }
 
-  return state.visibleDocuments
-      .where((document) => document.id == id)
-      .firstOrNull;
+  final accessibleDocuments = state.canAccessComprehensiveManagement
+      ? state.documents
+      : state.visibleDocuments;
+  return accessibleDocuments.where((document) => document.id == id).firstOrNull;
 });
 
 final approvalTemplateProvider = Provider.family<ApprovalFormTemplate?, String>(

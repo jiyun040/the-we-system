@@ -11,6 +11,7 @@ import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'approval_admin_apps_forms.dart';
+import 'approval_admin_comprehensive_management.dart';
 import 'approval_admin_dashboard_access.dart';
 import 'approval_admin_direct_leave.dart';
 import 'approval_admin_document_access.dart';
@@ -32,6 +33,7 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
 
   static const destinations = [
     (Icons.dashboard_outlined, '근태 관리'),
+    (Icons.space_dashboard_outlined, '종합관리'),
     (Icons.folder_shared_outlined, '결재 문서 관리'),
     (Icons.people_outline, '사원 관리'),
     (Icons.account_tree_outlined, '조직 관리'),
@@ -51,6 +53,8 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
             ? _AdminBottomNavigation(
                 selectedIndex: selectedIndex,
                 canManageNotices: state.canManageNotices,
+                canAccessComprehensiveManagement:
+                    state.canAccessComprehensiveManagement,
                 onSelected: (value) => setState(() => selectedIndex = value),
               )
             : null,
@@ -74,6 +78,8 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                     portalName: state.portalName,
                     logoBytes: state.customLogoBytes,
                     canManageNotices: state.canManageNotices,
+                    canAccessComprehensiveManagement:
+                        state.canAccessComprehensiveManagement,
                     onSelected: (value) =>
                         setState(() => selectedIndex = value),
                     onLeave: _leaveAdmin,
@@ -105,18 +111,21 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                 ),
                                 child: switch (selectedIndex) {
                                   0 => AdminDashboard(state: state),
-                                  1 => AdminDocumentAccessManagement(
+                                  1 => AdminComprehensiveManagement(
                                     state: state,
                                   ),
-                                  2 => AdminEmployeeManagement(
+                                  2 => AdminDocumentAccessManagement(
+                                    state: state,
+                                  ),
+                                  3 => AdminEmployeeManagement(
                                     state: state,
                                     scrollController: _pageScrollController,
                                   ),
-                                  3 => AdminOrganizationManagement(
+                                  4 => AdminOrganizationManagement(
                                     state: state,
                                   ),
-                                  4 => AdminAppManagement(state: state),
-                                  5 =>
+                                  5 => AdminAppManagement(state: state),
+                                  6 =>
                                     !state.settingsPasswordEnabled ||
                                             settingsUnlocked
                                         ? AdminIntegratedSettings(state: state)
@@ -125,7 +134,8 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                               () => settingsUnlocked = true,
                                             ),
                                           ),
-                                  _ => AdminNoticeManagement(state: state),
+                                  7 => AdminNoticeManagement(state: state),
+                                  _ => AdminDashboard(state: state),
                                 },
                               ),
                             ),
@@ -173,24 +183,37 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
   }
 
   Future<void> _showCompactMenu(ApprovalDashboardState state) async {
+    final visibleIndexes = _visibleDestinationIndexes(state);
     final selected = await showModalBottomSheet<int>(
       context: context,
       showDragHandle: true,
       builder: (context) => ListView.builder(
         shrinkWrap: true,
-        itemCount: state.canManageNotices
-            ? destinations.length
-            : destinations.length - 1,
-        itemBuilder: (context, index) => ListTile(
-          selected: selectedIndex == index,
-          leading: Icon(destinations[index].$1),
-          title: Text(destinations[index].$2),
-          onTap: () => Navigator.pop(context, index),
-        ),
+        itemCount: visibleIndexes.length,
+        itemBuilder: (context, index) {
+          final destinationIndex = visibleIndexes[index];
+          return ListTile(
+            selected: selectedIndex == destinationIndex,
+            leading: Icon(destinations[destinationIndex].$1),
+            title: Text(destinations[destinationIndex].$2),
+            onTap: () => Navigator.pop(context, destinationIndex),
+          );
+        },
       ),
     );
     if (selected != null) setState(() => selectedIndex = selected);
   }
+
+  static List<int> _visibleDestinationIndexes(ApprovalDashboardState state) => [
+    0,
+    if (state.canAccessComprehensiveManagement) 1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    if (state.canManageNotices) 7,
+  ];
 }
 
 class _AdminAccessGate extends ConsumerWidget {
@@ -269,6 +292,7 @@ class _AdminNavigation extends StatelessWidget {
     required this.portalName,
     required this.logoBytes,
     required this.canManageNotices,
+    required this.canAccessComprehensiveManagement,
     required this.onSelected,
     required this.onLeave,
     required this.onLogout,
@@ -277,6 +301,7 @@ class _AdminNavigation extends StatelessWidget {
   final String portalName;
   final Uint8List? logoBytes;
   final bool canManageNotices;
+  final bool canAccessComprehensiveManagement;
   final ValueChanged<int> onSelected;
   final VoidCallback onLeave;
   final VoidCallback onLogout;
@@ -305,27 +330,22 @@ class _AdminNavigation extends StatelessWidget {
             style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
           ),
           const SizedBox(height: 30),
-          ...List.generate(
-            canManageNotices
-                ? _ApprovalAdminPageState.destinations.length
-                : _ApprovalAdminPageState.destinations.length - 1,
-            (index) {
-              final item = _ApprovalAdminPageState.destinations[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: ListTile(
-                  selected: selectedIndex == index,
-                  selectedTileColor: TheWeColor.blueSurface,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: Icon(item.$1),
-                  title: Text(item.$2),
-                  onTap: () => onSelected(index),
+          ..._visibleIndexes.map((index) {
+            final item = _ApprovalAdminPageState.destinations[index];
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: ListTile(
+                selected: selectedIndex == index,
+                selectedTileColor: TheWeColor.blueSurface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              );
-            },
-          ),
+                leading: Icon(item.$1),
+                title: Text(item.$2),
+                onTap: () => onSelected(index),
+              ),
+            );
+          }),
           const Spacer(),
           OutlinedButton.icon(
             onPressed: onLeave,
@@ -350,6 +370,17 @@ class _AdminNavigation extends StatelessWidget {
       ),
     ),
   );
+
+  List<int> get _visibleIndexes => [
+    0,
+    if (canAccessComprehensiveManagement) 1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    if (canManageNotices) 7,
+  ];
 }
 
 class _AdminHeader extends StatelessWidget {
@@ -394,40 +425,54 @@ class _AdminBottomNavigation extends StatelessWidget {
   const _AdminBottomNavigation({
     required this.selectedIndex,
     required this.canManageNotices,
+    required this.canAccessComprehensiveManagement,
     required this.onSelected,
   });
 
   final int selectedIndex;
   final bool canManageNotices;
+  final bool canAccessComprehensiveManagement;
   final ValueChanged<int> onSelected;
 
   @override
-  Widget build(BuildContext context) => NavigationBar(
-    selectedIndex: selectedIndex,
-    backgroundColor: TheWeColor.background,
-    indicatorColor: Colors.transparent,
-    labelTextStyle: WidgetStateProperty.resolveWith((states) {
-      final selected = states.contains(WidgetState.selected);
-      return TheWeTextStyle.caption.copyWith(
-        color: selected ? TheWeColor.blue300 : TheWeColor.black900,
-        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-      );
-    }),
-    overlayColor: WidgetStatePropertyAll(
-      TheWeColor.blue100.withValues(alpha: 0.18),
-    ),
-    onDestinationSelected: onSelected,
-    destinations: [
-      for (final destination in _ApprovalAdminPageState.destinations.take(
-        canManageNotices
-            ? _ApprovalAdminPageState.destinations.length
-            : _ApprovalAdminPageState.destinations.length - 1,
-      ))
-        NavigationDestination(
-          icon: Icon(destination.$1),
-          selectedIcon: Icon(destination.$1, color: TheWeColor.blue300),
-          label: destination.$2,
-        ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final visibleIndexes = [
+      0,
+      if (canAccessComprehensiveManagement) 1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      if (canManageNotices) 7,
+    ];
+    final visibleSelectedIndex = visibleIndexes.indexOf(selectedIndex);
+    return NavigationBar(
+      selectedIndex: visibleSelectedIndex < 0 ? 0 : visibleSelectedIndex,
+      backgroundColor: TheWeColor.background,
+      indicatorColor: Colors.transparent,
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final selected = states.contains(WidgetState.selected);
+        return TheWeTextStyle.caption.copyWith(
+          color: selected ? TheWeColor.blue300 : TheWeColor.black900,
+          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+        );
+      }),
+      overlayColor: WidgetStatePropertyAll(
+        TheWeColor.blue100.withValues(alpha: 0.18),
+      ),
+      onDestinationSelected: (index) => onSelected(visibleIndexes[index]),
+      destinations: [
+        for (final index in visibleIndexes)
+          NavigationDestination(
+            icon: Icon(_ApprovalAdminPageState.destinations[index].$1),
+            selectedIcon: Icon(
+              _ApprovalAdminPageState.destinations[index].$1,
+              color: TheWeColor.blue300,
+            ),
+            label: _ApprovalAdminPageState.destinations[index].$2,
+          ),
+      ],
+    );
+  }
 }

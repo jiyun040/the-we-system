@@ -165,6 +165,9 @@ class ApprovalDashboardState {
 
   bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
 
+  bool get canAccessComprehensiveManagement =>
+      isAdminMode && currentUser?.isSystemAdministrator == true;
+
   bool get canManageNotices =>
       isAdminMode &&
       (currentUser?.canChangeAdminOtp == true ||
