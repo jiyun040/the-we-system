@@ -1,7 +1,8 @@
+import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
+
 import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
 import '../approval/approval_box_table_cells.dart';
-import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 
 class AdminComprehensiveManagement extends StatefulWidget {
   const AdminComprehensiveManagement({super.key, required this.state});
@@ -238,37 +239,44 @@ class _SummaryMetrics extends StatelessWidget {
       final columns = constraints.maxWidth < 600 ? 2 : 4;
       final spacing = 12.0;
       final width = (constraints.maxWidth - spacing * (columns - 1)) / columns;
+      final metrics = [
+        (
+          icon: Icons.description_outlined,
+          label: '전체 문서',
+          count: documents.length,
+        ),
+        (
+          icon: Icons.hourglass_top_outlined,
+          label: '결재 진행',
+          count: documents
+              .where(
+                (document) =>
+                    document.status == '결재대기' || document.status == '진행중',
+              )
+              .length,
+        ),
+        (
+          icon: Icons.task_alt_outlined,
+          label: '결재 완료',
+          count: documents.where((document) => document.status == '완료').length,
+        ),
+        (
+          icon: Icons.keyboard_return_outlined,
+          label: '반려',
+          count: documents.where((document) => document.status == '반려').length,
+        ),
+      ];
       return Wrap(
         spacing: spacing,
         runSpacing: spacing,
         children: [
-          AdminMetric(
-            width: width,
-            icon: Icons.description_outlined,
-            label: '전체 문서',
-            value: '${documents.length}건',
-          ),
-          AdminMetric(
-            width: width,
-            icon: Icons.hourglass_top_outlined,
-            label: '결재 진행',
-            value:
-                '${documents.where((document) => document.status == '결재대기' || document.status == '진행중').length}건',
-          ),
-          AdminMetric(
-            width: width,
-            icon: Icons.task_alt_outlined,
-            label: '결재 완료',
-            value:
-                '${documents.where((document) => document.status == '완료').length}건',
-          ),
-          AdminMetric(
-            width: width,
-            icon: Icons.keyboard_return_outlined,
-            label: '반려',
-            value:
-                '${documents.where((document) => document.status == '반려').length}건',
-          ),
+          for (final metric in metrics)
+            AdminMetric(
+              width: width,
+              icon: metric.icon,
+              label: metric.label,
+              value: '${metric.count}건',
+            ),
         ],
       );
     },
@@ -311,64 +319,70 @@ class _FilterPanel extends StatelessWidget {
   final VoidCallback onReset;
 
   @override
-  Widget build(BuildContext context) => Container(
-    key: const ValueKey('comprehensive-filters'),
-    width: double.infinity,
-    padding: const EdgeInsets.all(14),
-    decoration: adminSurface(),
-    child: Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        SizedBox(
-          width: 280,
-          child: TextField(
-            key: const ValueKey('comprehensive-search'),
-            controller: searchController,
-            onChanged: onSearchChanged,
-            decoration: const InputDecoration(
-              labelText: '문서 검색',
-              hintText: '제목, 기안자, 문서번호 검색',
-              prefixIcon: Icon(Icons.search),
-              border: OutlineInputBorder(),
-              isDense: true,
+  Widget build(BuildContext context) {
+    final filters = [
+      (
+        label: '상태',
+        value: status,
+        values: statuses,
+        onChanged: onStatusChanged,
+      ),
+      (
+        label: '부서',
+        value: department,
+        values: departments,
+        onChanged: onDepartmentChanged,
+      ),
+      (
+        label: '기안자',
+        value: drafter,
+        values: drafters,
+        onChanged: onDrafterChanged,
+      ),
+      (label: '결재양식', value: form, values: forms, onChanged: onFormChanged),
+    ];
+    return Container(
+      key: const ValueKey('comprehensive-filters'),
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: adminSurface(),
+      child: Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          SizedBox(
+            width: 280,
+            child: TextField(
+              key: const ValueKey('comprehensive-search'),
+              controller: searchController,
+              onChanged: onSearchChanged,
+              decoration: const InputDecoration(
+                labelText: '문서 검색',
+                hintText: '제목, 기안자, 문서번호 검색',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
             ),
           ),
-        ),
-        _FilterDropdown(
-          label: '상태',
-          value: status,
-          values: statuses,
-          onChanged: onStatusChanged,
-        ),
-        _FilterDropdown(
-          label: '부서',
-          value: department,
-          values: departments,
-          onChanged: onDepartmentChanged,
-        ),
-        _FilterDropdown(
-          label: '기안자',
-          value: drafter,
-          values: drafters,
-          onChanged: onDrafterChanged,
-        ),
-        _FilterDropdown(
-          label: '결재양식',
-          value: form,
-          values: forms,
-          onChanged: onFormChanged,
-        ),
-        TextButton.icon(
-          key: const ValueKey('comprehensive-filter-reset'),
-          onPressed: onReset,
-          icon: const Icon(Icons.refresh, size: 18),
-          label: const Text('초기화'),
-        ),
-      ],
-    ),
-  );
+          for (final filter in filters)
+            _FilterDropdown(
+              label: filter.label,
+              value: filter.value,
+              values: filter.values,
+              onChanged: filter.onChanged,
+            ),
+          TextButton.icon(
+            key: const ValueKey('comprehensive-filter-reset'),
+            onPressed: onReset,
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('초기화'),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _FilterDropdown extends StatelessWidget {
@@ -388,6 +402,7 @@ class _FilterDropdown extends StatelessWidget {
   Widget build(BuildContext context) => SizedBox(
     width: 150,
     child: DropdownButtonFormField<String>(
+      key: ValueKey('$label-$value'),
       initialValue: values.contains(value) ? value : values.first,
       isExpanded: true,
       decoration: InputDecoration(
