@@ -15,8 +15,11 @@ class ApprovalLeavePage extends ConsumerWidget {
     final asyncState = ref.watch(approvalDashboardControllerProvider);
     return Scaffold(
       backgroundColor: TheWeColor.white,
-      bottomNavigationBar: MediaQuery.sizeOf(context).width < 520
-          ? const MobileNavigationBar(currentIndex: 3)
+      appBar: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationAppBar()
+          : null,
+      drawer: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationDrawer()
           : null,
       body: asyncState.when(
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -58,20 +58,34 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
   _AdminDestination selectedDestination = _AdminDestination.dashboard;
   bool settingsUnlocked = false;
   final ScrollController _pageScrollController = ScrollController();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
     final asyncState = ref.watch(approvalDashboardControllerProvider);
     final mobile = MediaQuery.sizeOf(context).width < 600;
+    final compact = MediaQuery.sizeOf(context).width < 900;
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: TheWeColor.background,
-      bottomNavigationBar: asyncState.maybeWhen(
-        data: (state) => state.isAdminMode && mobile
-            ? _AdminBottomNavigation(
-                state: state,
-                selectedDestination: selectedDestination,
-                onSelected: (value) =>
-                    setState(() => selectedDestination = value),
+      drawer: asyncState.maybeWhen(
+        data: (state) => state.isAdminMode && compact
+            ? Drawer(
+                key: const ValueKey('admin-navigation-drawer'),
+                width: 286,
+                child: _AdminNavigation(
+                  width: double.infinity,
+                  state: state,
+                  selectedDestination: selectedDestination,
+                  portalName: state.portalName,
+                  logoBytes: state.customLogoBytes,
+                  onSelected: (value) {
+                    _scaffoldKey.currentState?.closeDrawer();
+                    setState(() => selectedDestination = value);
+                  },
+                  onLeave: _leaveAdmin,
+                  onLogout: _logout,
+                ),
               )
             : null,
         orElse: () => null,
@@ -84,7 +98,6 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
           if (!state.isAdminMode) {
             return _AdminAccessGate(onVerified: () => setState(() {}));
           }
-          final compact = MediaQuery.sizeOf(context).width < 900;
           return SafeArea(
             child: Row(
               children: [
@@ -107,9 +120,8 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                         if (compact)
                           _AdminHeader(
                             mobile: mobile,
-                            onOpenMenu: !mobile
-                                ? () => _showCompactMenu(state)
-                                : null,
+                            onOpenMenu: () =>
+                                _scaffoldKey.currentState?.openDrawer(),
                             onLeave: _leaveAdmin,
                             onLogout: _logout,
                           ),
@@ -199,28 +211,6 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
     ref.read(approvalDashboardControllerProvider.notifier).logout();
     context.goNamed(AppRouteName.home);
   }
-
-  Future<void> _showCompactMenu(ApprovalDashboardState state) async {
-    final destinations = _visibleAdminDestinations(state);
-    final selected = await showModalBottomSheet<_AdminDestination>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => ListView.builder(
-        shrinkWrap: true,
-        itemCount: destinations.length,
-        itemBuilder: (context, index) {
-          final destination = destinations[index];
-          return ListTile(
-            selected: selectedDestination == destination,
-            leading: Icon(destination.icon),
-            title: Text(destination.label),
-            onTap: () => Navigator.pop(context, destination),
-          );
-        },
-      ),
-    );
-    if (selected != null) setState(() => selectedDestination = selected);
-  }
 }
 
 class _AdminAccessGate extends ConsumerWidget {
@@ -302,6 +292,7 @@ class _AdminNavigation extends StatelessWidget {
     required this.onSelected,
     required this.onLeave,
     required this.onLogout,
+    this.width = 260,
   });
   final ApprovalDashboardState state;
   final _AdminDestination selectedDestination;
@@ -310,10 +301,11 @@ class _AdminNavigation extends StatelessWidget {
   final ValueChanged<_AdminDestination> onSelected;
   final VoidCallback onLeave;
   final VoidCallback onLogout;
+  final double width;
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 260,
+    width: width,
     color: const Color(0xFFFCFCFD),
     padding: const EdgeInsets.fromLTRB(18, 24, 18, 18),
     foregroundDecoration: BoxDecoration(
@@ -395,7 +387,11 @@ class _AdminHeader extends StatelessWidget {
     child: Row(
       children: [
         if (onOpenMenu != null)
-          IconButton(onPressed: onOpenMenu, icon: const Icon(Icons.menu)),
+          IconButton(
+            key: const ValueKey('admin-navigation-menu-button'),
+            onPressed: onOpenMenu,
+            icon: const Icon(Icons.menu),
+          ),
         const Spacer(),
         IconButton(
           onPressed: onLeave,
@@ -412,46 +408,4 @@ class _AdminHeader extends StatelessWidget {
       ],
     ),
   );
-}
-
-class _AdminBottomNavigation extends StatelessWidget {
-  const _AdminBottomNavigation({
-    required this.state,
-    required this.selectedDestination,
-    required this.onSelected,
-  });
-
-  final ApprovalDashboardState state;
-  final _AdminDestination selectedDestination;
-  final ValueChanged<_AdminDestination> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final destinations = _visibleAdminDestinations(state);
-    final visibleSelectedIndex = destinations.indexOf(selectedDestination);
-    return NavigationBar(
-      selectedIndex: visibleSelectedIndex < 0 ? 0 : visibleSelectedIndex,
-      backgroundColor: TheWeColor.background,
-      indicatorColor: Colors.transparent,
-      labelTextStyle: WidgetStateProperty.resolveWith((states) {
-        final selected = states.contains(WidgetState.selected);
-        return TheWeTextStyle.caption.copyWith(
-          color: selected ? TheWeColor.blue300 : TheWeColor.black900,
-          fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-        );
-      }),
-      overlayColor: WidgetStatePropertyAll(
-        TheWeColor.blue100.withValues(alpha: 0.18),
-      ),
-      onDestinationSelected: (index) => onSelected(destinations[index]),
-      destinations: [
-        for (final destination in destinations)
-          NavigationDestination(
-            icon: Icon(destination.icon),
-            selectedIcon: Icon(destination.icon, color: TheWeColor.blue300),
-            label: destination.label,
-          ),
-      ],
-    );
-  }
 }

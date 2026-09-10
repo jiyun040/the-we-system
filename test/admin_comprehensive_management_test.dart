@@ -157,6 +157,44 @@ void main() {
     expect(find.text('결재 문서 관리'), findsOneWidget);
   });
 
+  testWidgets('모바일 관리자 화면은 하단 바 대신 왼쪽 메뉴를 사용한다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 844);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+
+    final state = signedOutApprovalState.copyWith(
+      currentUser: _account('admin'),
+      adminMode: true,
+      documents: _documents,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            () => _ComprehensiveTestController(state),
+          ),
+        ],
+        child: const MaterialApp(home: ApprovalAdminPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(NavigationBar), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('admin-navigation-menu-button')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('admin-navigation-drawer')),
+      findsOneWidget,
+    );
+    expect(find.text('종합관리'), findsOneWidget);
+    expect(find.text('통합 설정'), findsOneWidget);
+  });
+
   test('슈퍼어드민은 제한 문서도 상세 조회 대상으로 가져온다', () async {
     final state = signedOutApprovalState.copyWith(
       currentUser: _account('admin'),

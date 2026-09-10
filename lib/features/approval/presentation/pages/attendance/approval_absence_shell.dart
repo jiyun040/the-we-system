@@ -29,8 +29,11 @@ class ApprovalAbsencePage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
-      bottomNavigationBar: MediaQuery.sizeOf(context).width < 520
-          ? const MobileNavigationBar(currentIndex: 2)
+      appBar: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationAppBar()
+          : null,
+      drawer: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationDrawer()
           : null,
       body: appState.when(
         data: (value) {

@@ -29,8 +29,11 @@ class ApprovalBoxPage extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
-      bottomNavigationBar: MediaQuery.sizeOf(context).width < 520
-          ? const MobileNavigationBar(currentIndex: 1)
+      appBar: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationAppBar()
+          : null,
+      drawer: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationDrawer()
           : null,
       body: SafeArea(
         child: state.when(

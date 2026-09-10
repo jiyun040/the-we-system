@@ -54,8 +54,11 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
-      bottomNavigationBar: MediaQuery.sizeOf(context).width < 520
-          ? const MobileNavigationBar(currentIndex: 0)
+      appBar: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationAppBar()
+          : null,
+      drawer: MediaQuery.sizeOf(context).width < 520
+          ? const MobileNavigationDrawer()
           : null,
       body: state.when(
         data: (approvalState) {

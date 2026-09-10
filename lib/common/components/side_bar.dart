@@ -32,6 +32,8 @@ class SideBar extends ConsumerWidget {
     required this.receiveDocument,
     required this.openPendingDocument,
     required this.scheduledDocument,
+    this.forceExpanded = false,
+    this.onNavigate,
   });
 
   final List<ApprovalForm> frequentForms;
@@ -39,13 +41,21 @@ class SideBar extends ConsumerWidget {
   final int receiveDocument;
   final int openPendingDocument;
   final int scheduledDocument;
+  final bool forceExpanded;
+  final VoidCallback? onNavigate;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.sizeOf(context).width;
-    final isCompact = screenWidth < 900;
+    final isCompact = !forceExpanded && screenWidth < 900;
     final isPhone = screenWidth < 520;
-    final sideBarWidth = isPhone ? 72.0 : (isCompact ? 96.0 : 320.0);
+    final sideBarWidth = forceExpanded
+        ? double.infinity
+        : isPhone
+        ? 72.0
+        : isCompact
+        ? 96.0
+        : 320.0;
     final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
     final currentUser = state?.currentUser;
     final approvalEnabled = state?.isAppEnabled(PortalAppId.approval) ?? true;
@@ -68,8 +78,21 @@ class SideBar extends ConsumerWidget {
     final onReferencePage = currentPath.contains('/approval/box/reference');
     final onScheduledPage = currentPath.contains('/approval/box/scheduled');
 
-    void openAttendance(String section) {
+    void navigateNamed(
+      String name, {
+      Map<String, String> pathParameters = const {},
+      Map<String, String> queryParameters = const {},
+    }) {
+      onNavigate?.call();
       context.goNamed(
+        name,
+        pathParameters: pathParameters,
+        queryParameters: queryParameters,
+      );
+    }
+
+    void openAttendance(String section) {
+      navigateNamed(
         AppRouteName.absence,
         queryParameters: {
           'section': section,
@@ -103,7 +126,7 @@ class SideBar extends ConsumerWidget {
                         label: '홈',
                         selected: onHomePage,
                         isCompact: isCompact,
-                        onTap: () => context.goNamed(AppRouteName.home),
+                        onTap: () => navigateNamed(AppRouteName.home),
                       ),
                       TheWeGaps.verticalSm,
                       if (approvalEnabled) ...[
@@ -124,7 +147,7 @@ class SideBar extends ConsumerWidget {
                                       label: form.name,
                                       count: form.recentCount,
                                       isCompact: isCompact,
-                                      onTap: () => context.goNamed(
+                                      onTap: () => navigateNamed(
                                         AppRouteName.formBox,
                                         pathParameters: {'formId': form.id},
                                       ),
@@ -146,7 +169,7 @@ class SideBar extends ConsumerWidget {
                                       !onAttendancePage &&
                                       onWaitingPage,
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
+                                  onTap: () => navigateNamed(
                                     AppRouteName.box,
                                     pathParameters: {'kind': 'waiting'},
                                   ),
@@ -157,7 +180,7 @@ class SideBar extends ConsumerWidget {
                                   count: receiveDocument,
                                   selected: onReceivedPage,
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
+                                  onTap: () => navigateNamed(
                                     AppRouteName.box,
                                     pathParameters: {'kind': 'received'},
                                   ),
@@ -168,7 +191,7 @@ class SideBar extends ConsumerWidget {
                                   count: openPendingDocument,
                                   selected: onReferencePage,
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
+                                  onTap: () => navigateNamed(
                                     AppRouteName.box,
                                     pathParameters: {'kind': 'reference'},
                                   ),
@@ -179,7 +202,7 @@ class SideBar extends ConsumerWidget {
                                   count: scheduledDocument,
                                   selected: onScheduledPage,
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
+                                  onTap: () => navigateNamed(
                                     AppRouteName.box,
                                     pathParameters: {'kind': 'scheduled'},
                                   ),
@@ -196,7 +219,7 @@ class SideBar extends ConsumerWidget {
                                   label: '기안 문서함',
                                   selected: onDraftPage,
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
+                                  onTap: () => navigateNamed(
                                     AppRouteName.box,
                                     pathParameters: {'kind': 'drafts'},
                                   ),
@@ -206,16 +229,15 @@ class SideBar extends ConsumerWidget {
                                   label: '임시 저장함',
                                   selected: onTemporaryPage,
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
-                                    AppRouteName.temporaryBox,
-                                  ),
+                                  onTap: () =>
+                                      navigateNamed(AppRouteName.temporaryBox),
                                 ),
                                 SideBarMenuItem(
                                   icon: Icons.archive_outlined,
                                   label: '결재 문서함',
                                   selected: onArchivePage,
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
+                                  onTap: () => navigateNamed(
                                     AppRouteName.box,
                                     pathParameters: {'kind': 'all'},
                                   ),
@@ -236,7 +258,7 @@ class SideBar extends ConsumerWidget {
                                     '/approval/box/department',
                                   ),
                                   isCompact: isCompact,
-                                  onTap: () => context.goNamed(
+                                  onTap: () => navigateNamed(
                                     AppRouteName.box,
                                     pathParameters: {'kind': 'department'},
                                   ),
@@ -263,7 +285,7 @@ class SideBar extends ConsumerWidget {
                           label: '휴가 현황/신청',
                           selected: onLeavePage,
                           isCompact: isCompact,
-                          onTap: () => context.goNamed(AppRouteName.leave),
+                          onTap: () => navigateNamed(AppRouteName.leave),
                         ),
                       if (state?.isAdminMode == true && attendanceEnabled) ...[
                         TheWeGaps.verticalXxl,
@@ -369,7 +391,7 @@ class SideBar extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (!isPhone) ...[
+              if (!isPhone || forceExpanded) ...[
                 Divider(
                   height: 18,
                   color: TheWeColor.black300.withValues(alpha: 0.24),
