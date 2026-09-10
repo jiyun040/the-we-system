@@ -367,11 +367,18 @@ class _FilterPanel extends StatelessWidget {
             ),
           ),
           for (final filter in filters)
-            _FilterDropdown(
-              label: filter.label,
-              value: filter.value,
-              values: filter.values,
-              onChanged: filter.onChanged,
+            TheWeDropdown<String>(
+              key: ValueKey('comprehensive-${filter.label}-dropdown'),
+              width: 150,
+              value: filter.values.contains(filter.value)
+                  ? filter.value
+                  : filter.values.first,
+              items: filter.values,
+              labelText: filter.label,
+              labelBuilder: (value) => value,
+              onChanged: (value) {
+                if (value != null) filter.onChanged(value);
+              },
             ),
           TextButton.icon(
             key: const ValueKey('comprehensive-filter-reset'),
@@ -383,42 +390,6 @@ class _FilterPanel extends StatelessWidget {
       ),
     );
   }
-}
-
-class _FilterDropdown extends StatelessWidget {
-  const _FilterDropdown({
-    required this.label,
-    required this.value,
-    required this.values,
-    required this.onChanged,
-  });
-
-  final String label;
-  final String value;
-  final List<String> values;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) => SizedBox(
-    width: 150,
-    child: DropdownButtonFormField<String>(
-      key: ValueKey('$label-$value'),
-      initialValue: values.contains(value) ? value : values.first,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
-        isDense: true,
-      ),
-      items: [
-        for (final item in values)
-          DropdownMenuItem(value: item, child: Text(item)),
-      ],
-      onChanged: (value) {
-        if (value != null) onChanged(value);
-      },
-    ),
-  );
 }
 
 class _TableText extends StatelessWidget {

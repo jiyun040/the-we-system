@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
@@ -107,6 +108,16 @@ void main() {
     expect(find.text('8월 법인카드 정산'), findsOneWidget);
     expect(find.text('김직원'), findsOneWidget);
     expect(find.text('이팀장'), findsOneWidget);
+    expect(find.byType(TheWeDropdown<String>), findsNWidgets(4));
+    expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+    expect(
+      tester
+          .widget<TheWeDropdown<String>>(
+            find.byKey(const ValueKey('comprehensive-상태-dropdown')),
+          )
+          .labelText,
+      '상태',
+    );
 
     await tester.enterText(
       find.byKey(const ValueKey('comprehensive-search')),
