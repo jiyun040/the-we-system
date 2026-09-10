@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/common/components/the_we_back_button.dart';
@@ -345,6 +347,8 @@ class _DocumentTable extends ConsumerWidget {
             onCancel: (id) => ref
                 .read(approvalDashboardControllerProvider.notifier)
                 .cancelSubmission(id),
+            onDelete: (document) =>
+                _confirmDraftDeletion(context, ref, document),
           );
         }
 
@@ -404,6 +408,17 @@ class _DocumentTable extends ConsumerWidget {
                   spacing: 6,
                   runSpacing: 6,
                   children: [
+                    if (kind == 'temporary')
+                      OutlinedButton(
+                        key: ValueKey('delete-draft-${document.id}'),
+                        onPressed: () =>
+                            _confirmDraftDeletion(context, ref, document),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: TheWeColor.danger,
+                          side: const BorderSide(color: TheWeColor.danger),
+                        ),
+                        child: const Text('삭제'),
+                      ),
                     if (kind == 'drafts' && canCancel)
                       OutlinedButton(
                         onPressed: () => ref
@@ -456,6 +471,32 @@ class _DocumentTable extends ConsumerWidget {
     }
 
     return !document.steps.skip(1).any((step) => step.status == '완료');
+  }
+}
+
+Future<void> _confirmDraftDeletion(
+  BuildContext context,
+  WidgetRef ref,
+  ApprovalDocument document,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => TheWeConfirmDialog(
+      title: '임시 저장 문서를 삭제할까요?',
+      message: '「${document.title}」 문서는 삭제 후 복구할 수 없습니다.',
+      primaryLabel: '삭제',
+      primaryColor: TheWeColor.danger,
+      onPrimaryPressed: () => Navigator.of(dialogContext).pop(true),
+      onSecondaryPressed: () => Navigator.of(dialogContext).pop(false),
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  final deleted = await ref
+      .read(approvalDashboardControllerProvider.notifier)
+      .deleteDraftDocument(document.id);
+  if (deleted && context.mounted) {
+    showTheWeSnackBar(context, message: '임시 저장 문서를 삭제했습니다.');
   }
 }
 

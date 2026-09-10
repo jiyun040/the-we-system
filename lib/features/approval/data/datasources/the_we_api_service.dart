@@ -256,6 +256,10 @@ class TheWeApiService {
     return ApprovalDocument.fromJson(response.data ?? <String, dynamic>{});
   });
 
+  Future<void> deleteDraft(String id) => _guard(() async {
+    await _dio.delete<void>('/approvals/documents/$id');
+  });
+
   Future<ApprovalDocument> submitDocument(String id) => _guard(() async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/approvals/documents/$id/submit',

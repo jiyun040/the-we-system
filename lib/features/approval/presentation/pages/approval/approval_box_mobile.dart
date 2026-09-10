@@ -7,12 +7,14 @@ class ApprovalDocumentMobileList extends StatelessWidget {
     required this.documents,
     required this.canCancelForCurrentUser,
     required this.onCancel,
+    required this.onDelete,
   });
 
   final String kind;
   final List<ApprovalDocument> documents;
   final bool Function(ApprovalDocument document) canCancelForCurrentUser;
   final ValueChanged<String> onCancel;
+  final ValueChanged<ApprovalDocument> onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -32,6 +34,16 @@ class ApprovalDocumentMobileList extends StatelessWidget {
             pathParameters: {'id': document.id},
           ),
           actions: [
+            if (kind == 'temporary')
+              OutlinedButton(
+                key: ValueKey('delete-draft-${document.id}'),
+                onPressed: () => onDelete(document),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: TheWeColor.danger,
+                  side: const BorderSide(color: TheWeColor.danger),
+                ),
+                child: const Text('삭제'),
+              ),
             if (kind == 'drafts' && canCancelForCurrentUser(document))
               OutlinedButton(
                 onPressed: () => onCancel(document.id),

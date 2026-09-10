@@ -167,6 +167,40 @@ extension ApprovalDashboardDraftActions on ApprovalDashboardController {
       return null;
     }
   }
+
+  Future<bool> deleteDraftDocument(String documentId) async {
+    final current = currentDashboardState;
+    final document = current?.documents
+        .where((item) => item.id == documentId)
+        .firstOrNull;
+    if (current == null ||
+        document == null ||
+        (document.status != '작성중' && document.status != '임시저장')) {
+      reportOperationError(
+        StateError('draft_not_found'),
+        fallback: '삭제할 임시 저장 문서를 찾지 못했습니다.',
+      );
+      return false;
+    }
+
+    try {
+      await api.deleteDraft(documentId);
+      setApprovalDashboardState(
+        this,
+        (latest) => latest.copyWith(
+          documents: latest.documents
+              .where((item) => item.id != documentId)
+              .toList(),
+          restrictedDocumentIds: {...latest.restrictedDocumentIds}
+            ..remove(documentId),
+        ),
+      );
+      return true;
+    } catch (error) {
+      reportOperationError(error, fallback: '임시 저장 문서를 삭제하지 못했습니다.');
+      return false;
+    }
+  }
 }
 
 List<String>? _approverIdsFor(
