@@ -39,7 +39,10 @@ Future<void> exportApprovalDocumentPdf(
   }
 }
 
-Future<Uint8List> buildApprovalDocumentPdf(ApprovalDocument document) async {
+Future<Uint8List> buildApprovalDocumentPdf(
+  ApprovalDocument document, {
+  @visibleForTesting ValueChanged<int>? onPageCount,
+}) async {
   final fontData = await _loadPdfFont('assets/fonts/SUIT-Medium.ttf');
   final boldFontData = await _loadPdfFont('assets/fonts/SUIT-Bold.ttf');
   final font = pw.Font.ttf(fontData);
@@ -61,6 +64,7 @@ Future<Uint8List> buildApprovalDocumentPdf(ApprovalDocument document) async {
       build: (_) => _buildDocument(document),
     ),
   );
+  onPageCount?.call(pdf.document.pdfPageList.pages.length);
   return pdf.save();
 }
 
@@ -180,27 +184,33 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
       valueFlex: columns.last.$3,
     ),
   );
-  widgets.addAll([
-    pw.SizedBox(height: 18),
-    pw.Container(
-      width: double.infinity,
-      alignment: pw.Alignment.center,
-      child: pw.Text(
-        '위 금액을 청구하오니 결재하여 주시기 바랍니다.',
-        style: const pw.TextStyle(color: PdfColors.black, fontSize: 10),
-        textAlign: pw.TextAlign.center,
+  widgets.add(
+    pw.Inseparable(
+      child: pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.only(top: 10),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+          children: [
+            pw.Text(
+              '위 금액을 청구하오니 결재하여 주시기 바랍니다.',
+              style: const pw.TextStyle(color: PdfColors.black, fontSize: 10),
+              textAlign: pw.TextAlign.center,
+            ),
+            pw.SizedBox(height: 6),
+            pw.Text(
+              '우리기술 주식회사',
+              style: pw.TextStyle(
+                color: PdfColors.black,
+                fontWeight: pw.FontWeight.bold,
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ],
+        ),
       ),
     ),
-    pw.SizedBox(height: 18),
-    pw.Text(
-      '우리기술 주식회사',
-      style: pw.TextStyle(
-        color: PdfColors.black,
-        fontWeight: pw.FontWeight.bold,
-      ),
-      textAlign: pw.TextAlign.center,
-    ),
-  ]);
+  );
   return widgets;
 }
 

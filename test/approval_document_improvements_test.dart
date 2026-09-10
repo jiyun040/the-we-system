@@ -259,8 +259,13 @@ void main() {
       ],
     );
 
-    final bytes = await buildApprovalDocumentPdf(document);
+    var pageCount = 0;
+    final bytes = await buildApprovalDocumentPdf(
+      document,
+      onPageCount: (value) => pageCount = value,
+    );
     expect(bytes.length, greaterThan(100));
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
+    expect(pageCount, 1);
   });
 }
