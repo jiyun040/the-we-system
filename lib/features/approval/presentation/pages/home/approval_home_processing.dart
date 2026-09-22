@@ -162,7 +162,7 @@ class _RoundMoveButton extends StatelessWidget {
   }
 }
 
-class ApprovalDraftProgressSection extends StatelessWidget {
+class ApprovalDraftProgressSection extends StatefulWidget {
   const ApprovalDraftProgressSection({
     super.key,
     required this.documents,
@@ -175,8 +175,17 @@ class ApprovalDraftProgressSection extends StatelessWidget {
   final ValueChanged<ApprovalDocument> onAcknowledgeRejected;
 
   @override
+  State<ApprovalDraftProgressSection> createState() => _ApprovalDraftProgressSectionState();
+}
+
+class _ApprovalDraftProgressSectionState extends State<ApprovalDraftProgressSection> {
+  int page = 0;
+
+  @override
   Widget build(BuildContext context) {
-    if (documents.isEmpty) {
+    final pages = (widget.documents.length / 2).ceil();
+    final visible = widget.documents.skip(page * 2).take(2).toList();
+    if (widget.documents.isEmpty) {
       return const SizedBox.shrink();
     }
 
@@ -204,12 +213,21 @@ class ApprovalDraftProgressSection extends StatelessWidget {
                 ),
               ],
             ),
+            IconButton(
+              onPressed: page > 0 ? () => setState(() => page--) : null,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            Text('${page + 1} / $pages'),
+            IconButton(
+              onPressed: page + 1 < pages ? () => setState(() => page++) : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
             OutlinedButton(
               onPressed: () => context.goNamed(
                 AppRouteName.box,
                 pathParameters: {'kind': 'sent'},
               ),
-              child: Text('더보기 ($totalCount)', style: TheWeTextStyle.subtitle),
+                child: Text('더보기 (${widget.totalCount})', style: TheWeTextStyle.subtitle),
             ),
           ],
         ),
@@ -218,8 +236,7 @@ class ApprovalDraftProgressSection extends StatelessWidget {
           builder: (context, constraints) {
             if (constraints.maxWidth < 520) {
               return Column(
-                children: documents
-                    .take(4)
+                children: visible
                     .map(
                       (document) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
@@ -229,14 +246,14 @@ class ApprovalDraftProgressSection extends StatelessWidget {
                             AppRouteName.detail,
                             pathParameters: {'id': document.id},
                           ),
-                          actions: document.status == '반려'
+                          actions: document.status == '반려' || document.status == '완료'
                               ? [
                                   FilledButton.icon(
                                     key: ValueKey(
                                       'acknowledge-rejected-document-${document.id}',
                                     ),
                                     onPressed: () =>
-                                        onAcknowledgeRejected(document),
+                          widget.onAcknowledgeRejected(document),
                                     icon: const Icon(Icons.check, size: 17),
                                     label: const Text('확인'),
                                   ),
@@ -268,10 +285,10 @@ class ApprovalDraftProgressSection extends StatelessWidget {
                   child: Column(
                     children: [
                       const _DraftProgressHeader(),
-                      ...documents.map(
+                      ...visible.map(
                         (document) => _DraftProgressRow(
                           document: document,
-                          onAcknowledgeRejected: onAcknowledgeRejected,
+                          onAcknowledgeRejected: widget.onAcknowledgeRejected,
                         ),
                       ),
                     ],
@@ -394,7 +411,7 @@ class _DraftProgressRow extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (document.status == '반려') ...[
+                  if (document.status == '반려' || document.status == '완료') ...[
                     const SizedBox(width: 6),
                     TextButton(
                       key: ValueKey(

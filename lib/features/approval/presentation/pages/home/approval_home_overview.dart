@@ -90,14 +90,19 @@ class ApprovalHomeOverview extends ConsumerWidget {
             .watch(acknowledgedRejectedDocumentsProvider)
             .asData
             ?.value;
+        final acknowledgedCompleted = ref
+            .watch(acknowledgedCompletedDocumentsProvider)
+            .asData
+            ?.value;
         final processingDocuments = state.dashboard.processingDocuments
             .where(
               (document) =>
-                  document.status != '반려' ||
-                  acknowledgedRejections == null ||
-                  !acknowledgedRejections.contains(
-                    rejectedApprovalEventKey(document),
-                  ),
+                  (document.status != '반려' ||
+                      acknowledgedRejections == null ||
+                      !acknowledgedRejections.contains(rejectedApprovalEventKey(document))) &&
+                  (document.status != '완료' ||
+                      acknowledgedCompleted == null ||
+                      !acknowledgedCompleted.contains(rejectedApprovalEventKey(document))),
             )
             .toList();
         final rightChild = Column(
@@ -110,9 +115,15 @@ class ApprovalHomeOverview extends ConsumerWidget {
               const SizedBox(height: 18),
               _PortalSurface(
                 child: ApprovalDraftProgressSection(
-                  documents: processingDocuments.take(5).toList(),
+                  documents: processingDocuments,
                   totalCount: processingDocuments.length,
                   onAcknowledgeRejected: (document) async {
+                    if (document.status == '완료') {
+                      await ref
+                          .read(acknowledgedCompletedDocumentsProvider.notifier)
+                          .acknowledge(document);
+                      return;
+                    }
                     await ref
                         .read(acknowledgedRejectedDocumentsProvider.notifier)
                         .acknowledge(document);

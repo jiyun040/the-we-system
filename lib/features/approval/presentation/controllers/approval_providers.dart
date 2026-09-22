@@ -41,6 +41,11 @@ final dismissedRejectedApprovalAlertsProvider =
       Set<String>
     >(DismissedRejectedApprovalAlertsController.new);
 
+final acknowledgedCompletedDocumentsProvider =
+    AsyncNotifierProvider<AcknowledgedCompletedDocumentsController, Set<String>>(
+      AcknowledgedCompletedDocumentsController.new,
+    );
+
 abstract class _RejectedApprovalEventController
     extends AsyncNotifier<Set<String>> {
   String get preferencePrefix;
@@ -99,6 +104,12 @@ class DismissedRejectedApprovalAlertsController
     extends _RejectedApprovalEventController {
   @override
   String get preferencePrefix => 'dismissed_rejected_approval_alerts';
+}
+
+class AcknowledgedCompletedDocumentsController
+    extends _RejectedApprovalEventController {
+  @override
+  String get preferencePrefix => 'acknowledged_completed_documents';
 }
 
 String _rejectedApprovalPreferenceKey(String prefix, String userId) =>

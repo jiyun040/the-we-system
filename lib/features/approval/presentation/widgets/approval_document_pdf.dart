@@ -484,5 +484,5 @@ String _sheetTitle(ApprovalDocument document) =>
         'payroll' => '급여대장 기안서',
         _ when document.form.contains('협조') => '업 무 협 조',
         _ when document.form.contains('휴가') => '휴 가 신 청',
-        _ => '업 무 기 안',
+      _ => document.form.trim().isEmpty ? '업 무 기 안' : document.form,
       };

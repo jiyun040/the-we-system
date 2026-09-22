@@ -115,6 +115,6 @@ class ApprovalDocumentSheet extends StatelessWidget {
     if (form.contains('휴가')) {
       return '휴 가 신 청';
     }
-    return '업 무 기 안';
+    return form.trim().isEmpty ? '업 무 기 안' : form;
   }
 }
