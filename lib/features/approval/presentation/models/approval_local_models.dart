@@ -215,7 +215,7 @@ class ApprovalRequestDraft {
     required this.urgent,
     required this.linkedDocuments,
     this.attachments = const <ApprovalAttachment>[],
-    this.departmentVisible = true,
+    this.departmentVisible = false,
     this.documentLayout = ApprovalDocumentLayout.basic,
     this.formFields = const <String, String>{},
     this.lineItems = const <Map<String, String>>[],

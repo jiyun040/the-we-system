@@ -1,4 +1,5 @@
 import 'approval_draft_dependencies.dart';
+import '../../widgets/approval_document_sheet_attachments.dart';
 import 'approval_draft_linked_documents.dart';
 import 'approval_draft_sheet_fields.dart';
 import '../../widgets/approval_document_sheet_tables.dart';
@@ -119,38 +120,6 @@ class ApprovalEditableDraftSheet extends StatelessWidget {
               onLineItemChanged: onLineItemChanged,
             ),
           const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            decoration: BoxDecoration(
-              color: departmentVisible
-                  ? TheWeColor.blueSurface
-                  : TheWeColor.dangerSurface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                color: departmentVisible
-                    ? TheWeColor.blue300.withValues(alpha: .35)
-                    : TheWeColor.danger.withValues(alpha: .35),
-              ),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: departmentVisible,
-                onChanged: onDepartmentVisibilityChanged,
-                title: Text('부서 문서함 열람 허용', style: TheWeTextStyle.subtitle),
-                subtitle: Text(
-                  departmentVisible
-                      ? '기본값 · 같은 부서 구성원이 문서를 열람할 수 있습니다.'
-                      : '보안 문서 · 기안자와 결재자만 열람할 수 있습니다.',
-                  style: TheWeTextStyle.caption.copyWith(
-                    color: TheWeColor.black500,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
           Text('첨부 / 연결 문서', style: TheWeTextStyle.title),
           const SizedBox(height: 8),
           _AttachmentDropArea(
@@ -236,9 +205,7 @@ class _AttachmentDropAreaState extends State<_AttachmentDropArea> {
                   label: const Text('연결 문서'),
                 ),
                 Text(
-                  _dragging
-                      ? '여기에 놓으면 PDF가 첨부됩니다.'
-                      : 'PDF 파일을 이 영역으로 드래그해도 됩니다.',
+                  _dragging ? '여기에 놓으면 파일이 첨부됩니다.' : '파일을 이 영역으로 드래그해도 됩니다.',
                   style: TheWeTextStyle.caption.copyWith(
                     color: _dragging ? TheWeColor.blue300 : TheWeColor.black500,
                     fontWeight: _dragging ? FontWeight.w700 : FontWeight.w400,
@@ -258,13 +225,18 @@ class _AttachmentDropAreaState extends State<_AttachmentDropArea> {
                       .map(
                         (attachment) => InputChip(
                           avatar: const Icon(
-                            Icons.picture_as_pdf_outlined,
+                            Icons.attach_file_outlined,
                             size: 18,
                           ),
                           label: Text(
                             attachment.name,
                             style: TheWeTextStyle.caption,
                           ),
+                          onPressed: () => showApprovalAttachmentPreview(
+                            context,
+                            attachment,
+                          ),
+                          tooltip: '미리보기',
                           onDeleted: () =>
                               widget.onRemoveAttachment(attachment),
                         ),

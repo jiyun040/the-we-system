@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/presentation/pages/home/approval_home_calendar_panel.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 
 void main() {
+  Dio calendarApi() {
+    final events = <Map<String, dynamic>>[];
+    final dio = Dio();
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          if (options.path == '/calendar/events' && options.method == 'POST') {
+            final data = Map<String, dynamic>.from(options.data as Map);
+            events.add({
+              ...data,
+              'id': '${events.length + 1}',
+              'kind': 'schedule',
+            });
+            handler.resolve(
+              Response(requestOptions: options, data: events.last),
+            );
+          } else if (options.path == '/calendar/events') {
+            handler.resolve(
+              Response(requestOptions: options, data: {'events': events}),
+            );
+          } else {
+            handler.reject(DioException(requestOptions: options));
+          }
+        },
+      ),
+    );
+    return dio;
+  }
+
   testWidgets('결재 양식이 없으면 선택 창 예외 대신 안내를 표시한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -34,14 +66,18 @@ void main() {
     final now = DateTime.now();
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: SizedBox(width: 900, child: ApprovalHomeCalendarPanel()),
+      ProviderScope(
+        overrides: [dioProvider.overrideWithValue(calendarApi())],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: SizedBox(width: 900, child: ApprovalHomeCalendarPanel()),
+            ),
           ),
         ),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('approval-month-calendar')), findsOneWidget);
     expect(find.text('${now.year}년 ${now.month}월'), findsOneWidget);
@@ -54,10 +90,13 @@ void main() {
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: SizedBox(width: 900, child: ApprovalHomeCalendarPanel()),
+      ProviderScope(
+        overrides: [dioProvider.overrideWithValue(calendarApi())],
+        child: const MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: SizedBox(width: 900, child: ApprovalHomeCalendarPanel()),
+            ),
           ),
         ),
       ),

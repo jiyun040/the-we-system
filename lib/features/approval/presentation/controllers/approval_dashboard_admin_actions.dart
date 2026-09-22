@@ -483,14 +483,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
   }) {
     final current = currentDashboardState;
     if (current == null) return '양식 정보를 불러오지 못했습니다.';
-    if ([
-      category,
-      name,
-      description,
-      defaultTitle,
-      defaultContent,
-    ].any((value) => value.trim().isEmpty)) {
-      return '모든 항목을 입력해 주세요.';
+    if ([category, name, defaultTitle].any((value) => value.trim().isEmpty)) {
+      return '분류, 양식명, 기본 제목을 입력해 주세요.';
     }
 
     final templates = [...current.formTemplates];
@@ -1004,12 +998,6 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         reason: reason,
       ),
     );
-  }
-
-  void updateLeaveStatus(String requestId, String status) {
-    if (status == '승인완료' || status == '반려') {
-      syncRemote(() => api.actOnLeave(requestId, approve: status == '승인완료'));
-    }
   }
 
   bool actOnLeave(

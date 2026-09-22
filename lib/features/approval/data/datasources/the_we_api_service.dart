@@ -66,6 +66,10 @@ class TheWeApiService {
   final Dio _dio;
   final AuthTokenStore _tokenStore;
 
+  Future<void> unregisterDeviceToken(String token) => _guard(() async {
+    await _dio.delete<void>('/notifications/devices', data: {'token': token});
+  });
+
   Future<T> _guard<T>(Future<T> Function() request) async {
     try {
       return await request();

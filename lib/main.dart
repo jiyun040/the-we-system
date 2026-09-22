@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -11,13 +13,19 @@ import 'package:the_we_system/common/components/rejected_approval_alert.dart';
 import 'package:the_we_system/common/theme/the_we_theme.dart';
 import 'package:the_we_system/core/platform/app_zoom_wheel_bridge.dart';
 import 'package:the_we_system/core/router/app_router.dart';
+import 'package:the_we_system/core/notifications/push_registration.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR');
-  runApp(const ProviderScope(child: MyApp()));
+  if (!kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.android ||
+          defaultTargetPlatform == TargetPlatform.iOS)) {
+    await Firebase.initializeApp();
+  }
+  runApp(const ProviderScope(child: PushRegistration(child: MyApp())));
 }
 
 class MyApp extends ConsumerWidget {

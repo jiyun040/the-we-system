@@ -1,4 +1,6 @@
 import 'package:the_we_system/core/network/api_exception.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
@@ -58,6 +60,16 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   Future<void> logout() async {
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS)) {
+      try {
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null) await api.unregisterDeviceToken(token);
+      } catch (_) {
+        // Logout must remain available when push services are offline.
+      }
+    }
     await api.logout();
     emitDashboardState(signedOutApprovalState);
   }

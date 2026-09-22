@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "627473935635",
+    "project_id": "the-we-system",
+    "storage_bucket": "the-we-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:627473935635:android:ac6b0ba6dcdf7d8f5e3ee6",
+        "android_client_info": {
+          "package_name": "com.the_we_system"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8XLxavLaaZngRCM8y9Kwsr2VqcgtP1Zs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

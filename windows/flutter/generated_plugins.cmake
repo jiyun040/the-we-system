@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_drop
   file_saver
   file_selector_windows
+  firebase_core
   flutter_secure_storage_windows
   url_launcher_windows
 )

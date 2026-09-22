@@ -70,6 +70,7 @@ class SideBar extends ConsumerWidget {
         GoRouterState.of(context).uri.queryParameters['view'] ?? 'weekly';
     final onAttendancePage = currentPath == AppRoutePath.absence;
     final onLeavePage = currentPath == AppRoutePath.leave;
+    final onBoardPage = currentPath == AppRoutePath.board;
     final onReceivedPage = currentPath.contains('/approval/box/received');
     final onDraftPage = currentPath.contains('/approval/box/drafts');
     final onTemporaryPage = currentPath == AppRoutePath.temporaryBox;
@@ -127,6 +128,14 @@ class SideBar extends ConsumerWidget {
                         selected: onHomePage,
                         isCompact: isCompact,
                         onTap: () => navigateNamed(AppRouteName.home),
+                      ),
+                      TheWeGaps.verticalSm,
+                      SideBarMenuItem(
+                        icon: Icons.forum_outlined,
+                        label: '게시판',
+                        selected: onBoardPage,
+                        isCompact: isCompact,
+                        onTap: () => navigateNamed(AppRouteName.board),
                       ),
                       TheWeGaps.verticalSm,
                       if (approvalEnabled) ...[

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'approval_document_sheet_dependencies.dart';
 
 class ApprovalDocumentAttachmentArea extends StatelessWidget {
@@ -38,9 +40,13 @@ class ApprovalDocumentAttachmentArea extends StatelessWidget {
             runSpacing: 6,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              const Icon(
-                Icons.picture_as_pdf_outlined,
-                color: TheWeColor.danger,
+              Icon(
+                attachment.mimeType == 'application/pdf'
+                    ? Icons.picture_as_pdf_outlined
+                    : Icons.attach_file_outlined,
+                color: attachment.mimeType == 'application/pdf'
+                    ? TheWeColor.danger
+                    : TheWeColor.blue300,
                 size: 20,
               ),
               Text(attachment.name, style: TheWeTextStyle.body),
@@ -51,7 +57,8 @@ class ApprovalDocumentAttachmentArea extends StatelessWidget {
                 ),
               ),
               OutlinedButton(
-                onPressed: () => _showAttachmentPreview(context, attachment),
+                onPressed: () =>
+                    showApprovalAttachmentPreview(context, attachment),
                 child: const Text('미리보기'),
               ),
               OutlinedButton(
@@ -87,10 +94,97 @@ String _formatFileSize(int bytes) {
   return '${(kilobytes / 1024).toStringAsFixed(1)}MB';
 }
 
-Future<void> _showAttachmentPreview(
+Future<void> showApprovalAttachmentPreview(
   BuildContext context,
   ApprovalAttachment attachment,
 ) async {
+  final name = attachment.name.toLowerCase();
+  if (attachment.mimeType.startsWith('image/') ||
+      name.endsWith('.png') ||
+      name.endsWith('.jpg') ||
+      name.endsWith('.jpeg') ||
+      name.endsWith('.gif') ||
+      name.endsWith('.webp')) {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        backgroundColor: TheWeColor.white,
+        child: SizedBox(
+          width: 900,
+          height: MediaQuery.sizeOf(context).height * .8,
+          child: Column(
+            children: [
+              ListTile(
+                title: Text(attachment.name, overflow: TextOverflow.ellipsis),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(dialogContext),
+                ),
+              ),
+              Expanded(
+                child: InteractiveViewer(child: Image.memory(attachment.bytes)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    return;
+  }
+  if (attachment.mimeType.startsWith('text/') ||
+      name.endsWith('.txt') ||
+      name.endsWith('.csv') ||
+      name.endsWith('.json') ||
+      name.endsWith('.md') ||
+      name.endsWith('.xml')) {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: TheWeColor.surfaceAlt,
+        title: Text(attachment.name),
+        content: SizedBox(
+          width: 700,
+          height: MediaQuery.sizeOf(context).height * .7,
+          child: SingleChildScrollView(
+            child: SelectableText(
+              utf8.decode(attachment.bytes, allowMalformed: true),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('닫기'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+  if (attachment.mimeType != 'application/pdf' && !name.endsWith('.pdf')) {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: TheWeColor.surfaceAlt,
+        title: Text(attachment.name),
+        content: const Text('이 파일 형식은 앱에서 미리보기를 지원하지 않습니다. 파일을 내려받아 확인해 주세요.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('닫기'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(dialogContext);
+              await _downloadAttachment(context, attachment);
+            },
+            child: const Text('다운로드'),
+          ),
+        ],
+      ),
+    );
+    return;
+  }
   await showDialog<void>(
     context: context,
     builder: (dialogContext) =>

@@ -2,19 +2,22 @@ import 'approval_home_dependencies.dart';
 import 'approval_home_calendar_day.dart';
 import 'approval_home_calendar_dialog.dart';
 import 'approval_home_calendar_models.dart';
+import 'package:the_we_system/core/network/dio_provider.dart';
 
-class ApprovalHomeCalendarPanel extends StatefulWidget {
+class ApprovalHomeCalendarPanel extends ConsumerStatefulWidget {
   const ApprovalHomeCalendarPanel({super.key});
 
   @override
-  State<ApprovalHomeCalendarPanel> createState() =>
+  ConsumerState<ApprovalHomeCalendarPanel> createState() =>
       _ApprovalHomeCalendarPanelState();
 }
 
-class _ApprovalHomeCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
+class _ApprovalHomeCalendarPanelState
+    extends ConsumerState<ApprovalHomeCalendarPanel> {
   late DateTime _focusedDay;
   late DateTime _selectedDay;
   final Map<DateTime, List<ApprovalCalendarEvent>> _events = {};
+  String? _loadError;
 
   @override
   void initState() {
@@ -22,6 +25,38 @@ class _ApprovalHomeCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
     final today = DateUtils.dateOnly(DateTime.now());
     _focusedDay = today;
     _selectedDay = today;
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    try {
+      final response = await ref
+          .read(dioProvider)
+          .get<Map<String, dynamic>>('/calendar/events');
+      final rows = response.data?['events'] as List<dynamic>? ?? const [];
+      if (!mounted) return;
+      setState(() {
+        _events.clear();
+        for (final row in rows) {
+          if (row is! Map) continue;
+          final data = Map<String, dynamic>.from(row);
+          final start = DateTime.tryParse(data['date']?.toString() ?? '');
+          if (start == null) continue;
+          final event = ApprovalCalendarEvent.fromJson(data);
+          final end = event.endDate ?? start;
+          for (
+            var day = DateUtils.dateOnly(start);
+            !day.isAfter(end);
+            day = day.add(const Duration(days: 1))
+          ) {
+            _events.putIfAbsent(day, () => []).add(event);
+          }
+        }
+        _loadError = null;
+      });
+    } catch (_) {
+      if (mounted) setState(() => _loadError = '공유 일정을 불러오지 못했습니다.');
+    }
   }
 
   void _moveMonth(int delta) {
@@ -43,12 +78,29 @@ class _ApprovalHomeCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
 
     if (event == null || !mounted) return;
 
-    setState(() {
-      final key = DateUtils.dateOnly(day);
-      _events.putIfAbsent(key, () => []).add(event);
-      _selectedDay = key;
-      _focusedDay = key;
-    });
+    try {
+      await ref
+          .read(dioProvider)
+          .post<Map<String, dynamic>>(
+            '/calendar/events',
+            data: {
+              'date': day.toIso8601String().substring(0, 10),
+              'title': event.title,
+              'time': event.time,
+              'place': event.place,
+              'colorKey': event.colorKey,
+            },
+          );
+      await _loadEvents();
+      if (mounted) {
+        setState(() {
+          _selectedDay = DateUtils.dateOnly(day);
+          _focusedDay = DateUtils.dateOnly(day);
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _loadError = '일정을 저장하지 못했습니다.');
+    }
   }
 
   Future<void> _openEventDetail(
@@ -91,22 +143,26 @@ class _ApprovalHomeCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                OutlinedButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pop(ApprovalCalendarEventAction.delete),
-                  child: Text(
-                    '삭제',
-                    style: TheWeTextStyle.body.copyWith(color: TheWeColor.pink),
+                if (event.kind == 'schedule' && _canEdit(event))
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pop(ApprovalCalendarEventAction.delete),
+                    child: Text(
+                      '삭제',
+                      style: TheWeTextStyle.body.copyWith(
+                        color: TheWeColor.pink,
+                      ),
+                    ),
                   ),
-                ),
                 const SizedBox(width: 10),
-                OutlinedButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pop(ApprovalCalendarEventAction.edit),
-                  child: const Text('수정'),
-                ),
+                if (event.kind == 'schedule' && _canEdit(event))
+                  OutlinedButton(
+                    onPressed: () => Navigator.of(
+                      context,
+                    ).pop(ApprovalCalendarEventAction.edit),
+                    child: const Text('수정'),
+                  ),
                 const SizedBox(width: 10),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -125,11 +181,14 @@ class _ApprovalHomeCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
     if (!mounted) return;
 
     if (action == ApprovalCalendarEventAction.delete) {
-      setState(() {
-        final key = DateUtils.dateOnly(day);
-        _events[key]?.remove(event);
-        if (_events[key]?.isEmpty ?? false) _events.remove(key);
-      });
+      try {
+        await ref
+            .read(dioProvider)
+            .delete<void>('/calendar/events/${event.id}');
+        await _loadEvents();
+      } catch (_) {
+        if (mounted) setState(() => _loadError = '일정을 삭제하지 못했습니다.');
+      }
       return;
     }
 
@@ -143,11 +202,31 @@ class _ApprovalHomeCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
 
     if (edited == null || !mounted) return;
 
-    setState(() {
-      final dayEvents = _events[DateUtils.dateOnly(day)];
-      final index = dayEvents?.indexOf(event) ?? -1;
-      if (index >= 0) dayEvents![index] = edited;
-    });
+    try {
+      await ref
+          .read(dioProvider)
+          .patch<Map<String, dynamic>>(
+            '/calendar/events/${event.id}',
+            data: {
+              'title': edited.title,
+              'time': edited.time,
+              'place': edited.place,
+              'colorKey': edited.colorKey,
+            },
+          );
+      await _loadEvents();
+    } catch (_) {
+      if (mounted) setState(() => _loadError = '일정을 수정하지 못했습니다.');
+    }
+  }
+
+  bool _canEdit(ApprovalCalendarEvent event) {
+    final user = ref
+        .read(approvalDashboardControllerProvider)
+        .asData
+        ?.value
+        .currentUser;
+    return event.authorId == user?.id || user?.isAdmin == true;
   }
 
   ApprovalCalendarDayCard _dayCard(
@@ -179,7 +258,14 @@ class _ApprovalHomeCalendarPanelState extends State<ApprovalHomeCalendarPanel> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('캘린더', style: TheWeTextStyle.title),
+            Text('공유 캘린더', style: TheWeTextStyle.title),
+            if (_loadError != null)
+              Text(
+                _loadError!,
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.danger,
+                ),
+              ),
             const SizedBox(height: 16),
             Row(
               children: [

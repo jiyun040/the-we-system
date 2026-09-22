@@ -531,7 +531,7 @@ Future<void> _showFormEditor(
                 const SizedBox(height: 10),
                 TextField(
                   controller: description,
-                  decoration: const InputDecoration(labelText: '설명'),
+                  decoration: const InputDecoration(labelText: '설명 (선택)'),
                 ),
                 const SizedBox(height: 10),
                 TextField(
@@ -543,7 +543,7 @@ Future<void> _showFormEditor(
                   controller: defaultContent,
                   minLines: 3,
                   maxLines: 6,
-                  decoration: const InputDecoration(labelText: '기본 본문'),
+                  decoration: const InputDecoration(labelText: '기본 본문 (선택)'),
                 ),
                 const SizedBox(height: 10),
                 TheWeDropdown<String>(

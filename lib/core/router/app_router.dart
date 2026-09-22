@@ -10,6 +10,7 @@ import 'package:the_we_system/features/approval/presentation/pages/settings/appr
 import 'package:the_we_system/features/approval/presentation/pages/auth/approval_signup_page.dart';
 import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_page.dart';
 import 'package:the_we_system/features/approval/presentation/pages/leave/approval_leave_page.dart';
+import 'package:the_we_system/features/approval/presentation/pages/board/approval_board_page.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_auth_gate.dart';
 
 abstract final class AppRouteName {
@@ -25,6 +26,7 @@ abstract final class AppRouteName {
   static const signup = 'approvalSignup';
   static const leave = 'approvalLeave';
   static const admin = 'approvalAdmin';
+  static const board = 'approvalBoard';
 }
 
 abstract final class AppRoutePath {
@@ -40,6 +42,7 @@ abstract final class AppRoutePath {
   static const signup = '/signup';
   static const leave = '/leave';
   static const admin = '/admin';
+  static const board = '/board';
 }
 
 final appRouter = GoRouter(
@@ -132,6 +135,13 @@ final appRouter = GoRouter(
       path: AppRoutePath.leave,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: ApprovalAuthGate(child: ApprovalLeavePage()),
+      ),
+    ),
+    GoRoute(
+      name: AppRouteName.board,
+      path: AppRoutePath.board,
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ApprovalAuthGate(child: ApprovalBoardPage()),
       ),
     ),
     GoRoute(

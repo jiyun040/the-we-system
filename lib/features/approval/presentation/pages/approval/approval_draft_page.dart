@@ -49,7 +49,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   Map<String, String> formFields = {};
   List<Map<String, String>> lineItems = [];
   final Set<int> manuallyEditedLineTotals = {};
-  bool departmentVisible = true;
+  bool departmentVisible = false;
   bool initialized = false;
 
   @override
@@ -109,9 +109,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
               lineItems = initialDocument.lineItems
                   .map((item) => {...item})
                   .toList();
-              departmentVisible = !appState.restrictedDocumentIds.contains(
-                initialDocument.id,
-              );
+              departmentVisible = false;
               editingDocumentId = sourceDocument?.status == '작성중'
                   ? sourceDocument?.id
                   : null;
@@ -195,7 +193,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                                   (_) => <String, String>{},
                                 );
                           manuallyEditedLineTotals.clear();
-                          departmentVisible = true;
+                          departmentVisible = false;
                           editingDocumentId = null;
                           selectedApprovalLineId =
                               template.approvalLines.firstOrNull?.id;
@@ -553,14 +551,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   }
 
   Future<void> _addAttachmentFile() async {
-    const pdfTypes = XTypeGroup(
-      label: 'PDF 문서',
-      extensions: <String>['pdf'],
-      mimeTypes: <String>['application/pdf'],
-      uniformTypeIdentifiers: <String>['com.adobe.pdf'],
-      webWildCards: <String>['application/pdf'],
-    );
-    final file = await openFile(acceptedTypeGroups: const [pdfTypes]);
+    final file = await openFile();
     if (file == null) {
       return;
     }
@@ -570,19 +561,11 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
 
   Future<void> _addAttachmentFiles(List<XFile> files) async {
     final accepted = <ApprovalAttachment>[];
-    var rejectedCount = 0;
+    var oversizedCount = 0;
     var emptyCount = 0;
     var unreadableCount = 0;
 
     for (final file in files) {
-      final isPdf =
-          file.name.toLowerCase().endsWith('.pdf') ||
-          file.mimeType == 'application/pdf';
-      if (!isPdf) {
-        rejectedCount++;
-        continue;
-      }
-
       Uint8List bytes;
       try {
         bytes = await _readAttachmentBytes(file);
@@ -594,11 +577,15 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
         emptyCount++;
         continue;
       }
+      if (bytes.lengthInBytes > 10 * 1024 * 1024) {
+        oversizedCount++;
+        continue;
+      }
 
       accepted.add(
         ApprovalAttachment.fromBytes(
           name: file.name,
-          mimeType: 'application/pdf',
+          mimeType: file.mimeType ?? 'application/octet-stream',
           bytes: bytes,
         ),
       );
@@ -617,9 +604,9 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
       });
     }
 
-    if (rejectedCount > 0 || emptyCount > 0 || unreadableCount > 0) {
+    if (oversizedCount > 0 || emptyCount > 0 || unreadableCount > 0) {
       final reasons = [
-        if (rejectedCount > 0) 'PDF가 아닌 파일 $rejectedCount개',
+        if (oversizedCount > 0) '10MB 초과 파일 $oversizedCount개',
         if (emptyCount > 0) '빈 파일 $emptyCount개',
         if (unreadableCount > 0) '읽을 수 없는 파일 $unreadableCount개',
       ].join(', ');

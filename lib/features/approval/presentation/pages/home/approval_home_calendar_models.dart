@@ -30,11 +30,32 @@ class ApprovalCalendarNavButton extends StatelessWidget {
 
 class ApprovalCalendarEvent {
   const ApprovalCalendarEvent({
+    this.id = '',
+    this.authorId = '',
+    this.kind = 'schedule',
+    this.endDate,
     required this.title,
     required this.time,
     required this.place,
     required this.colorKey,
   });
+
+  final String id;
+  final String authorId;
+  final String kind;
+  final DateTime? endDate;
+
+  factory ApprovalCalendarEvent.fromJson(Map<String, dynamic> data) =>
+      ApprovalCalendarEvent(
+        id: data['id']?.toString() ?? '',
+        authorId: data['authorId']?.toString() ?? '',
+        kind: data['kind']?.toString() ?? 'schedule',
+        endDate: DateTime.tryParse(data['endDate']?.toString() ?? ''),
+        title: data['title']?.toString() ?? '',
+        time: data['time']?.toString() ?? '',
+        place: data['place']?.toString() ?? '',
+        colorKey: data['colorKey']?.toString() ?? 'blue',
+      );
 
   final String title;
   final String time;
