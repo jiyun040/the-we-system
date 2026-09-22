@@ -50,7 +50,7 @@ class ApprovalEditableDraftSheet extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            document.form.contains('휴가') ? '휴 가 신 청' : '기 안 용 지',
+            document.form.trim().isEmpty ? '기 안 용 지' : document.form,
             textAlign: TextAlign.center,
             style: TheWeTextStyle.pageTitle.copyWith(
               fontSize: compact ? 24 : 32,
