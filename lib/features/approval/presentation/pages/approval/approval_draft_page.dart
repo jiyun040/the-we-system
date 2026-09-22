@@ -74,7 +74,8 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
       body: SafeArea(
         child: state.when(
           data: (appState) {
-            if (appState.formTemplates.isEmpty) {
+            final availableTemplates = appState.activeFormTemplates;
+            if (availableTemplates.isEmpty) {
               return Center(
                 child: Text(
                   '서버에 사용 가능한 결재 양식이 없습니다.',
@@ -87,10 +88,14 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                 : ref.watch(approvalDocumentProvider(widget.reuseDocumentId!));
             final initialDocument = _initialDocument(appState, sourceDocument);
             final currentFormId =
-                selectedFormId ??
-                widget.selectedFormId ??
-                appState.formTemplates.first.id;
-            final currentTemplate = appState.formTemplates
+                availableTemplates.any((form) => form.id == selectedFormId)
+                ? selectedFormId!
+                : availableTemplates.any(
+                    (form) => form.id == widget.selectedFormId,
+                  )
+                ? widget.selectedFormId!
+                : availableTemplates.first.id;
+            final currentTemplate = availableTemplates
                 .where((template) => template.id == currentFormId)
                 .firstOrNull;
 
@@ -170,7 +175,7 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
                       void selectForm(String formId) {
                         setState(() {
                           selectedFormId = formId;
-                          final template = appState.formTemplates
+                          final template = availableTemplates
                               .where((item) => item.id == formId)
                               .first;
                           titleController.text = template.defaultTitle;
@@ -202,14 +207,14 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
 
                       final catalog = isNarrow
                           ? ApprovalCompactFormSelector(
-                              templates: appState.formTemplates,
+                              templates: availableTemplates,
                               selectedFormId: currentFormId,
                               onFormSelected: selectForm,
                             )
                           : SizedBox(
                               width: 320,
                               child: ApprovalFormCatalog(
-                                templates: appState.formTemplates,
+                                templates: availableTemplates,
                                 selectedFormId: currentFormId,
                                 onFormSelected: selectForm,
                               ),
@@ -378,8 +383,11 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
       );
     }
 
-    final formId =
-        selectedFormId ?? widget.selectedFormId ?? state.formTemplates.first.id;
+    final availableTemplates = state.activeFormTemplates;
+    final preferredId = selectedFormId ?? widget.selectedFormId;
+    final formId = availableTemplates.any((form) => form.id == preferredId)
+        ? preferredId!
+        : availableTemplates.first.id;
     selectedFormId ??= formId;
     return ref
         .read(approvalDashboardControllerProvider.notifier)
@@ -387,11 +395,11 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   }
 
   String _findTemplateIdByName(ApprovalDashboardState state, String formName) {
-    return state.formTemplates
+    return state.activeFormTemplates
             .where((item) => item.name == formName)
             .firstOrNull
             ?.id ??
-        state.formTemplates.first.id;
+        state.activeFormTemplates.first.id;
   }
 
   String? _approvalLineIdForDocument(

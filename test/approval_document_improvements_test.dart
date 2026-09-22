@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 import 'package:the_we_system/features/approval/presentation/pages/approval/approval_draft_sheet_fields.dart';
@@ -7,6 +10,7 @@ import 'package:the_we_system/features/approval/presentation/widgets/approval_di
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_pdf.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_input_formatters.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_material_photos.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -267,5 +271,36 @@ void main() {
     expect(bytes.length, greaterThan(100));
     expect(String.fromCharCodes(bytes.take(4)), '%PDF');
     expect(pageCount, 1);
+  });
+
+  test('자재구매 사진을 문서와 PDF에 표시한다', () async {
+    final source = img.encodePng(img.Image(width: 4, height: 4));
+    final optimized = normalizeMaterialPhoto(source);
+    expect(optimized, isNotNull);
+    final document = ApprovalDocument(
+      id: 'MATERIAL-PHOTO',
+      title: '자재 반입',
+      drafter: '홍길동',
+      department: '공무팀',
+      form: '자재구매신청서',
+      status: '작성중',
+      draftedAt: '2026-09-22',
+      dueDate: '2026-09-22',
+      progress: 0,
+      documentNo: 'MATERIAL-PHOTO',
+      content: '',
+      documentLayout: 'purchase',
+      formFields: {
+        materialPhotoBeforeKey:
+            'data:image/jpeg;base64,${base64Encode(optimized!)}',
+      },
+      lineItems: const [],
+    );
+    expect(
+      materialPhotoBytes(document.formFields[materialPhotoBeforeKey]),
+      isNotEmpty,
+    );
+    final pdf = await buildApprovalDocumentPdf(document);
+    expect(String.fromCharCodes(pdf.take(4)), '%PDF');
   });
 }

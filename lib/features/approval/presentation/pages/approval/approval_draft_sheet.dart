@@ -3,6 +3,7 @@ import '../../widgets/approval_document_sheet_attachments.dart';
 import 'approval_draft_linked_documents.dart';
 import 'approval_draft_sheet_fields.dart';
 import '../../widgets/approval_document_sheet_tables.dart';
+import '../../widgets/approval_material_photos.dart';
 
 class ApprovalEditableDraftSheet extends StatelessWidget {
   const ApprovalEditableDraftSheet({
@@ -118,6 +119,11 @@ class ApprovalEditableDraftSheet extends StatelessWidget {
               contentController: contentController,
               onFormFieldChanged: onFormFieldChanged,
               onLineItemChanged: onLineItemChanged,
+            ),
+          if (isMaterialPurchaseDocument(document))
+            ApprovalMaterialPhotoSection(
+              document: document,
+              onChanged: onFormFieldChanged,
             ),
           const SizedBox(height: 16),
           Text('첨부 / 연결 문서', style: TheWeTextStyle.title),

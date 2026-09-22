@@ -160,12 +160,5 @@ const approvalDefaultFormTemplates = [
 List<ApprovalFormTemplate> mergeApprovalFormTemplates(
   Iterable<ApprovalFormTemplate> remoteTemplates,
 ) {
-  final remote = remoteTemplates.toList();
-  final remoteIds = remote.map((template) => template.id).toSet();
-  return [
-    ...remote,
-    ...approvalDefaultFormTemplates.where(
-      (template) => !remoteIds.contains(template.id),
-    ),
-  ];
+  return remoteTemplates.toList();
 }

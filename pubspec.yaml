@@ -30,6 +30,7 @@ dependencies:
   desktop_drop: ^0.8.4
   firebase_core: ^4.15.0
   firebase_messaging: ^16.7.0
+  image: ^4.9.1
 
 dev_dependencies:
   flutter_test:

@@ -7,6 +7,7 @@ import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_step.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_input_formatters.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_material_photos.dart';
 
 Future<void> exportApprovalDocumentPdf(
   BuildContext context,
@@ -211,7 +212,56 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
       ),
     ),
   );
+  if (isMaterialPurchaseDocument(document)) {
+    widgets.add(_materialPhotoPdfSection(document));
+  }
   return widgets;
+}
+
+pw.Widget _materialPhotoPdfSection(ApprovalDocument document) {
+  pw.Widget photo(String key, String label) {
+    final bytes = materialPhotoBytes(document.formFields[key]);
+    return pw.Expanded(
+      child: pw.Column(
+        children: [
+          pw.Container(
+            height: 160,
+            width: double.infinity,
+            alignment: pw.Alignment.center,
+            decoration: pw.BoxDecoration(border: pw.Border.all()),
+            child: bytes == null
+                ? pw.Text('사진 없음')
+                : pw.Image(
+                    pw.MemoryImage(Uint8List.fromList(bytes)),
+                    fit: pw.BoxFit.contain,
+                  ),
+          ),
+          pw.Container(
+            width: double.infinity,
+            alignment: pw.Alignment.center,
+            padding: const pw.EdgeInsets.all(6),
+            decoration: pw.BoxDecoration(border: pw.Border.all()),
+            child: pw.Text(label),
+          ),
+        ],
+      ),
+    );
+  }
+
+  return pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: [
+      pw.SizedBox(height: 14),
+      _sectionHeader('2. 반입 및 비치 대지 (사진 대지)'),
+      pw.Row(
+        children: [
+          photo(materialPhotoBeforeKey, '자재 반입 전'),
+          pw.SizedBox(width: 8),
+          photo(materialPhotoAfterKey, '자재 반입 후'),
+        ],
+      ),
+    ],
+  );
 }
 
 pw.Widget _approvalLine(List<ApprovalStep> steps) => pw.Column(
@@ -425,12 +475,14 @@ String _totalAmount(ApprovalDocument document) {
 }
 
 String _sheetTitle(ApprovalDocument document) =>
-    switch (document.documentLayout) {
-      'expense' => '지출결의서(지급품의)',
-      'hospitality' => '지출결의서(기업업무추진비)',
-      'purchase' => '비품/소모품 구입신청서',
-      'payroll' => '급여대장 기안서',
-      _ when document.form.contains('협조') => '업 무 협 조',
-      _ when document.form.contains('휴가') => '휴 가 신 청',
-      _ => '업 무 기 안',
-    };
+    isMaterialPurchaseDocument(document)
+    ? '자재구매신청서'
+    : switch (document.documentLayout) {
+        'expense' => '지출결의서(지급품의)',
+        'hospitality' => '지출결의서(기업업무추진비)',
+        'purchase' => '비품/소모품 구입신청서',
+        'payroll' => '급여대장 기안서',
+        _ when document.form.contains('협조') => '업 무 협 조',
+        _ when document.form.contains('휴가') => '휴 가 신 청',
+        _ => '업 무 기 안',
+      };

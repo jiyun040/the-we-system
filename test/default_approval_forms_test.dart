@@ -3,7 +3,7 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 
 void main() {
-  test('누락된 기존 결재 양식만 복원하고 서버의 커스텀 양식은 보존한다', () {
+  test('서버에서 받은 양식만 표시한다', () {
     const customizedBusinessDraft = ApprovalFormTemplate(
       id: 'business-draft',
       category: '커스텀 분류',
@@ -39,7 +39,7 @@ void main() {
       customForm,
     ]);
 
-    expect(merged, hasLength(9));
+    expect(merged, hasLength(2));
     expect(
       merged.where((form) => form.id == 'business-draft').single.name,
       '내가 수정한 업무기안',
@@ -47,17 +47,9 @@ void main() {
     expect(merged.where((form) => form.id == 'my-custom-form'), hasLength(1));
     expect(
       merged.map((form) => form.id),
-      containsAll([
-        'expense-slip',
-        'purchase-request',
-        'material-purchase-request',
-        'hospitality-expense',
-        'payroll-draft',
-        'team-vacation',
-        'cooperation-request',
-      ]),
+      isNot(contains('material-purchase-request')),
     );
-    final materialPurchase = merged
+    final materialPurchase = approvalDefaultFormTemplates
         .where((form) => form.id == 'material-purchase-request')
         .single;
     expect(materialPurchase.name, '자재구매신청서');

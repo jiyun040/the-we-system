@@ -5,6 +5,7 @@ import 'package:the_we_system/features/approval/domain/entities/document/approva
 import 'approval_document_sheet_attachments.dart';
 import 'approval_document_sheet_body.dart';
 import 'approval_document_sheet_tables.dart';
+import 'approval_material_photos.dart';
 
 class ApprovalDocumentSheet extends StatelessWidget {
   const ApprovalDocumentSheet({super.key, required this.document});
@@ -81,6 +82,8 @@ class ApprovalDocumentSheet extends StatelessWidget {
             ),
           ] else
             ApprovalPdfDocumentBody(document: document),
+          if (isMaterialPurchaseDocument(document))
+            ApprovalMaterialPhotoSection(document: document),
           if (document.attachments.isNotEmpty) ...[
             const SizedBox(height: 22),
             ApprovalDocumentAttachmentArea(files: document.attachments),
@@ -91,6 +94,9 @@ class ApprovalDocumentSheet extends StatelessWidget {
   }
 
   String _sheetTitle(String form) {
+    if (isMaterialPurchaseDocument(document)) {
+      return '자재구매신청서';
+    }
     if (document.documentLayout == 'expense') {
       return '지출결의서(지급품의)';
     }
