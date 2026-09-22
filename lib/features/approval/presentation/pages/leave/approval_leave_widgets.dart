@@ -194,6 +194,14 @@ class ApprovalMobileLeaveRequestCard extends StatelessWidget {
         ),
         const SizedBox(height: 9),
         _MobileLeaveInfoRow(label: '신청 사유', value: request.reason, maxLines: 2),
+        if (request.rejectionReason.isNotEmpty) ...[
+          const SizedBox(height: 9),
+          _MobileLeaveInfoRow(
+            label: '반려 사유',
+            value: request.rejectionReason,
+            maxLines: 2,
+          ),
+        ],
       ],
     ),
   );

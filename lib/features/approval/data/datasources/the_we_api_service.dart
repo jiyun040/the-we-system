@@ -336,13 +336,18 @@ class TheWeApiService {
     await _dio.delete<Map<String, dynamic>>('/leave/requests/$id');
   });
 
-  Future<void> actOnLeave(String id, {required bool approve}) =>
-      _guard(() async {
-        await _dio.post<Map<String, dynamic>>(
-          '/leave/requests/$id/${approve ? 'approve' : 'reject'}',
-          data: const <String, dynamic>{},
-        );
-      });
+  Future<void> actOnLeave(
+    String id, {
+    required bool approve,
+    String rejectionReason = '',
+  }) => _guard(() async {
+    await _dio.post<Map<String, dynamic>>(
+      '/leave/requests/$id/${approve ? 'approve' : 'reject'}',
+      data: approve
+          ? const <String, dynamic>{}
+          : {'rejectionReason': rejectionReason},
+    );
+  });
 
   Future<void> acknowledgeLeave(String id) => _guard(() async {
     await _dio.post<Map<String, dynamic>>(
@@ -561,6 +566,7 @@ LeaveRequest _leaveRequest(Map<String, dynamic> data) => LeaveRequest(
       .where((step) => step.userId.isNotEmpty)
       .toList(),
   rejectedBy: data['rejectedBy']?.toString() ?? '',
+  rejectionReason: data['rejectionReason']?.toString() ?? '',
   directEntry: data['directEntry'] == true,
   registeredBy: data['registeredBy']?.toString() ?? '',
 );

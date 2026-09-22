@@ -2,6 +2,69 @@ import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
 import 'approval_admin_leave_management.dart';
 
+Future<void> showLeaveRejectReasonDialog(
+  BuildContext context,
+  WidgetRef ref,
+  LeaveRequest request,
+) async {
+  final reason = TextEditingController();
+  var error = '';
+  await showDialog<void>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setDialogState) => AlertDialog(
+        title: const Text('휴가 반려'),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('반려 사유를 간단히 입력해 주세요.'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reason,
+                autofocus: true,
+                maxLines: 3,
+                maxLength: 200,
+                decoration: InputDecoration(
+                  hintText: '예: 업무 일정과 겹쳐 조정이 필요합니다.',
+                  errorText: error.isEmpty ? null : error,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final value = reason.text.trim();
+              if (value.isEmpty) {
+                setDialogState(() => error = '반려 사유를 입력해 주세요.');
+                return;
+              }
+              ref
+                  .read(approvalDashboardControllerProvider.notifier)
+                  .actOnLeave(
+                    request.id,
+                    approve: false,
+                    rejectionReason: value,
+                  );
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('반려 처리'),
+          ),
+        ],
+      ),
+    ),
+  );
+  reason.dispose();
+}
+
 class AdminDashboard extends ConsumerWidget {
   const AdminDashboard({super.key, required this.state});
   final ApprovalDashboardState state;
@@ -9,11 +72,13 @@ class AdminDashboard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pendingLeaves = state.pendingLeaveRequests;
     final approvedLeaves = state.unacknowledgedApprovedLeaveRequests;
+    final rejectionAlerts = state.rejectedLeavesForCurrentFinalApprover;
     final mobile = MediaQuery.sizeOf(context).width < 600;
     final currentUser = state.currentUser;
     final isLeaveDecisionAccount =
         currentUser?.id == 'ceo' ||
         currentUser?.position.contains('대표') == true;
+    final canManageLeave = state.isAdminMode || isLeaveDecisionAccount;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -78,7 +143,11 @@ class AdminDashboard extends ConsumerWidget {
             );
           },
         ),
-        SizedBox(height: mobile ? 22 : 28),
+        if (rejectionAlerts.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          _LeaveRejectionAlert(requests: rejectionAlerts, state: state),
+        ],
+        SizedBox(height: rejectionAlerts.isEmpty ? (mobile ? 22 : 28) : 22),
         Text(
           '휴가 승인 관리',
           style: mobile
@@ -101,17 +170,16 @@ class AdminDashboard extends ConsumerWidget {
             return _PendingLeaveCard(
               employee: employee,
               request: request,
-              showDetails: isLeaveDecisionAccount,
+              showDetails: canManageLeave,
               canAct: state.canActOnLeave(request),
-              onReject: () => ref
-                  .read(approvalDashboardControllerProvider.notifier)
-                  .actOnLeave(request.id, approve: false),
+              onReject: () =>
+                  showLeaveRejectReasonDialog(context, ref, request),
               onApprove: () => ref
                   .read(approvalDashboardControllerProvider.notifier)
                   .actOnLeave(request.id, approve: true),
             );
           })
-        else if (!isLeaveDecisionAccount)
+        else if (!canManageLeave)
           TheWeDataTable(
             headers: const ['신청 직원', '결재 상태'],
             columnFlexes: const [1.8, 1.2],
@@ -150,11 +218,11 @@ class AdminDashboard extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           TextButton(
-                            onPressed: () => ref
-                                .read(
-                                  approvalDashboardControllerProvider.notifier,
-                                )
-                                .actOnLeave(request.id, approve: false),
+                            onPressed: () => showLeaveRejectReasonDialog(
+                              context,
+                              ref,
+                              request,
+                            ),
                             child: const Text('반려'),
                           ),
                           const SizedBox(width: 6),
@@ -175,6 +243,36 @@ class AdminDashboard extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _LeaveRejectionAlert extends StatelessWidget {
+  const _LeaveRejectionAlert({required this.requests, required this.state});
+
+  final List<LeaveRequest> requests;
+  final ApprovalDashboardState state;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: TheWeColor.danger.withValues(alpha: .06),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: TheWeColor.danger.withValues(alpha: .25)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('휴가 반려 알림', style: TheWeTextStyle.subtitle),
+        const SizedBox(height: 8),
+        for (final request in requests)
+          Text(
+            '${state.accounts.where((account) => account.id == request.userId).firstOrNull?.name ?? request.userId}: ${request.rejectionReason}',
+            style: TheWeTextStyle.body,
+          ),
+      ],
+    ),
+  );
 }
 
 class _PendingLeaveCard extends StatelessWidget {

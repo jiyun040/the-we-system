@@ -473,6 +473,20 @@ class ApprovalDashboardState {
   List<LeaveRequest> get actionableLeaveRequests =>
       leaveRequests.where(canActOnLeave).toList();
 
+  List<LeaveRequest> get rejectedLeavesForCurrentFinalApprover {
+    final user = currentUser;
+    if (user == null) return const [];
+    return leaveRequests.where((request) {
+      if (request.status != '반려' || request.rejectionReason.isEmpty) {
+        return false;
+      }
+      if (request.approvalLine.isNotEmpty) {
+        return request.approvalLine.last.userId == user.id;
+      }
+      return user.id == 'ceo' || user.position.contains('대표');
+    }).toList();
+  }
+
   List<LeaveRequest> leaveRequestsFor(String userId) =>
       leaveRequests.where((request) => request.userId == userId).toList();
 
@@ -597,6 +611,7 @@ class ApprovalDashboardState {
   bool canActOnLeave(LeaveRequest request) {
     final user = currentUser;
     if (user == null || request.status != '승인대기') return false;
+    if (isAdminMode) return true;
     if (request.approvalLine.isNotEmpty) {
       return request.approvalLine.any(
         (step) => step.status == '진행중' && step.userId == user.id,

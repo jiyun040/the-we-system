@@ -270,9 +270,8 @@ class LeaveDateSelection {
 
   bool get isHalfDay => type == '반차';
 
-  double get days => isHalfDay
-      ? .5
-      : endDate.difference(startDate).inDays + 1.0;
+  double get days =>
+      isHalfDay ? .5 : endDate.difference(startDate).inDays + 1.0;
 
   void selectType(String value) {
     type = value;
@@ -315,6 +314,7 @@ class LeaveRequest {
     this.ceoStatus = '진행중',
     this.approvalLine = const [],
     this.rejectedBy = '',
+    this.rejectionReason = '',
     this.directEntry = false,
     this.registeredBy = '',
   });
@@ -330,6 +330,7 @@ class LeaveRequest {
   final String ceoStatus;
   final List<LeaveApprovalStep> approvalLine;
   final String rejectedBy;
+  final String rejectionReason;
   final bool directEntry;
   final String registeredBy;
 
@@ -339,6 +340,7 @@ class LeaveRequest {
     String? ceoStatus,
     List<LeaveApprovalStep>? approvalLine,
     String? rejectedBy,
+    String? rejectionReason,
     bool? directEntry,
     String? registeredBy,
   }) => LeaveRequest(
@@ -353,6 +355,7 @@ class LeaveRequest {
     ceoStatus: ceoStatus ?? this.ceoStatus,
     approvalLine: approvalLine ?? this.approvalLine,
     rejectedBy: rejectedBy ?? this.rejectedBy,
+    rejectionReason: rejectionReason ?? this.rejectionReason,
     directEntry: directEntry ?? this.directEntry,
     registeredBy: registeredBy ?? this.registeredBy,
   );

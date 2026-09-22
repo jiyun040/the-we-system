@@ -1012,7 +1012,11 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     }
   }
 
-  bool actOnLeave(String requestId, {required bool approve}) {
+  bool actOnLeave(
+    String requestId, {
+    required bool approve,
+    String rejectionReason = '',
+  }) {
     final current = currentDashboardState;
     if (current == null || current.currentUser == null) return false;
     final request = current.leaveRequests
@@ -1020,7 +1024,13 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         .firstOrNull;
     if (request == null || !current.canActOnLeave(request)) return false;
 
-    syncRemote(() => api.actOnLeave(requestId, approve: approve));
+    syncRemote(
+      () => api.actOnLeave(
+        requestId,
+        approve: approve,
+        rejectionReason: rejectionReason,
+      ),
+    );
     return true;
   }
 

@@ -434,6 +434,15 @@ class ApprovalLeaveContent extends ConsumerWidget {
                 request.reason,
                 style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
               ),
+              if (request.rejectionReason.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('반려 사유', style: TheWeTextStyle.body),
+                const SizedBox(height: 4),
+                Text(
+                  request.rejectionReason,
+                  style: TheWeTextStyle.body.copyWith(color: TheWeColor.danger),
+                ),
+              ],
               const SizedBox(height: 20),
               for (var index = 0; index < approvalLine.length; index++) ...[
                 ApprovalLeaveProgressRow(
