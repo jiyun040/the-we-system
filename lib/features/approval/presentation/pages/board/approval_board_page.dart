@@ -95,7 +95,8 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                     value: department,
                     items: ['', ...?state?.departments],
                     labelText: '게시판',
-                    labelBuilder: (value) => value.isEmpty ? '전체게시판' : '$value 게시판',
+                    labelBuilder: (value) =>
+                        value.isEmpty ? '전체게시판' : '$value 게시판',
                     onChanged: saving
                         ? (_) {}
                         : (value) => update(() => department = value ?? ''),
@@ -119,45 +120,49 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                       for (final file in details.files) {
                         if (files.length >= 5) break;
                         final bytes = await file.readAsBytes();
-                        if (bytes.isNotEmpty && bytes.length <= 10 * 1024 * 1024) {
-                          files.add(ApprovalAttachment.fromBytes(
-                            name: file.name,
-                            mimeType: file.mimeType ?? 'application/octet-stream',
-                            bytes: bytes,
-                          ));
+                        if (bytes.isNotEmpty &&
+                            bytes.length <= 10 * 1024 * 1024) {
+                          files.add(
+                            ApprovalAttachment.fromBytes(
+                              name: file.name,
+                              mimeType:
+                                  file.mimeType ?? 'application/octet-stream',
+                              bytes: bytes,
+                            ),
+                          );
                         }
                       }
                       update(() {});
                     },
                     child: OutlinedButton.icon(
-                    onPressed: saving || files.length >= 5
-                        ? null
-                        : () async {
-                            final picked = await openFiles();
-                            for (final file in picked) {
-                              final bytes = await file.readAsBytes();
-                              if (bytes.isEmpty ||
-                                  bytes.length > 10 * 1024 * 1024) {
-                                update(
-                                  () => message = '파일은 각 10MB 이하로 첨부해 주세요.',
+                      onPressed: saving || files.length >= 5
+                          ? null
+                          : () async {
+                              final picked = await openFiles();
+                              for (final file in picked) {
+                                final bytes = await file.readAsBytes();
+                                if (bytes.isEmpty ||
+                                    bytes.length > 10 * 1024 * 1024) {
+                                  update(
+                                    () => message = '파일은 각 10MB 이하로 첨부해 주세요.',
+                                  );
+                                  continue;
+                                }
+                                if (files.length >= 5) break;
+                                files.add(
+                                  ApprovalAttachment.fromBytes(
+                                    name: file.name,
+                                    mimeType:
+                                        file.mimeType ??
+                                        'application/octet-stream',
+                                    bytes: bytes,
+                                  ),
                                 );
-                                continue;
                               }
-                              if (files.length >= 5) break;
-                              files.add(
-                                ApprovalAttachment.fromBytes(
-                                  name: file.name,
-                                  mimeType:
-                                      file.mimeType ??
-                                      'application/octet-stream',
-                                  bytes: bytes,
-                                ),
-                              );
-                            }
-                            update(() {});
-                          },
-                    icon: const Icon(Icons.attach_file),
-                    label: const Text('자료 첨부 (최대 5개)'),
+                              update(() {});
+                            },
+                      icon: const Icon(Icons.attach_file),
+                      label: const Text('자료 첨부 (최대 5개)'),
                     ),
                   ),
                   Text('파일을 이 영역에 끌어 놓아도 됩니다.', style: TheWeTextStyle.caption),
@@ -260,11 +265,10 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   }
 
   Future<void> _openAttachment(ApprovalAttachment attachment) async {
-    if (attachment.mimeType == 'application/pdf' ||
-        attachment.name.toLowerCase().endsWith('.pdf')) {
-      await showApprovalAttachmentPreview(context, attachment);
-      return;
-    }
+    await showApprovalAttachmentPreview(context, attachment);
+  }
+
+  Future<void> _downloadAttachment(ApprovalAttachment attachment) async {
     final dot = attachment.name.lastIndexOf('.');
     await FileSaver.instance.saveFile(
       name: dot > 0 ? attachment.name.substring(0, dot) : attachment.name,
@@ -272,6 +276,61 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
       fileExtension: dot > 0 ? attachment.name.substring(dot + 1) : 'bin',
       mimeType: MimeType.custom,
       customMimeType: attachment.mimeType,
+    );
+  }
+
+  Future<void> _openPostDetail(Map<String, dynamic> post) async {
+    final attachments = (post['attachments'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map(
+          (item) =>
+              ApprovalAttachment.fromJson(Map<String, dynamic>.from(item)),
+        )
+        .toList();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => TheWeModalSurface(
+        maxWidth: 720,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TheWeModalHeader(
+                title: post['title']?.toString() ?? '',
+                onClose: () => Navigator.pop(dialogContext),
+              ),
+              Text(
+                '${post['authorName'] ?? ''} · ${post['createdAt'] ?? ''}',
+                style: TheWeTextStyle.caption,
+              ),
+              const SizedBox(height: 18),
+              SelectableText(
+                post['content']?.toString() ?? '',
+                style: TheWeTextStyle.body,
+              ),
+              if (attachments.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Text('첨부파일', style: TheWeTextStyle.subtitle),
+                for (final attachment in attachments)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.attach_file),
+                    title: Text(
+                      attachment.name,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    onTap: () => _openAttachment(attachment),
+                    trailing: IconButton(
+                      tooltip: '다운로드',
+                      icon: const Icon(Icons.download_outlined),
+                      onPressed: () => _downloadAttachment(attachment),
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -357,59 +416,71 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                   for (final post in visible)
                     Card(
                       color: TheWeColor.surfaceAlt,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              post['title']?.toString() ?? '',
-                              style: TheWeTextStyle.subtitle,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${post['authorName'] ?? ''} · ${(post['createdAt']?.toString() ?? '').replaceFirst('T', ' ').split('.').first}',
-                              style: TheWeTextStyle.caption,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              post['content']?.toString() ?? '',
-                              style: TheWeTextStyle.body,
-                            ),
-                            const SizedBox(height: 8),
-                            for (final raw
-                                in (post['attachments'] as List<dynamic>? ??
-                                    const []))
-                              if (raw is Map)
-                                TextButton.icon(
-                                  onPressed: () => _openAttachment(
-                                    ApprovalAttachment.fromJson(
-                                      Map<String, dynamic>.from(raw),
+                      child: InkWell(
+                        onTap: () => _openPostDetail(post),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                post['title']?.toString() ?? '',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TheWeTextStyle.subtitle,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${post['authorName'] ?? ''} · ${(post['createdAt']?.toString() ?? '').replaceFirst('T', ' ').split('.').first}',
+                                style: TheWeTextStyle.caption,
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                post['content']?.toString() ?? '',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TheWeTextStyle.body,
+                              ),
+                              const SizedBox(height: 8),
+                              for (final raw
+                                  in (post['attachments'] as List<dynamic>? ??
+                                      const []))
+                                if (raw is Map)
+                                  TextButton.icon(
+                                    onPressed: () => _openAttachment(
+                                      ApprovalAttachment.fromJson(
+                                        Map<String, dynamic>.from(raw),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.attach_file),
+                                    label: Text(
+                                      raw['name']?.toString() ?? '첨부파일',
                                     ),
                                   ),
-                                  icon: const Icon(Icons.attach_file),
-                                  label: Text(
-                                    raw['name']?.toString() ?? '첨부파일',
-                                  ),
+                              if (post['authorId'] == state?.currentUser?.id ||
+                                  state?.currentUser?.isAdmin == true)
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton(
+                                      onPressed: () => _edit(post),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: TheWeColor.blue300,
+                                      ),
+                                      child: const Text('수정'),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => _delete(post),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: TheWeColor.danger,
+                                      ),
+                                      child: const Text('삭제'),
+                                    ),
+                                  ],
                                 ),
-                            if (post['authorId'] == state?.currentUser?.id ||
-                                state?.currentUser?.isAdmin == true)
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                children: [
-                                  TextButton(
-                                    onPressed: () => _edit(post),
-                                    style: TextButton.styleFrom(foregroundColor: TheWeColor.blue300),
-                                    child: const Text('수정'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => _delete(post),
-                                    style: TextButton.styleFrom(foregroundColor: TheWeColor.danger),
-                                    child: const Text('삭제'),
-                                  ),
-                                ],
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
