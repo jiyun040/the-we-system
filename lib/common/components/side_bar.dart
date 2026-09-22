@@ -293,7 +293,7 @@ class SideBar extends ConsumerWidget {
                           label: '자료공유',
                           selected: onBoardPage,
                           isCompact: isCompact,
-                          onTap: () => navigateNamed(AppRouteName.board),
+                          onTap: () => context.go('/board'),
                         ),
                       ],
                       if (state?.isAdminMode == true && attendanceEnabled) ...[

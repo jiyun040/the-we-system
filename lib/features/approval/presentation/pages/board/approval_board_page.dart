@@ -459,7 +459,8 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                                     ),
                                   ),
                               if (post['authorId'] == state?.currentUser?.id ||
-                                  state?.currentUser?.isAdmin == true)
+                                (state?.currentUser?.isAdmin == true ||
+                                    state?.currentUser?.isSystemAdministrator == true))
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [

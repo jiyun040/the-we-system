@@ -224,7 +224,9 @@ class _ApprovalHomeCalendarPanelState
         .asData
         ?.value
         .currentUser;
-    return event.authorId == user?.id || user?.isAdmin == true;
+    return event.authorId == user?.id ||
+        user?.isAdmin == true ||
+        user?.isSystemAdministrator == true;
   }
 
   ApprovalCalendarDayCard _dayCard(
