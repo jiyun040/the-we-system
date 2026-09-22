@@ -64,5 +64,7 @@ void main() {
     expect(materialPurchase.cooperationDepartment, '공무팀');
     expect(materialPurchase.documentLayout, ApprovalDocumentLayout.purchase);
     expect(materialPurchase.lineItemRows, 16);
+    expect(materialPurchase.approvalLines, hasLength(1));
+    expect(materialPurchase.approvalLines.single.userIds, ['김현정']);
   });
 }

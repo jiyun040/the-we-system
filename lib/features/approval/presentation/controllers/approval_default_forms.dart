@@ -78,6 +78,13 @@ const approvalDefaultFormTemplates = [
     agreement: '합의 후 구매 진행',
     documentLayout: ApprovalDocumentLayout.purchase,
     lineItemRows: 16,
+    approvalLines: [
+      ApprovalLinePreset(
+        id: 'material-purchase-public-works-line',
+        name: '김현정 대리 결재라인',
+        userIds: ['김현정'],
+      ),
+    ],
   ),
   ApprovalFormTemplate(
     id: 'hospitality-expense',
