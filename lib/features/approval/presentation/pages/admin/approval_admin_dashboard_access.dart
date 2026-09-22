@@ -13,6 +13,7 @@ Future<void> showLeaveRejectReasonDialog(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
       builder: (context, setDialogState) => AlertDialog(
+        backgroundColor: TheWeColor.surfaceAlt,
         title: const Text('휴가 반려'),
         content: SizedBox(
           width: 380,
