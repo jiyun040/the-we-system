@@ -140,8 +140,12 @@ final appRouter = GoRouter(
     GoRoute(
       name: AppRouteName.board,
       path: AppRoutePath.board,
-      pageBuilder: (context, state) => const NoTransitionPage(
-        child: ApprovalAuthGate(child: ApprovalBoardPage()),
+      pageBuilder: (context, state) => NoTransitionPage(
+        child: ApprovalAuthGate(
+          child: ApprovalBoardPage(
+            initialDepartment: state.uri.queryParameters['department'],
+          ),
+        ),
       ),
     ),
     GoRoute(

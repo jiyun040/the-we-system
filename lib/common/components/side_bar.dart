@@ -288,7 +288,7 @@ class SideBar extends ConsumerWidget {
                         ),
                         TheWeGaps.verticalXxl,
                       ],
-                      if (leaveEnabled)
+                      if (leaveEnabled) ...[
                         SideBarMenuItem(
                           icon: Icons.beach_access_outlined,
                           label: '휴가 현황/신청',
@@ -296,6 +296,15 @@ class SideBar extends ConsumerWidget {
                           isCompact: isCompact,
                           onTap: () => navigateNamed(AppRouteName.leave),
                         ),
+                        TheWeGaps.verticalSm,
+                        SideBarMenuItem(
+                          icon: Icons.folder_shared_outlined,
+                          label: '자료공유',
+                          selected: onBoardPage,
+                          isCompact: isCompact,
+                          onTap: () => navigateNamed(AppRouteName.board),
+                        ),
+                      ],
                       if (state?.isAdminMode == true && attendanceEnabled) ...[
                         TheWeGaps.verticalXxl,
                         SideBarCategorySection(

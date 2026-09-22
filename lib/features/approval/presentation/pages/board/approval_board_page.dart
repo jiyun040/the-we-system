@@ -15,7 +15,8 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet_attachments.dart';
 
 class ApprovalBoardPage extends ConsumerStatefulWidget {
-  const ApprovalBoardPage({super.key});
+  const ApprovalBoardPage({super.key, this.initialDepartment});
+  final String? initialDepartment;
 
   @override
   ConsumerState<ApprovalBoardPage> createState() => _ApprovalBoardPageState();
@@ -30,6 +31,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   @override
   void initState() {
     super.initState();
+    selectedDepartment = widget.initialDepartment ?? '';
     _load();
   }
 
@@ -278,7 +280,9 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: Text('게시판', style: TheWeTextStyle.title)),
+                      Expanded(
+                        child: Text('자료공유', style: TheWeTextStyle.title),
+                      ),
                       FilledButton.icon(
                         onPressed: () => _edit(),
                         icon: const Icon(Icons.edit),
