@@ -300,7 +300,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                 onClose: () => Navigator.pop(dialogContext),
               ),
               Text(
-                '${post['authorName'] ?? ''} · ${post['createdAt'] ?? ''}',
+                '${post['authorName'] ?? ''} · ${_formatCreatedAt(post['createdAt'])}',
                 style: TheWeTextStyle.caption,
               ),
               const SizedBox(height: 18),
@@ -432,7 +432,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '${post['authorName'] ?? ''} · ${(post['createdAt']?.toString() ?? '').replaceFirst('T', ' ').split('.').first}',
+                                '${post['authorName'] ?? ''} · ${_formatCreatedAt(post['createdAt'])}',
                                 style: TheWeTextStyle.caption,
                               ),
                               const SizedBox(height: 12),
@@ -492,4 +492,13 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
       ),
     );
   }
+}
+
+String _formatCreatedAt(Object? raw) {
+  final parsed = DateTime.tryParse(raw?.toString() ?? '');
+  if (parsed == null) return raw?.toString() ?? '';
+  final value = parsed.toLocal();
+  String two(int number) => number.toString().padLeft(2, '0');
+  return '${value.year}.${two(value.month)}.${two(value.day)} '
+      '${two(value.hour)}:${two(value.minute)}';
 }
