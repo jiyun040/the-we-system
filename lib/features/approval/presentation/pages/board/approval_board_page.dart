@@ -7,12 +7,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_attachment.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet_attachments.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 
 class ApprovalBoardPage extends ConsumerStatefulWidget {
   const ApprovalBoardPage({super.key, this.initialDepartment});
@@ -88,19 +91,13 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DropdownButtonFormField<String>(
-                    initialValue: department,
-                    decoration: const InputDecoration(labelText: '게시판'),
-                    items: ['', ...?state?.departments]
-                        .map(
-                          (value) => DropdownMenuItem(
-                            value: value,
-                            child: Text(value.isEmpty ? '자유게시판' : '$value 게시판'),
-                          ),
-                        )
-                        .toList(),
+                  TheWeDropdown<String>(
+                    value: department,
+                    items: ['', ...?state?.departments],
+                    labelText: '게시판',
+                    labelBuilder: (value) => value.isEmpty ? '전체게시판' : '$value 게시판',
                     onChanged: saving
-                        ? null
+                        ? (_) {}
                         : (value) => update(() => department = value ?? ''),
                   ),
                   const SizedBox(height: 12),
@@ -117,7 +114,22 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                     decoration: const InputDecoration(labelText: '내용'),
                   ),
                   const SizedBox(height: 12),
-                  OutlinedButton.icon(
+                  DropTarget(
+                    onDragDone: (details) async {
+                      for (final file in details.files) {
+                        if (files.length >= 5) break;
+                        final bytes = await file.readAsBytes();
+                        if (bytes.isNotEmpty && bytes.length <= 10 * 1024 * 1024) {
+                          files.add(ApprovalAttachment.fromBytes(
+                            name: file.name,
+                            mimeType: file.mimeType ?? 'application/octet-stream',
+                            bytes: bytes,
+                          ));
+                        }
+                      }
+                      update(() {});
+                    },
+                    child: OutlinedButton.icon(
                     onPressed: saving || files.length >= 5
                         ? null
                         : () async {
@@ -146,7 +158,9 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                           },
                     icon: const Icon(Icons.attach_file),
                     label: const Text('자료 첨부 (최대 5개)'),
+                    ),
                   ),
+                  Text('파일을 이 영역에 끌어 놓아도 됩니다.', style: TheWeTextStyle.caption),
                   for (final file in files)
                     InputChip(
                       label: Text(file.name),
@@ -224,6 +238,19 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   }
 
   Future<void> _delete(Map<String, dynamic> post) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => TheWeConfirmDialog(
+        title: '게시글을 삭제할까요?',
+        message: '삭제한 게시글은 복구할 수 없습니다.',
+        primaryLabel: '삭제',
+        secondaryLabel: '취소',
+        primaryColor: TheWeColor.danger,
+        onPrimaryPressed: () => Navigator.of(context).pop(true),
+        onSecondaryPressed: () => Navigator.of(context).pop(false),
+      ),
+    );
+    if (confirmed != true) return;
     try {
       await ref.read(dioProvider).delete('/board/posts/${post['id']}');
       await _load();
@@ -300,7 +327,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
                               label: Text(
-                                department.isEmpty ? '자유게시판' : department,
+                                department.isEmpty ? '전체게시판' : department,
                               ),
                               selected: selectedDepartment == department,
                               onSelected: (_) => setState(
@@ -372,10 +399,12 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                                 children: [
                                   TextButton(
                                     onPressed: () => _edit(post),
+                                    style: TextButton.styleFrom(foregroundColor: TheWeColor.blue300),
                                     child: const Text('수정'),
                                   ),
                                   TextButton(
                                     onPressed: () => _delete(post),
+                                    style: TextButton.styleFrom(foregroundColor: TheWeColor.danger),
                                     child: const Text('삭제'),
                                   ),
                                 ],

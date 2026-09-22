@@ -129,15 +129,6 @@ class SideBar extends ConsumerWidget {
                         isCompact: isCompact,
                         onTap: () => navigateNamed(AppRouteName.home),
                       ),
-                      TheWeGaps.verticalSm,
-                      SideBarMenuItem(
-                        icon: Icons.forum_outlined,
-                        label: '게시판',
-                        selected: onBoardPage,
-                        isCompact: isCompact,
-                        onTap: () => navigateNamed(AppRouteName.board),
-                      ),
-                      TheWeGaps.verticalSm,
                       if (approvalEnabled) ...[
                         SideBarCategorySection(
                           title: '전자결재',
