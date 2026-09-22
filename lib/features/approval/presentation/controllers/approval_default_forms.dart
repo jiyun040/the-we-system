@@ -60,6 +60,26 @@ const approvalDefaultFormTemplates = [
     lineItemRows: 16,
   ),
   ApprovalFormTemplate(
+    id: 'material-purchase-request',
+    category: '지원',
+    name: '자재구매신청서',
+    description: '자재 구매 요청',
+    defaultTitle: '업무용 PC 구매 예산 할당 요청',
+    defaultContent:
+        '업무용 PC 구매 예산 할당 요청 재가 바랍니다.\n\n'
+        '1. 구매 목적: 노후 PC 교체 및 교육 실습 장비 확보\n'
+        '2. 구매 품목: 데스크톱 PC 6대, 모니터 6대\n'
+        '3. 예산 요청: 9,600,000원',
+    receivers: ['재경팀'],
+    references: ['교육관리팀 부장', '구매 담당자'],
+    viewers: ['교육관리팀 구성원'],
+    publicReceivers: ['다우기술'],
+    cooperationDepartment: '공무팀',
+    agreement: '합의 후 구매 진행',
+    documentLayout: ApprovalDocumentLayout.purchase,
+    lineItemRows: 16,
+  ),
+  ApprovalFormTemplate(
     id: 'hospitality-expense',
     category: '회계',
     name: '지출결의서(기업업무추진비)',

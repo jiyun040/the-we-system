@@ -39,7 +39,7 @@ void main() {
       customForm,
     ]);
 
-    expect(merged, hasLength(8));
+    expect(merged, hasLength(9));
     expect(
       merged.where((form) => form.id == 'business-draft').single.name,
       '내가 수정한 업무기안',
@@ -50,11 +50,19 @@ void main() {
       containsAll([
         'expense-slip',
         'purchase-request',
+        'material-purchase-request',
         'hospitality-expense',
         'payroll-draft',
         'team-vacation',
         'cooperation-request',
       ]),
     );
+    final materialPurchase = merged
+        .where((form) => form.id == 'material-purchase-request')
+        .single;
+    expect(materialPurchase.name, '자재구매신청서');
+    expect(materialPurchase.cooperationDepartment, '공무팀');
+    expect(materialPurchase.documentLayout, ApprovalDocumentLayout.purchase);
+    expect(materialPurchase.lineItemRows, 16);
   });
 }
