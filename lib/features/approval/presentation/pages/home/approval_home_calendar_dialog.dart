@@ -18,10 +18,6 @@ class ApprovalCalendarEventDialog extends StatefulWidget {
 
 class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
   final titleController = TextEditingController();
-  final placeController = TextEditingController();
-  String colorKey = 'blue';
-  int hour = 9;
-  int minute = 0;
 
   @override
   void initState() {
@@ -32,21 +28,11 @@ class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
     }
 
     titleController.text = initialEvent.title;
-    placeController.text = initialEvent.place == '장소 미정'
-        ? ''
-        : initialEvent.place;
-    colorKey = initialEvent.colorKey;
-    final parts = initialEvent.time.split(':');
-    if (parts.length == 2) {
-      hour = int.tryParse(parts.first) ?? 9;
-      minute = int.tryParse(parts.last) ?? 0;
-    }
   }
 
   @override
   void dispose() {
     titleController.dispose();
-    placeController.dispose();
     super.dispose();
   }
 
@@ -79,36 +65,6 @@ class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
                     label: '일정 이름',
                     controller: titleController,
                   ),
-                  TheWeGaps.verticalLg,
-                  Text('시간', style: TheWeTextStyle.body),
-                  TheWeGaps.verticalSm,
-                  _CalendarTimeSelector(
-                    hour: hour,
-                    minute: minute,
-                    onChanged: (nextHour, nextMinute) {
-                      setState(() {
-                        hour = nextHour;
-                        minute = nextMinute;
-                      });
-                    },
-                  ),
-                  TheWeGaps.verticalLg,
-                  _CalendarTextField(label: '장소', controller: placeController),
-                  TheWeGaps.verticalLg,
-                  Text('색상', style: TheWeTextStyle.body),
-                  TheWeGaps.verticalSm,
-                  Wrap(
-                    spacing: 12,
-                    children: ['blue', 'orange', 'pink']
-                        .map(
-                          (item) => _CalendarColorChoice(
-                            color: _calendarColor(item),
-                            selected: colorKey == item,
-                            onTap: () => setState(() => colorKey = item),
-                          ),
-                        )
-                        .toList(),
-                  ),
                 ],
               ),
             ),
@@ -126,12 +82,9 @@ class _CalendarEventDialogState extends State<ApprovalCalendarEventDialog> {
                 Navigator.of(context).pop(
                   ApprovalCalendarEvent(
                     title: title,
-                    time:
-                        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
-                    place: placeController.text.trim().isEmpty
-                        ? '장소 미정'
-                        : placeController.text.trim(),
-                    colorKey: colorKey,
+                    time: '',
+                    place: '',
+                    colorKey: 'blue',
                   ),
                 );
               },

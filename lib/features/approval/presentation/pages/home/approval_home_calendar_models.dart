@@ -32,6 +32,7 @@ class ApprovalCalendarEvent {
   const ApprovalCalendarEvent({
     this.id = '',
     this.authorId = '',
+    this.authorName = '',
     this.kind = 'schedule',
     this.endDate,
     required this.title,
@@ -42,6 +43,7 @@ class ApprovalCalendarEvent {
 
   final String id;
   final String authorId;
+  final String authorName;
   final String kind;
   final DateTime? endDate;
 
@@ -49,6 +51,7 @@ class ApprovalCalendarEvent {
       ApprovalCalendarEvent(
         id: data['id']?.toString() ?? '',
         authorId: data['authorId']?.toString() ?? '',
+        authorName: data['authorName']?.toString() ?? '',
         kind: data['kind']?.toString() ?? 'schedule',
         endDate: DateTime.tryParse(data['endDate']?.toString() ?? ''),
         title: data['title']?.toString() ?? '',
