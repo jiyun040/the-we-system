@@ -54,6 +54,28 @@ void main() {
     expect(state.servicePeriodLabelFor(account), '0년 ${now.month - 1}개월차');
   });
 
+  test('근속 3개월 직원은 낮게 저장된 월차보다 발생 월차를 우선한다', () {
+    final now = DateTime.now();
+    final hireDate = DateTime(now.year, now.month - 3, now.day);
+    final account = EmployeeAccount(
+      id: 'three-month-employee',
+      password: '',
+      name: '3개월 직원',
+      department: '관리부',
+      position: '사원',
+      hireDate:
+          '${hireDate.year}-${hireDate.month.toString().padLeft(2, '0')}-${hireDate.day.toString().padLeft(2, '0')}',
+      monthlyLeaveDays: 2,
+    );
+    final state = signedOutApprovalState.copyWith(
+      accounts: [account],
+      monthlyLeavePerMonth: 1,
+    );
+
+    expect(state.totalCompletedServiceMonthsFor(account), 3);
+    expect(state.monthlyLeaveDaysFor(account), 3);
+  });
+
   test('근속기간은 년과 개월을 함께 표시한다', () {
     final now = DateTime.now();
     final hireDate = DateTime(now.year - 2, now.month - 3, now.day);

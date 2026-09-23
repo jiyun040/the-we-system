@@ -544,8 +544,14 @@ class ApprovalDashboardState {
     return annualLeaveByYear[selectedYear] ?? 19;
   }
 
-  double monthlyLeaveDaysFor(EmployeeAccount account) =>
-      account.monthlyLeaveDays ?? accruedMonthlyLeaveFor(account).toDouble();
+  double monthlyLeaveDaysFor(EmployeeAccount account) {
+    final accrued = accruedMonthlyLeaveFor(account).toDouble();
+    if (!isUnderOneYear(account)) {
+      return account.monthlyLeaveDays ?? accrued;
+    }
+    final configured = account.monthlyLeaveDays ?? 0;
+    return configured < accrued ? accrued : configured;
+  }
 
   double totalAnnualLeaveFor(EmployeeAccount? account) {
     if (account == null) return 0;
