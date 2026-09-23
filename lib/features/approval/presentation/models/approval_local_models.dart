@@ -2,7 +2,7 @@ import 'package:the_we_system/features/approval/domain/entities/document/approva
 
 import '../pages/admin/approval_admin_dependencies.dart';
 
-const designatedAdminAccountId = 'we81048';
+const designatedAdminAccountId = 'we81049';
 const designatedAdminName = '김효민';
 const designatedAdminDepartment = '경리부';
 const designatedAdminPosition = '대리';
@@ -60,12 +60,7 @@ class EmployeeAccount {
   bool get isSystemAdministrator => isAdmin && normalizedId == 'admin';
 
   bool get isDesignatedAdministrator =>
-      normalizedId == designatedAdminAccountId ||
-      (isAdmin &&
-          name.trim() == designatedAdminName &&
-          department.replaceAll(RegExp(r'\s+'), '') ==
-              designatedAdminDepartment &&
-          position.replaceAll(RegExp(r'\s+'), '') == designatedAdminPosition);
+      normalizedId == designatedAdminAccountId;
 
   bool get canAccessAdminMode =>
       isSystemAdministrator || isDesignatedAdministrator;
