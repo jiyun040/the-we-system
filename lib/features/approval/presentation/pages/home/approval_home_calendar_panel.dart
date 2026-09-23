@@ -3,6 +3,7 @@ import 'approval_home_calendar_day.dart';
 import 'approval_home_calendar_dialog.dart';
 import 'approval_home_calendar_models.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
+import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_direct_leave.dart';
 
 class ApprovalHomeCalendarPanel extends ConsumerStatefulWidget {
   const ApprovalHomeCalendarPanel({super.key});
@@ -144,25 +145,25 @@ class _ApprovalHomeCalendarPanelState
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                if (event.kind == 'schedule' && _canEdit(event))
+                if (_canManage(event))
                   OutlinedButton(
                     onPressed: () => Navigator.of(
                       context,
                     ).pop(ApprovalCalendarEventAction.delete),
                     child: Text(
-                      '삭제',
+                      event.kind == 'leave' ? '휴가 삭제' : '삭제',
                       style: TheWeTextStyle.body.copyWith(
                         color: TheWeColor.pink,
                       ),
                     ),
                   ),
                 const SizedBox(width: 10),
-                if (event.kind == 'schedule' && _canEdit(event))
+                if (_canManage(event))
                   OutlinedButton(
                     onPressed: () => Navigator.of(
                       context,
                     ).pop(ApprovalCalendarEventAction.edit),
-                    child: const Text('수정'),
+                    child: Text(event.kind == 'leave' ? '휴가 수정' : '수정'),
                   ),
                 const SizedBox(width: 10),
                 FilledButton(
@@ -183,9 +184,19 @@ class _ApprovalHomeCalendarPanelState
 
     if (action == ApprovalCalendarEventAction.delete) {
       try {
-        await ref
-            .read(dioProvider)
-            .delete<void>('/calendar/events/${event.id}');
+        if (event.kind == 'leave') {
+          final message = await ref
+              .read(approvalDashboardControllerProvider.notifier)
+              .deleteLeaveForEmployee(_leaveRequestId(event));
+          if (message != null) {
+            if (mounted) setState(() => _loadError = message);
+            return;
+          }
+        } else {
+          await ref
+              .read(dioProvider)
+              .delete<void>('/calendar/events/${event.id}');
+        }
         await _loadEvents();
       } catch (_) {
         if (mounted) setState(() => _loadError = '일정을 삭제하지 못했습니다.');
@@ -194,6 +205,24 @@ class _ApprovalHomeCalendarPanelState
     }
 
     if (action != ApprovalCalendarEventAction.edit) return;
+
+    if (event.kind == 'leave') {
+      final state = ref.read(approvalDashboardControllerProvider).asData?.value;
+      final requestId = _leaveRequestId(event);
+      final request = state?.leaveRequests
+          .where((item) => item.id == requestId)
+          .firstOrNull;
+      final account = state?.accounts
+          .where((item) => item.id == event.authorId)
+          .firstOrNull;
+      if (request == null || account == null) {
+        setState(() => _loadError = '수정할 휴가 내역을 찾을 수 없습니다.');
+        return;
+      }
+      await showAdminEditLeaveDialog(context, ref, account, request);
+      if (mounted) await _loadEvents();
+      return;
+    }
 
     final edited = await showDialog<ApprovalCalendarEvent>(
       context: context,
@@ -231,6 +260,21 @@ class _ApprovalHomeCalendarPanelState
         user?.isAdmin == true ||
         user?.normalizedId == 'admin';
   }
+
+  bool _canManage(ApprovalCalendarEvent event) {
+    if (event.kind == 'leave') {
+      final user = ref
+          .read(approvalDashboardControllerProvider)
+          .asData
+          ?.value
+          .currentUser;
+      return user?.isAdmin == true || user?.normalizedId == 'admin';
+    }
+    return _canEdit(event);
+  }
+
+  String _leaveRequestId(ApprovalCalendarEvent event) =>
+      event.id.replaceFirst('leave-', '');
 
   ApprovalCalendarDayCard _dayCard(
     DateTime day,

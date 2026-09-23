@@ -843,7 +843,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     List<String> userIds,
   ) {
     final current = currentDashboardState;
-    if (current == null || !current.isAdminMode) {
+    if (current == null || !current.isAdmin) {
       return '관리자 모드에서만 휴가 결재라인을 수정할 수 있습니다.';
     }
     if (!current.departments.contains(department)) {
@@ -915,8 +915,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String reason,
   }) async {
     final current = currentDashboardState;
-    if (current == null || !current.isAdminMode) {
-      return '관리자 모드에서만 휴가 내역을 수정할 수 있습니다.';
+    if (current == null || !current.isAdmin) {
+      return '관리자 계정만 휴가 내역을 수정할 수 있습니다.';
     }
     final request = current.leaveRequests
         .where((item) => item.id == requestId)
@@ -954,7 +954,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         days: days,
         reason: reason.trim(),
       );
-      await reloadRemoteState(adminMode: true);
+      await reloadRemoteState(adminMode: current.adminMode);
       return null;
     } on ApiException catch (error) {
       return error.message;
@@ -965,15 +965,15 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
 
   Future<String?> deleteLeaveForEmployee(String requestId) async {
     final current = currentDashboardState;
-    if (current == null || !current.isAdminMode) {
-      return '관리자 모드에서만 휴가 내역을 삭제할 수 있습니다.';
+    if (current == null || !current.isAdmin) {
+      return '관리자 계정만 휴가 내역을 삭제할 수 있습니다.';
     }
     if (!current.leaveRequests.any((request) => request.id == requestId)) {
       return '삭제할 휴가 내역을 찾을 수 없습니다.';
     }
     try {
       await api.deleteLeave(requestId);
-      await reloadRemoteState(adminMode: true);
+      await reloadRemoteState(adminMode: current.adminMode);
       return null;
     } on ApiException catch (error) {
       return error.message;
