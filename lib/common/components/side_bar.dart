@@ -135,7 +135,10 @@ class SideBar extends ConsumerWidget {
                           icon: Icons.approval_outlined,
                           isCompact: isCompact,
                           initiallyExpanded:
-                              !onAttendancePage && !onLeavePage && !onHomePage,
+                              !onAttendancePage &&
+                              !onLeavePage &&
+                              !onHomePage &&
+                              !onBoardPage,
                           children: [
                             SideBarMenuSection(
                               title: '자주 쓰는 양식',

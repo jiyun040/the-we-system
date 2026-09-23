@@ -270,8 +270,21 @@ class LeaveDateSelection {
 
   bool get isHalfDay => type == '반차';
 
-  double get days =>
-      isHalfDay ? .5 : endDate.difference(startDate).inDays + 1.0;
+  double get days {
+    if (isHalfDay) return .5;
+    var workdays = 0;
+    for (
+      var date = startDate;
+      !date.isAfter(endDate);
+      date = date.add(const Duration(days: 1))
+    ) {
+      if (date.weekday != DateTime.saturday &&
+          date.weekday != DateTime.sunday) {
+        workdays++;
+      }
+    }
+    return workdays.toDouble();
+  }
 
   void selectType(String value) {
     type = value;

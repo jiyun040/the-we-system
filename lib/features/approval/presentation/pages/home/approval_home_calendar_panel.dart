@@ -134,7 +134,10 @@ class _ApprovalHomeCalendarPanelState
                   label: '날짜',
                   value: formatApprovalKoreanDate(day),
                 ),
-                ApprovalCalendarDetailLine(label: '작성자', value: event.authorName),
+                ApprovalCalendarDetailLine(
+                  label: '작성자',
+                  value: event.authorName,
+                ),
               ],
             ),
             const SizedBox(height: 22),
@@ -226,7 +229,7 @@ class _ApprovalHomeCalendarPanelState
         .currentUser;
     return event.authorId == user?.id ||
         user?.isAdmin == true ||
-        user?.isSystemAdministrator == true;
+        user?.normalizedId == 'admin';
   }
 
   ApprovalCalendarDayCard _dayCard(
