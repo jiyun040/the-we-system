@@ -2,6 +2,8 @@ import 'approval_admin_dependencies.dart';
 import 'approval_admin_direct_leave.dart';
 import 'approval_admin_leave_overview.dart';
 
+enum _EmployeeLeaveDirectoryMode { all, department }
+
 Future<void> showAdminEmployeeLeaveDirectory(
   BuildContext context,
   ApprovalDashboardState state,
@@ -403,6 +405,8 @@ class _EmployeeLeaveDirectoryDialog extends StatefulWidget {
 class _EmployeeLeaveDirectoryDialogState
     extends State<_EmployeeLeaveDirectoryDialog> {
   final _verticalScrollController = ScrollController();
+  _EmployeeLeaveDirectoryMode _mode = _EmployeeLeaveDirectoryMode.all;
+  String? _department;
 
   @override
   void dispose() {
@@ -413,7 +417,28 @@ class _EmployeeLeaveDirectoryDialogState
   @override
   Widget build(BuildContext context) {
     final mobile = MediaQuery.sizeOf(context).width < 700;
-    final orderedAccounts = widget.state.organizationOrderedAccounts;
+    final departments = widget.state.departments.toList();
+    final selectedDepartment = departments.contains(_department)
+        ? _department
+        : departments.firstOrNull;
+    final orderedAccounts =
+        widget.state.accounts
+            .where(
+              (account) =>
+                  !account.isSystemAdministrator &&
+                  (_mode == _EmployeeLeaveDirectoryMode.all ||
+                      account.department.trim() == selectedDepartment),
+            )
+            .toList()
+          ..sort((left, right) {
+            final leftDate = DateTime.tryParse(left.hireDate);
+            final rightDate = DateTime.tryParse(right.hireDate);
+            if (leftDate == null && rightDate == null) return 0;
+            if (leftDate == null) return 1;
+            if (rightDate == null) return -1;
+            final date = leftDate.compareTo(rightDate);
+            return date == 0 ? left.name.compareTo(right.name) : date;
+          });
     return Dialog(
       backgroundColor: TheWeColor.surfaceAlt,
       insetPadding: EdgeInsets.all(mobile ? 12 : 32),
@@ -434,6 +459,42 @@ class _EmployeeLeaveDirectoryDialogState
                     tooltip: '닫기',
                   ),
                 ],
+              ),
+              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    ChoiceChip(
+                      key: const ValueKey('employee-leave-filter-all'),
+                      label: const Text('전체'),
+                      selected: _mode == _EmployeeLeaveDirectoryMode.all,
+                      onSelected: (_) => setState(
+                        () => _mode = _EmployeeLeaveDirectoryMode.all,
+                      ),
+                    ),
+                    ChoiceChip(
+                      key: const ValueKey('employee-leave-filter-department'),
+                      label: const Text('부서별'),
+                      selected: _mode == _EmployeeLeaveDirectoryMode.department,
+                      onSelected: (_) => setState(
+                        () => _mode = _EmployeeLeaveDirectoryMode.department,
+                      ),
+                    ),
+                    if (_mode == _EmployeeLeaveDirectoryMode.department)
+                      TheWeDropdown<String>(
+                        key: const ValueKey('employee-leave-department-filter'),
+                        width: mobile ? 180 : 220,
+                        value: selectedDepartment,
+                        items: departments,
+                        labelBuilder: (value) => value,
+                        onChanged: (value) =>
+                            setState(() => _department = value),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
               Expanded(
