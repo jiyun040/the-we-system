@@ -5,6 +5,8 @@ import 'approval_absence_date_range.dart';
 import 'approval_absence_month_widgets.dart';
 import 'approval_absence_seed.dart';
 
+enum _AttendanceDirectoryMode { all, department }
+
 class ApprovalCompanyAttendanceSection extends StatefulWidget {
   const ApprovalCompanyAttendanceSection({super.key, required this.rows});
 
@@ -21,13 +23,24 @@ class _CompanyAttendanceSectionState
   DateTime _periodStart = DateTime(2026, 6, 1);
   DateTime _periodEnd = DateTime(2026, 6, 30);
   bool _periodMode = false;
-  String _employmentStatus = '전체';
-  String _searchQuery = '';
-  final TextEditingController _searchController = TextEditingController();
+  _AttendanceDirectoryMode _directoryMode = _AttendanceDirectoryMode.all;
+  String? _department;
+
+  Widget _directoryChip({
+    required Key key,
+    required String label,
+    required _AttendanceDirectoryMode mode,
+  }) {
+    return ChoiceChip(
+      key: key,
+      label: Text(label),
+      selected: _directoryMode == mode,
+      onSelected: (_) => setState(() => _directoryMode = mode),
+    );
+  }
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -108,31 +121,35 @@ class _CompanyAttendanceSectionState
 
   @override
   Widget build(BuildContext context) {
-    final normalizedQuery = _searchQuery.trim().toLowerCase();
-    final visibleRows = widget.rows.where((row) {
-      // EmployeeAccount currently represents active employees; keep the
-      // status filter extensible while allowing the all-employees view.
-      if (_employmentStatus != '전체' && _employmentStatus != '재직') {
-        return false;
-      }
-      if (normalizedQuery.isEmpty) {
-        return true;
-      }
-      return row.account.id.toLowerCase().contains(normalizedQuery) ||
-          row.account.name.toLowerCase().contains(normalizedQuery) ||
-          row.account.department.toLowerCase().contains(normalizedQuery);
-    }).toList()
-      ..sort((a, b) {
-        final aDate = DateTime.tryParse(a.account.hireDate);
-        final bDate = DateTime.tryParse(b.account.hireDate);
-        if (aDate == null && bDate == null) return 0;
-        if (aDate == null) return 1;
-        if (bDate == null) return -1;
-        final dateComparison = aDate.compareTo(bDate);
-        return dateComparison == 0
-            ? a.account.name.compareTo(b.account.name)
-            : dateComparison;
-      });
+    final departments =
+        widget.rows
+            .map((row) => row.account.department.trim())
+            .where((department) => department.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort();
+    final selectedDepartment = departments.contains(_department)
+        ? _department
+        : departments.firstOrNull;
+    final visibleRows =
+        widget.rows
+            .where(
+              (row) =>
+                  _directoryMode == _AttendanceDirectoryMode.all ||
+                  row.account.department.trim() == selectedDepartment,
+            )
+            .toList()
+          ..sort((a, b) {
+            final aDate = DateTime.tryParse(a.account.hireDate);
+            final bDate = DateTime.tryParse(b.account.hireDate);
+            if (aDate == null && bDate == null) return 0;
+            if (aDate == null) return 1;
+            if (bDate == null) return -1;
+            final dateComparison = aDate.compareTo(bDate);
+            return dateComparison == 0
+                ? a.account.name.compareTo(b.account.name)
+                : dateComparison;
+          });
     final normalCount = widget.rows
         .where((row) => row.stateLabel == '정상')
         .length;
@@ -283,24 +300,33 @@ class _CompanyAttendanceSectionState
                   final stacked = constraints.maxWidth < 520;
                   final filter = SizedBox(
                     width: stacked ? double.infinity : 140,
-                    child: TheWeDropdown<String>(
-                      key: const ValueKey('attendance-employment-filter'),
-                      value: _employmentStatus,
-                      items: const ['전체', '재직', '휴직', '퇴사'],
-                      labelBuilder: (value) => value,
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => _employmentStatus = value);
-                        }
-                      },
-                    ),
-                  );
-                  final search = CustomTextFormField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    decoration: const InputDecoration(
-                      hintText: '부서, 사번, 이름을 검색하세요.',
-                      prefixIcon: Icon(Icons.search),
+                    child: Wrap(
+                      key: const ValueKey('attendance-directory-filter'),
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        _directoryChip(
+                          key: const ValueKey('attendance-filter-all'),
+                          label: '전체',
+                          mode: _AttendanceDirectoryMode.all,
+                        ),
+                        _directoryChip(
+                          key: const ValueKey('attendance-filter-department'),
+                          label: '부서별',
+                          mode: _AttendanceDirectoryMode.department,
+                        ),
+                        if (_directoryMode ==
+                            _AttendanceDirectoryMode.department)
+                          TheWeDropdown<String>(
+                            key: const ValueKey('attendance-department-filter'),
+                            width: 180,
+                            value: selectedDepartment,
+                            items: departments,
+                            labelBuilder: (value) => value,
+                            onChanged: (value) =>
+                                setState(() => _department = value),
+                          ),
+                      ],
                     ),
                   );
 
@@ -309,8 +335,6 @@ class _CompanyAttendanceSectionState
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         filter,
-                        const SizedBox(height: 10),
-                        search,
                         const SizedBox(height: 10),
                         OutlinedButton.icon(
                           onPressed: () {},
@@ -323,9 +347,7 @@ class _CompanyAttendanceSectionState
 
                   return Row(
                     children: [
-                      filter,
-                      const SizedBox(width: 12),
-                      Expanded(child: search),
+                      Expanded(child: filter),
                       const SizedBox(width: 12),
                       OutlinedButton.icon(
                         onPressed: () {},
