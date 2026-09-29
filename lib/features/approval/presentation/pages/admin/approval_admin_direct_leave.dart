@@ -55,6 +55,7 @@ Future<void> _showAdminLeaveEditorDialog(
   final selection = LeaveDateSelection(
     type: existingRequest?.type ?? types.first,
     startDate: initialStart,
+    department: account.department,
   );
   if (existingRequest != null && !selection.isHalfDay) {
     selection.selectEndDate(
