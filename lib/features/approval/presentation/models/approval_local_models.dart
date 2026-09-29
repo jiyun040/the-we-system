@@ -254,11 +254,16 @@ class LeaveApprovalStep {
 }
 
 class LeaveDateSelection {
-  LeaveDateSelection({required this.type, required DateTime startDate})
+  LeaveDateSelection({
+    required this.type,
+    required DateTime startDate,
+    this.department = '',
+  })
     : startDate = DateUtils.dateOnly(startDate),
       endDate = DateUtils.dateOnly(startDate);
 
   String type;
+  final String department;
   DateTime startDate;
   DateTime endDate;
   bool _endDateWasEdited = false;
@@ -273,8 +278,10 @@ class LeaveDateSelection {
       !date.isAfter(endDate);
       date = date.add(const Duration(days: 1))
     ) {
-      if (date.weekday != DateTime.saturday &&
-          date.weekday != DateTime.sunday) {
+      final isSunday = date.weekday == DateTime.sunday;
+      final isSaturday = date.weekday == DateTime.saturday;
+      final includesSaturday = department.trim() == '현장팀';
+      if (!isSunday && (!isSaturday || includesSaturday)) {
         workdays++;
       }
     }

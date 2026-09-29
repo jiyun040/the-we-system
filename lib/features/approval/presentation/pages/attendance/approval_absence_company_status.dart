@@ -21,7 +21,7 @@ class _CompanyAttendanceSectionState
   DateTime _periodStart = DateTime(2026, 6, 1);
   DateTime _periodEnd = DateTime(2026, 6, 30);
   bool _periodMode = false;
-  String _employmentStatus = '재직';
+  String _employmentStatus = '전체';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
@@ -110,7 +110,9 @@ class _CompanyAttendanceSectionState
   Widget build(BuildContext context) {
     final normalizedQuery = _searchQuery.trim().toLowerCase();
     final visibleRows = widget.rows.where((row) {
-      if (_employmentStatus != '재직') {
+      // EmployeeAccount currently represents active employees; keep the
+      // status filter extensible while allowing the all-employees view.
+      if (_employmentStatus != '전체' && _employmentStatus != '재직') {
         return false;
       }
       if (normalizedQuery.isEmpty) {
@@ -119,7 +121,18 @@ class _CompanyAttendanceSectionState
       return row.account.id.toLowerCase().contains(normalizedQuery) ||
           row.account.name.toLowerCase().contains(normalizedQuery) ||
           row.account.department.toLowerCase().contains(normalizedQuery);
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        final aDate = DateTime.tryParse(a.account.hireDate);
+        final bDate = DateTime.tryParse(b.account.hireDate);
+        if (aDate == null && bDate == null) return 0;
+        if (aDate == null) return 1;
+        if (bDate == null) return -1;
+        final dateComparison = aDate.compareTo(bDate);
+        return dateComparison == 0
+            ? a.account.name.compareTo(b.account.name)
+            : dateComparison;
+      });
     final normalCount = widget.rows
         .where((row) => row.stateLabel == '정상')
         .length;
@@ -271,8 +284,9 @@ class _CompanyAttendanceSectionState
                   final filter = SizedBox(
                     width: stacked ? double.infinity : 140,
                     child: TheWeDropdown<String>(
+                      key: const ValueKey('attendance-employment-filter'),
                       value: _employmentStatus,
-                      items: const ['재직', '휴직', '퇴사'],
+                      items: const ['전체', '재직', '휴직', '퇴사'],
                       labelBuilder: (value) => value,
                       onChanged: (value) {
                         if (value != null) {

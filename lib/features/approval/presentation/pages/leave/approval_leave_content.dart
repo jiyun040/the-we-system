@@ -197,6 +197,7 @@ class ApprovalLeaveContent extends ConsumerWidget {
     final selection = LeaveDateSelection(
       type: leaveTypes.first,
       startDate: DateTime.now().add(const Duration(days: 1)),
+      department: state.currentUser?.department ?? '',
     );
     var reasonError = '';
     var requestError = '';

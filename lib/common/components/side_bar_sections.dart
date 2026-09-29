@@ -217,6 +217,8 @@ Future<String?> _showAdminOtpDialog(BuildContext context) {
               controller: controller,
               autofocus: true,
               maxLength: 6,
+              obscureText: true,
+              obscuringCharacter: '•',
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'OTP 인증번호'),
             ),

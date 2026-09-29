@@ -32,4 +32,14 @@ void main() {
     expect(selection.endDate, DateTime(2026, 9, 3));
     expect(selection.days, .5);
   });
+
+  test('현장팀은 토요일을 포함하고 일요일은 포함하지 않는다', () {
+    final selection = LeaveDateSelection(
+      type: '연차',
+      department: '현장팀',
+      startDate: DateTime(2026, 9, 4),
+    )..selectEndDate(DateTime(2026, 9, 6));
+
+    expect(selection.days, 2);
+  });
 }
