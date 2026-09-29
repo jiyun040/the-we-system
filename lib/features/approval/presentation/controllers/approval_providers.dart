@@ -228,6 +228,8 @@ class ApprovalDashboardController
         current.copyWith(
           documents: documents,
           restrictedDocumentIds: remote.restrictedDocumentIds,
+          leaveRequests: remote.leaveRequests,
+          acknowledgedLeaveRequestIds: remote.acknowledgedLeaveRequestIds,
         ),
       );
     } catch (_) {

@@ -25,10 +25,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
           !await api.verifyAdminOtp(otp)) {
         return false;
       }
-      setApprovalDashboardState(
-        this,
-        (value) => value.copyWith(adminMode: true),
-      );
+      await reloadRemoteState(adminMode: true);
       return true;
     } catch (error) {
       reportOperationError(error, fallback: '관리자 인증을 완료하지 못했습니다.');
