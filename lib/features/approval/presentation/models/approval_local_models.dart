@@ -270,6 +270,9 @@ class LeaveDateSelection {
 
   bool get isHalfDay => type == '반차';
 
+  bool get isFieldTeam =>
+      department.replaceAll(RegExp(r'\s+'), '').contains('현장');
+
   double get days {
     if (isHalfDay) return .5;
     var workdays = 0;
@@ -280,7 +283,7 @@ class LeaveDateSelection {
     ) {
       final isSunday = date.weekday == DateTime.sunday;
       final isSaturday = date.weekday == DateTime.saturday;
-      final includesSaturday = department.trim() == '현장팀';
+      final includesSaturday = isFieldTeam;
       if (!isSunday && (!isSaturday || includesSaturday)) {
         workdays++;
       }
