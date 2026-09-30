@@ -503,6 +503,11 @@ Map<String, dynamic> _map(dynamic value) =>
 
 List<dynamic> _list(dynamic value) => value is List ? value : const [];
 
+bool _flag(dynamic value) {
+  if (value == true || value == 1) return true;
+  return value?.toString().toLowerCase() == 'true';
+}
+
 List<String> _strings(dynamic value) =>
     _list(value).map((item) => item.toString()).toList();
 
@@ -533,7 +538,8 @@ EmployeeAccount _account(Map<String, dynamic> data) => EmployeeAccount(
   department: data['department']?.toString() ?? '',
   position: data['position']?.toString() ?? '',
   hireDate: data['hireDate']?.toString() ?? '',
-  isAdmin: data['isAdmin'] == true || data['is_staff'] == true,
+  isAdmin:
+      _flag(data['isAdmin']) || _flag(data['is_staff']) || _flag(data['isStaff']),
   canChangeAdminOtp: data['canChangeAdminOtp'] == true,
   annualLeaveDays: (data['annualLeaveDays'] as num?)?.toDouble(),
   monthlyLeaveDays: (data['monthlyLeaveDays'] as num?)?.toDouble(),
