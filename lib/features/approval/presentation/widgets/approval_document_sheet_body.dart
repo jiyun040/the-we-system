@@ -66,6 +66,7 @@ class ApprovalPdfDocumentBody extends StatelessWidget {
                               (column) => Expanded(
                                 flex: column.$3,
                                 child: _ReadOnlyTableCell(
+                                  textAlign: approvalLineItemTextAlign(column.$1),
                                   text: _displayLineItemValue(
                                     column.$1,
                                     item[column.$1] ?? '',
@@ -231,10 +232,15 @@ class _ReadOnlyWideRow extends StatelessWidget {
 }
 
 class _ReadOnlyTableCell extends StatelessWidget {
-  const _ReadOnlyTableCell({required this.text, this.header = false});
+  const _ReadOnlyTableCell({
+    required this.text,
+    this.header = false,
+    this.textAlign = TextAlign.center,
+  });
 
   final String text;
   final bool header;
+  final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -249,7 +255,7 @@ class _ReadOnlyTableCell extends StatelessWidget {
     ),
     child: Text(
       text,
-      textAlign: TextAlign.center,
+      textAlign: textAlign,
       style: TheWeTextStyle.body.copyWith(
         fontSize: 14,
         fontWeight: header ? FontWeight.w700 : FontWeight.w400,

@@ -413,6 +413,7 @@ class _PdfLayoutEditor extends StatelessWidget {
                               isAmount:
                                   column.$1 == 'amount' || column.$1 == 'total',
                               isQuantity: column.$1 == 'quantity',
+                              textAlign: approvalLineItemTextAlign(column.$1),
                               onChanged: (value) =>
                                   onLineItemChanged(index, column.$1, value),
                             ),

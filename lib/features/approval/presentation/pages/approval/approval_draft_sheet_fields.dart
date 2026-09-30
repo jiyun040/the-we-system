@@ -98,6 +98,7 @@ class ApprovalMobileLineItemEditor extends StatelessWidget {
                 ? formatApprovalAmount(item[column.$1] ?? '')
                 : item[column.$1] ?? '',
             onChanged: (value) => onChanged(column.$1, value),
+            textAlign: approvalLineItemTextAlign(column.$1),
             keyboardType:
                 column.$1 == 'amount' ||
                     column.$1 == 'total' ||
@@ -263,6 +264,7 @@ class ApprovalPdfInputCell extends StatelessWidget {
     this.isDate = false,
     this.isAmount = false,
     this.isQuantity = false,
+    this.textAlign = TextAlign.center,
   });
 
   final String value;
@@ -271,6 +273,7 @@ class ApprovalPdfInputCell extends StatelessWidget {
   final bool isDate;
   final bool isAmount;
   final bool isQuantity;
+  final TextAlign textAlign;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -282,7 +285,7 @@ class ApprovalPdfInputCell extends StatelessWidget {
     child: _ApprovalSynchronizedTextFormField(
       value: value,
       onChanged: onChanged,
-      textAlign: TextAlign.center,
+      textAlign: textAlign,
       keyboardType: isAmount || isQuantity
           ? TextInputType.number
           : isDate

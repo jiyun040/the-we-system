@@ -169,6 +169,14 @@ List<pw.Widget> _buildDocument(ApprovalDocument document) {
       cellStyle: const pw.TextStyle(color: PdfColors.black, fontSize: 9),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey200),
       cellAlignment: pw.Alignment.center,
+      cellAlignments: {
+        for (var index = 0; index < columns.length; index++)
+          index: _pdfLineItemAlignment(columns[index].$1),
+      },
+      headerAlignments: {
+        for (var index = 0; index < columns.length; index++)
+          index: pw.Alignment.center,
+      },
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 8),
       border: pw.TableBorder.all(color: PdfColors.black, width: .8),
       columnWidths: {
@@ -467,6 +475,12 @@ List<(String, String, int)> _columnsFor(String layout) => switch (layout) {
 String _displayCell(String key, String value) {
   if (key == 'amount' || key == 'total') return formatApprovalAmount(value);
   return value;
+}
+
+pw.Alignment _pdfLineItemAlignment(String key) {
+  if (key == 'amount' || key == 'total') return pw.Alignment.centerRight;
+  if (key == 'item' || key == 'purpose') return pw.Alignment.centerLeft;
+  return pw.Alignment.center;
 }
 
 String _totalAmount(ApprovalDocument document) {

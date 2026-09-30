@@ -104,3 +104,10 @@ String calculateApprovalLineItemsTotal(List<Map<String, String>> items) {
   });
   return sum == BigInt.zero ? '' : sum.toString();
 }
+
+/// 결재 문서의 금액성/서술형 항목에 공통으로 사용하는 입력 정렬입니다.
+TextAlign approvalLineItemTextAlign(String key) {
+  if (key == 'amount' || key == 'total') return TextAlign.end;
+  if (key == 'item' || key == 'purpose') return TextAlign.start;
+  return TextAlign.center;
+}
