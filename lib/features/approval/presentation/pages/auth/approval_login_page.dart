@@ -183,7 +183,10 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                       autofillHints: const [
                         AutofillHints.password,
                       ],
-                      keyboardType: TextInputType.visiblePassword,
+                      // visiblePassword maps to an ASCII-capable keyboard on iOS,
+                      // which prevents switching to the Korean keyboard. Keep
+                      // the field textual and rely on obscureText for masking.
+                      keyboardType: TextInputType.text,
                       style: TheWeTextStyle.body.copyWith(
                         fontSize: 16,
                       ),
