@@ -61,6 +61,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
     final monthlyLeave = TextEditingController(text: '0');
     final remainingLeave = TextEditingController(text: '0');
     var error = '';
+    var showPassword = false;
 
     await showDialog<void>(
       context: context,
@@ -87,8 +88,20 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   const SizedBox(height: 10),
                   TextField(
                     controller: password,
-                    obscureText: true,
-                    decoration: const InputDecoration(labelText: '초기 비밀번호'),
+                    obscureText: !showPassword,
+                    decoration: InputDecoration(
+                      labelText: '초기 비밀번호',
+                      suffixIcon: IconButton(
+                        tooltip: showPassword ? '비밀번호 숨기기' : '비밀번호 표시',
+                        onPressed: () =>
+                            setDialogState(() => showPassword = !showPassword),
+                        icon: Icon(
+                          showPassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -211,6 +224,7 @@ class AdminEmployeeManagement extends ConsumerWidget {
     );
     final password = TextEditingController();
     var error = '';
+    var showPassword = false;
     await showDialog<void>(
       context: context,
       builder: (context) => StatefulBuilder(
@@ -289,10 +303,20 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   const SizedBox(height: 10),
                   TextField(
                     controller: password,
-                    obscureText: true,
-                    decoration: const InputDecoration(
+                    obscureText: !showPassword,
+                    decoration: InputDecoration(
                       labelText: '새 비밀번호',
                       hintText: '변경하지 않으면 비워두세요.',
+                      suffixIcon: IconButton(
+                        tooltip: showPassword ? '비밀번호 숨기기' : '비밀번호 표시',
+                        onPressed: () =>
+                            setDialogState(() => showPassword = !showPassword),
+                        icon: Icon(
+                          showPassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                      ),
                     ),
                   ),
                   if (error.isNotEmpty) ...[
