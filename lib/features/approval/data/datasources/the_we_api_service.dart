@@ -190,8 +190,34 @@ class TheWeApiService {
         logoBytes = null;
       }
     }
+    var leaveRequests = _list(data['leaveRequests'])
+        .map((item) => _leaveRequest(_map(item)))
+        .toList();
+    final currentUser = _account(_map(data['currentUser']));
+    if (currentUser.isAdmin) {
+      try {
+        final leaveResponse = await _dio.get<dynamic>('/leave/requests');
+        final leaveData = leaveResponse.data;
+        final leaveItems = leaveData is List
+            ? leaveData
+            : _list(
+                leaveData is Map<String, dynamic>
+                    ? (leaveData['requests'] ??
+                        leaveData['items'] ??
+                        leaveData['data'])
+                    : null,
+              );
+        if (leaveItems.isNotEmpty) {
+          leaveRequests = leaveItems
+              .map((item) => _leaveRequest(_map(item)))
+              .toList();
+        }
+      } on DioException {
+        // Bootstrap data remains the fallback for deployments without this endpoint.
+      }
+    }
     return RemoteBootstrapData(
-      currentUser: _account(_map(data['currentUser'])),
+      currentUser: currentUser,
       accounts: _list(
         data['accounts'],
       ).map((item) => _account(_map(item))).toList(),
@@ -209,9 +235,7 @@ class TheWeApiService {
         data['documents'],
       ).map((item) => ApprovalDocument.fromJson(_map(item))).toList(),
       restrictedDocumentIds: _strings(data['restrictedDocumentIds']).toSet(),
-      leaveRequests: _list(
-        data['leaveRequests'],
-      ).map((item) => _leaveRequest(_map(item))).toList(),
+      leaveRequests: leaveRequests,
       notices: _list(
         data['notices'],
       ).map((item) => _notice(_map(item))).toList(),
@@ -509,7 +533,7 @@ EmployeeAccount _account(Map<String, dynamic> data) => EmployeeAccount(
   department: data['department']?.toString() ?? '',
   position: data['position']?.toString() ?? '',
   hireDate: data['hireDate']?.toString() ?? '',
-  isAdmin: data['isAdmin'] == true,
+  isAdmin: data['isAdmin'] == true || data['is_staff'] == true,
   canChangeAdminOtp: data['canChangeAdminOtp'] == true,
   annualLeaveDays: (data['annualLeaveDays'] as num?)?.toDouble(),
   monthlyLeaveDays: (data['monthlyLeaveDays'] as num?)?.toDouble(),
