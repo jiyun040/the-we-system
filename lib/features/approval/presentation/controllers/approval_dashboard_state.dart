@@ -459,7 +459,7 @@ class ApprovalDashboardState {
   }
 
   List<LeaveRequest> get pendingLeaveRequests =>
-      leaveRequests.where((request) => request.status == '승인대기').toList();
+      leaveRequests.where((request) => _isPendingLeaveStatus(request.status)).toList();
 
   List<LeaveRequest> get unacknowledgedApprovedLeaveRequests => leaveRequests
       .where(
@@ -616,7 +616,7 @@ class ApprovalDashboardState {
 
   bool canActOnLeave(LeaveRequest request) {
     final user = currentUser;
-    if (user == null || request.status != '승인대기') return false;
+    if (user == null || !_isPendingLeaveStatus(request.status)) return false;
     if (isAdminMode) return true;
     if (request.approvalLine.isNotEmpty) {
       return request.approvalLine.any(
@@ -629,6 +629,9 @@ class ApprovalDashboardState {
     return false;
   }
 }
+
+bool _isPendingLeaveStatus(String status) =>
+    status == '승인대기' || status == '진행중' || status == '대기';
 
 bool _audienceIncludesCurrentUser(
   Iterable<String> audience,

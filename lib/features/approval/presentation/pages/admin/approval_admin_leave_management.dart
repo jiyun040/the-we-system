@@ -206,10 +206,6 @@ Future<void> showAdminApprovedLeaveDirectory(
     title: '휴가 승인 내역',
     emptyMessage: '새로 승인된 휴가가 없습니다.',
   );
-  if (requests.isEmpty) return;
-  ref
-      .read(approvalDashboardControllerProvider.notifier)
-      .acknowledgeApprovedLeaves(requests.map((request) => request.id));
 }
 
 Future<void> showAdminDepartmentDirectory(
