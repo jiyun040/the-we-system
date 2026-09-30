@@ -14,9 +14,9 @@ Future<void> showApprovalDecisionDialog(
   BuildContext context, {
   required ApprovalDocument document,
   required String action,
-  required Future<void> Function(String opinion) onConfirm,
+  required Future<void> Function(String rejectionReason) onConfirm,
 }) {
-  final opinionController = TextEditingController(text: '');
+  final rejectionReasonController = TextEditingController(text: '');
 
   return showDialog<void>(
     context: context,
@@ -39,13 +39,20 @@ Future<void> showApprovalDecisionDialog(
               children: [
                 ApprovalDialogInfoRow(label: '결재문서명', value: document.title),
                 const SizedBox(height: 20),
-                Text('결재의견', style: TheWeTextStyle.body),
+                Text(
+                  action == '반려' ? '반려 사유' : '결재의견',
+                  style: TheWeTextStyle.body,
+                ),
                 const SizedBox(height: 8),
                 CustomTextFormField(
-                  controller: opinionController,
+                  controller: rejectionReasonController,
                   minLines: 5,
                   maxLines: 5,
-                  decoration: const InputDecoration(hintText: '의견을 작성해 주세요.'),
+                  decoration: InputDecoration(
+                    hintText: action == '반려'
+                        ? '반려 사유를 입력해 주세요.'
+                        : '의견을 작성해 주세요.',
+                  ),
                 ),
                 if (action == '반려') ...[
                   const SizedBox(height: 12),
@@ -65,7 +72,16 @@ Future<void> showApprovalDecisionDialog(
             secondaryLabel: '취소',
             primaryColor: action == '승인' ? TheWeColor.blue300 : TheWeColor.pink,
             onPrimaryPressed: () async {
-              await onConfirm(opinionController.text.trim());
+              final rejectionReason = rejectionReasonController.text.trim();
+              if (action == '반려' && rejectionReason.isEmpty) {
+                showTheWeSnackBar(
+                  context,
+                  message: '반려 사유를 입력해 주세요.',
+                  type: TheWeSnackBarType.error,
+                );
+                return;
+              }
+              await onConfirm(rejectionReason);
               if (context.mounted) {
                 Navigator.of(context).pop();
               }

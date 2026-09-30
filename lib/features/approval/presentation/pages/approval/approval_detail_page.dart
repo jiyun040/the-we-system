@@ -242,12 +242,12 @@ class _DocumentToolbar extends ConsumerWidget {
                       context,
                       document: document,
                       action: '승인',
-                      onConfirm: (opinion) => ref
+                      onConfirm: (rejectionReason) => ref
                           .read(approvalDashboardControllerProvider.notifier)
                           .approveDocument(
                             document.id,
                             action: '승인',
-                            opinion: opinion,
+                            rejectionReason: rejectionReason,
                           ),
                     ),
                   ),
@@ -259,12 +259,12 @@ class _DocumentToolbar extends ConsumerWidget {
                       context,
                       document: document,
                       action: '반려',
-                      onConfirm: (opinion) => ref
+                      onConfirm: (rejectionReason) => ref
                           .read(approvalDashboardControllerProvider.notifier)
                           .approveDocument(
                             document.id,
                             action: '반려',
-                            opinion: opinion,
+                            rejectionReason: rejectionReason,
                           ),
                     ),
                   ),

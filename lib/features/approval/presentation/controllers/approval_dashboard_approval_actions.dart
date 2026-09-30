@@ -5,13 +5,14 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
   Future<void> approveDocument(
     String documentId, {
     required String action,
-    required String opinion,
+    required String rejectionReason,
   }) async {
     try {
       if (documentId.startsWith('LEAVE-DOC-')) {
         await api.actOnLeave(
           documentId.substring('LEAVE-DOC-'.length),
           approve: action != '반려',
+          rejectionReason: rejectionReason,
         );
         await reloadRemoteState();
         return;
@@ -19,7 +20,7 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
       final document = await api.actOnDocument(
         documentId,
         approve: action != '반려',
-        opinion: opinion,
+        rejectionReason: rejectionReason,
       );
       replaceApprovalDocument(this, document);
     } catch (error) {

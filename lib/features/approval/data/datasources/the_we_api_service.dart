@@ -275,12 +275,12 @@ class TheWeApiService {
   Future<ApprovalDocument> actOnDocument(
     String id, {
     required bool approve,
-    required String opinion,
+    required String rejectionReason,
   }) => _guard(() async {
     final action = approve ? 'approve' : 'reject';
     final response = await _dio.post<Map<String, dynamic>>(
       '/approvals/$id/$action',
-      data: {'opinion': opinion},
+      data: {'rejectionReason': rejectionReason},
     );
     return ApprovalDocument.fromJson(response.data ?? <String, dynamic>{});
   });
@@ -350,9 +350,7 @@ class TheWeApiService {
       data: approve
           ? const <String, dynamic>{}
           : {
-              // Keep both names for compatibility with older API deployments.
               'rejectionReason': rejectionReason,
-              'reason': rejectionReason,
             },
     );
   });
