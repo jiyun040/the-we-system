@@ -69,8 +69,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
   Future<void> _login() async {
     if (isLoggingIn) return;
 
-    final notifier =
-    ref.read(approvalDashboardControllerProvider.notifier);
+    final notifier = ref.read(approvalDashboardControllerProvider.notifier);
 
     final id = idController.text.trim();
     final password = passwordController.text.trim();
@@ -100,8 +99,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
 
   @override
   Widget build(BuildContext context) {
-    final state =
-        ref.watch(approvalDashboardControllerProvider).asData?.value;
+    final state = ref.watch(approvalDashboardControllerProvider).asData?.value;
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
@@ -128,29 +126,19 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '로그인',
-                      style: TheWeTextStyle.pageTitle,
-                    ),
+                    Text('로그인', style: TheWeTextStyle.pageTitle),
 
                     const SizedBox(height: 24),
 
-                    Text(
-                      '아이디',
-                      style: TheWeTextStyle.body,
-                    ),
+                    Text('아이디', style: TheWeTextStyle.body),
 
                     const SizedBox(height: 8),
 
                     CustomTextFormField(
                       controller: idController,
-                      autofillHints: const [
-                        AutofillHints.username,
-                      ],
+                      autofillHints: const [AutofillHints.username],
                       keyboardType: TextInputType.text,
-                      style: TheWeTextStyle.body.copyWith(
-                        fontSize: 16,
-                      ),
+                      style: TheWeTextStyle.body.copyWith(fontSize: 16),
                       textInputAction: TextInputAction.next,
                       decoration: const InputDecoration(
                         contentPadding: EdgeInsets.symmetric(
@@ -159,9 +147,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         ),
                       ),
                       onChanged: (_) => ref
-                          .read(
-                        approvalDashboardControllerProvider.notifier,
-                      )
+                          .read(approvalDashboardControllerProvider.notifier)
                           .clearLoginError(),
                       onFieldSubmitted: (_) {
                         passwordFocusNode.requestFocus();
@@ -170,26 +156,23 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
 
                     const SizedBox(height: 16),
 
-                    Text(
-                      '비밀번호',
-                      style: TheWeTextStyle.body,
-                    ),
+                    Text('비밀번호', style: TheWeTextStyle.body),
 
                     const SizedBox(height: 8),
 
                     CustomTextFormField(
                       controller: passwordController,
                       focusNode: passwordFocusNode,
-                      autofillHints: const [
-                        AutofillHints.password,
-                      ],
+                      // iOS can lock the secure field to its ASCII password
+                      // keyboard when a password autofill hint is supplied.
+                      // Keep masking, but allow the user to switch languages.
                       // visiblePassword maps to an ASCII-capable keyboard on iOS,
                       // which prevents switching to the Korean keyboard. Keep
                       // the field textual and rely on obscureText for masking.
                       keyboardType: TextInputType.text,
-                      style: TheWeTextStyle.body.copyWith(
-                        fontSize: 16,
-                      ),
+                      autocorrect: false,
+                      enableSuggestions: false,
+                      style: TheWeTextStyle.body.copyWith(fontSize: 16),
                       obscureText: !showPassword,
                       textInputAction: TextInputAction.done,
                       decoration: InputDecoration(
@@ -211,9 +194,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                         ),
                       ),
                       onChanged: (_) => ref
-                          .read(
-                        approvalDashboardControllerProvider.notifier,
-                      )
+                          .read(approvalDashboardControllerProvider.notifier)
                           .clearLoginError(),
                       onFieldSubmitted: (_) => _login(),
                     ),
@@ -241,10 +222,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                               rememberId = !rememberId;
                             });
                           },
-                          child: Text(
-                            '아이디 저장',
-                            style: TheWeTextStyle.body,
-                          ),
+                          child: Text('아이디 저장', style: TheWeTextStyle.body),
                         ),
                       ],
                     ),
@@ -263,14 +241,11 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                           color: TheWeColor.dangerSurface,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: TheWeColor.danger.withValues(
-                              alpha: 0.28,
-                            ),
+                            color: TheWeColor.danger.withValues(alpha: 0.28),
                           ),
                         ),
                         child: Row(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Icon(
                               Icons.error_outline_rounded,
@@ -281,8 +256,7 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                             Expanded(
                               child: Text(
                                 state!.loginError,
-                                style:
-                                TheWeTextStyle.body.copyWith(
+                                style: TheWeTextStyle.body.copyWith(
                                   color: TheWeColor.danger,
                                   fontWeight: FontWeight.w700,
                                   height: 1.4,
@@ -299,20 +273,16 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                       width: double.infinity,
                       height: 48,
                       child: FilledButton(
-                        onPressed:
-                        isLoggingIn ? null : _login,
+                        onPressed: isLoggingIn ? null : _login,
                         style: FilledButton.styleFrom(
-                          backgroundColor:
-                          TheWeColor.black900,
+                          backgroundColor: TheWeColor.black900,
                           shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
                         child: Text(
                           '로그인',
-                          style:
-                          TheWeTextStyle.subtitle.copyWith(
+                          style: TheWeTextStyle.subtitle.copyWith(
                             color: Colors.white,
                           ),
                         ),
@@ -324,13 +294,10 @@ class _ApprovalLoginPageState extends ConsumerState<ApprovalLoginPage> {
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () => context.pushNamed(
-                          AppRouteName.signup,
-                        ),
+                        onPressed: () => context.pushNamed(AppRouteName.signup),
                         child: Text(
                           '회원가입',
-                          style:
-                          TheWeTextStyle.body.copyWith(
+                          style: TheWeTextStyle.body.copyWith(
                             color: TheWeColor.blue300,
                             fontWeight: FontWeight.w700,
                           ),

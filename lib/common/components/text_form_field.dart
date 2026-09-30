@@ -24,6 +24,7 @@ class CustomTextFormField extends StatelessWidget {
   final bool readOnly;
   final bool obscureText;
   final bool autocorrect;
+  final bool enableSuggestions;
   final bool expands;
   final bool? showCursor;
 
@@ -68,6 +69,7 @@ class CustomTextFormField extends StatelessWidget {
     this.readOnly = false,
     this.obscureText = false,
     this.autocorrect = true,
+    this.enableSuggestions = true,
     this.expands = false,
     this.showCursor,
     this.obscuringCharacter = '*',
@@ -172,6 +174,7 @@ class CustomTextFormField extends StatelessWidget {
       children: [
         TextFormField(
           autocorrect: autocorrect,
+          enableSuggestions: enableSuggestions,
           showCursor: showCursor,
           cursorColor: TheWeColor.blue300,
           controller: controller,
