@@ -63,7 +63,7 @@ class EmployeeAccount {
       normalizedId == designatedAdminAccountId;
 
   bool get canAccessAdminMode =>
-      isSystemAdministrator || isDesignatedAdministrator;
+      isAdmin || isDesignatedAdministrator;
 
   EmployeeAccount copyWith({
     String? id,

@@ -88,7 +88,7 @@ void main() {
     expect(state.reorderedDepartments('경리부', 1), state.departments);
   });
 
-  test('슈퍼어드민과 지정 관리자만 관리자 모드에 접근한다', () {
+  test('관리자 권한이 있는 계정과 지정 관리자는 관리자 모드에 접근한다', () {
     final systemAdmin = _account(
       id: 'admin',
       name: '슈퍼어드민',
@@ -124,7 +124,7 @@ void main() {
 
     expect(systemAdmin.canAccessAdminMode, isTrue);
     expect(designatedAdmin.canAccessAdminMode, isTrue);
-    expect(otherAdmin.canAccessAdminMode, isFalse);
+    expect(otherAdmin.canAccessAdminMode, isTrue);
     expect(wrongProfile.canAccessAdminMode, isFalse);
     expect(serverVerifiedDesignatedAdmin.canAccessAdminMode, isTrue);
   });
