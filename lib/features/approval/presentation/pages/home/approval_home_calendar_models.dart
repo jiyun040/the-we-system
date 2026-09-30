@@ -35,6 +35,7 @@ class ApprovalCalendarEvent {
     this.authorName = '',
     this.kind = 'schedule',
     this.endDate,
+    this.visibleDates = const [],
     required this.title,
     required this.time,
     required this.place,
@@ -46,6 +47,7 @@ class ApprovalCalendarEvent {
   final String authorName;
   final String kind;
   final DateTime? endDate;
+  final List<DateTime> visibleDates;
 
   factory ApprovalCalendarEvent.fromJson(Map<String, dynamic> data) =>
       ApprovalCalendarEvent(
@@ -54,6 +56,11 @@ class ApprovalCalendarEvent {
         authorName: data['authorName']?.toString() ?? '',
         kind: data['kind']?.toString() ?? 'schedule',
         endDate: DateTime.tryParse(data['endDate']?.toString() ?? ''),
+        visibleDates: (data['visibleDates'] as List<dynamic>? ?? const [])
+            .map((value) => DateTime.tryParse(value.toString()))
+            .whereType<DateTime>()
+            .map(DateUtils.dateOnly)
+            .toList(),
         title: data['title']?.toString() ?? '',
         time: data['time']?.toString() ?? '',
         place: data['place']?.toString() ?? '',

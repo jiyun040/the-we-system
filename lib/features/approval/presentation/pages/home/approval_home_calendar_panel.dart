@@ -44,13 +44,11 @@ class _ApprovalHomeCalendarPanelState
           final start = DateTime.tryParse(data['date']?.toString() ?? '');
           if (start == null) continue;
           final event = ApprovalCalendarEvent.fromJson(data);
-          final end = event.endDate ?? start;
-          for (
-            var day = DateUtils.dateOnly(start);
-            !day.isAfter(end);
-            day = day.add(const Duration(days: 1))
-          ) {
-            _events.putIfAbsent(day, () => []).add(event);
+          final days = event.visibleDates.isNotEmpty
+              ? event.visibleDates
+              : _calendarDaysBetween(start, event.endDate ?? start);
+          for (final day in days) {
+            _events.putIfAbsent(DateUtils.dateOnly(day), () => []).add(event);
           }
         }
         _loadError = null;
@@ -58,6 +56,18 @@ class _ApprovalHomeCalendarPanelState
     } catch (_) {
       if (mounted) setState(() => _loadError = '공유 일정을 불러오지 못했습니다.');
     }
+  }
+
+  List<DateTime> _calendarDaysBetween(DateTime start, DateTime end) {
+    final days = <DateTime>[];
+    for (
+      var day = DateUtils.dateOnly(start);
+      !day.isAfter(end);
+      day = day.add(const Duration(days: 1))
+    ) {
+      days.add(day);
+    }
+    return days;
   }
 
   void _moveMonth(int delta) {

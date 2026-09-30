@@ -57,3 +57,21 @@ flutter test
 Android와 iOS 앱은 Firebase Messaging 토큰을 로그인 후 서버에 등록합니다. 알림에는 문서 제목이나 휴가 내용이 포함되지 않고, 상세 내용은 로그인한 앱에서 확인합니다. 제공된 `android/app/google-services.json`과 `ios/Runner/GoogleService-Info.plist`의 앱 식별자는 현재 프로젝트와 일치합니다.
 
 실제 발송에는 Django 서버의 `FIREBASE_SERVICE_ACCOUNT` 환경변수에 Firebase 서비스 계정 JSON 파일 경로를 설정해야 합니다. 서버 키는 모바일 앱이나 저장소에 넣지 마세요. iOS 푸시에는 Apple 개발자 계정의 Push Notifications 권한과 Firebase 콘솔의 APNs 인증 키도 필요합니다.
+
+## 웹 알림
+
+Firebase 웹 앱 설정값과 Cloud Messaging의 Web Push 인증서(VAPID) 키를 빌드 시 전달해야 합니다.
+또한 `web/firebase-messaging-sw.js`의 웹 앱 설정값을 Firebase 콘솔 값으로 교체하고 HTTPS로 배포해야 합니다.
+
+```bash
+flutter build web --release \
+  --dart-define=FIREBASE_WEB_API_KEY=... \
+  --dart-define=FIREBASE_WEB_APP_ID=... \
+  --dart-define=FIREBASE_WEB_MESSAGING_SENDER_ID=... \
+  --dart-define=FIREBASE_WEB_PROJECT_ID=... \
+  --dart-define=FIREBASE_WEB_AUTH_DOMAIN=... \
+  --dart-define=FIREBASE_WEB_STORAGE_BUCKET=... \
+  --dart-define=FIREBASE_WEB_VAPID_KEY=...
+```
+
+웹 토큰은 기존 `/notifications/devices` API에 `platform: "web"`으로 등록됩니다.

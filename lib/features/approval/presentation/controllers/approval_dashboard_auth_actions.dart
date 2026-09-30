@@ -60,9 +60,9 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   Future<void> logout() async {
-    if (!kIsWeb &&
-        (defaultTargetPlatform == TargetPlatform.android ||
-            defaultTargetPlatform == TargetPlatform.iOS)) {
+    if (kIsWeb ||
+        defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS) {
       try {
         final token = await FirebaseMessaging.instance.getToken();
         if (token != null) await api.unregisterDeviceToken(token);

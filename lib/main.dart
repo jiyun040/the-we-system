@@ -20,9 +20,50 @@ import 'package:the_we_system/features/approval/domain/entities/document/approva
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR');
-  if (!kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.android ||
-          defaultTargetPlatform == TargetPlatform.iOS)) {
+  if (kIsWeb) {
+    const apiKey = String.fromEnvironment(
+      'FIREBASE_WEB_API_KEY',
+      defaultValue: 'AIzaSyDi5zfl_Bt3r-2aDYYnVROuDkecLoVxuho',
+    );
+    const appId = String.fromEnvironment(
+      'FIREBASE_WEB_APP_ID',
+      defaultValue: '1:627473935635:web:c3e2c4f465bed0fd5e3ee6',
+    );
+    const messagingSenderId = String.fromEnvironment(
+      'FIREBASE_WEB_MESSAGING_SENDER_ID',
+      defaultValue: '627473935635',
+    );
+    const projectId = String.fromEnvironment(
+      'FIREBASE_WEB_PROJECT_ID',
+      defaultValue: 'the-we-system',
+    );
+    if (apiKey.isNotEmpty &&
+        appId.isNotEmpty &&
+        messagingSenderId.isNotEmpty &&
+        projectId.isNotEmpty) {
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: apiKey,
+          appId: appId,
+          messagingSenderId: messagingSenderId,
+          projectId: projectId,
+          authDomain: String.fromEnvironment(
+            'FIREBASE_WEB_AUTH_DOMAIN',
+            defaultValue: 'the-we-system.firebaseapp.com',
+          ),
+          storageBucket: String.fromEnvironment(
+            'FIREBASE_WEB_STORAGE_BUCKET',
+            defaultValue: 'the-we-system.firebasestorage.app',
+          ),
+          measurementId: String.fromEnvironment(
+            'FIREBASE_WEB_MEASUREMENT_ID',
+            defaultValue: 'G-HHEPHXRDQ4',
+          ),
+        ),
+      );
+    }
+  } else if (defaultTargetPlatform == TargetPlatform.android ||
+      defaultTargetPlatform == TargetPlatform.iOS) {
     await Firebase.initializeApp();
   }
   runApp(const ProviderScope(child: PushRegistration(child: MyApp())));
