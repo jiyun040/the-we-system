@@ -349,7 +349,11 @@ class TheWeApiService {
       '/leave/requests/$id/${approve ? 'approve' : 'reject'}',
       data: approve
           ? const <String, dynamic>{}
-          : {'rejectionReason': rejectionReason},
+          : {
+              // Keep both names for compatibility with older API deployments.
+              'rejectionReason': rejectionReason,
+              'reason': rejectionReason,
+            },
     );
   });
 
