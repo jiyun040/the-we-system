@@ -8,9 +8,14 @@ extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
     required String rejectionReason,
   }) async {
     try {
-      if (documentId.startsWith('LEAVE-DOC-')) {
+      // Leave approval documents use the public leave request id directly
+      // (for example, LEAVE-260929-76C8B6).
+      if (documentId.startsWith('LEAVE-')) {
+        final leaveId = documentId.startsWith('LEAVE-DOC-')
+            ? documentId.substring('LEAVE-DOC-'.length)
+            : documentId;
         await api.actOnLeave(
-          documentId.substring('LEAVE-DOC-'.length),
+          leaveId,
           approve: action != '반려',
           rejectionReason: rejectionReason,
         );
