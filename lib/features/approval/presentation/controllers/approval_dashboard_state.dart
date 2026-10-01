@@ -458,8 +458,43 @@ class ApprovalDashboardState {
         .toList();
   }
 
-  List<LeaveRequest> get pendingLeaveRequests =>
-      leaveRequests.where((request) => _isPendingLeaveStatus(request.status)).toList();
+  List<LeaveRequest> get pendingLeaveRequests {
+    final pending = leaveRequests
+        .where((request) => _isPendingLeaveStatus(request.status))
+        .toList();
+    if (!isAdminMode) return pending;
+
+    final knownIds = pending.map((request) => request.id).toSet();
+    for (final document in documents) {
+      if (!document.id.startsWith('LEAVE-') ||
+          document.status != '결재대기' ||
+          !knownIds.add(document.id)) {
+        continue;
+      }
+      pending.add(_leaveRequestFromDocument(document));
+    }
+    pending.sort((left, right) => right.id.compareTo(left.id));
+    return pending;
+  }
+
+  LeaveRequest _leaveRequestFromDocument(ApprovalDocument document) {
+    final fields = document.formFields;
+    final employee = accounts
+        .where((account) => account.name == document.drafter)
+        .firstOrNull;
+    final startDate = fields['startDate'] ?? fields['leaveStartDate'] ?? '';
+    final endDate = fields['endDate'] ?? fields['leaveEndDate'] ?? startDate;
+    return LeaveRequest(
+      id: document.id,
+      userId: employee?.id ?? document.drafter,
+      type: fields['type'] ?? fields['leaveType'] ?? '휴가',
+      startDate: startDate.isEmpty ? document.draftedAt : startDate,
+      endDate: endDate.isEmpty ? document.draftedAt : endDate,
+      days: double.tryParse(fields['days'] ?? fields['leaveDays'] ?? '') ?? 0,
+      reason: fields['reason'] ?? fields['leaveReason'] ?? document.content,
+      status: '결재대기',
+    );
+  }
 
   List<LeaveRequest> get unacknowledgedApprovedLeaveRequests => leaveRequests
       .where(
@@ -631,7 +666,10 @@ class ApprovalDashboardState {
 }
 
 bool _isPendingLeaveStatus(String status) =>
-    status == '승인대기' || status == '진행중' || status == '대기';
+    status == '승인대기' ||
+    status == '진행중' ||
+    status == '대기' ||
+    status == '결재대기';
 
 bool _audienceIncludesCurrentUser(
   Iterable<String> audience,
