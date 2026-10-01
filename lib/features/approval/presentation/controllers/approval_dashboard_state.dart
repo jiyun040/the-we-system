@@ -464,11 +464,18 @@ class ApprovalDashboardState {
         .toList();
     if (!isAdminMode) return pending;
 
+    final pendingDocuments = documents
+        .where(
+          (document) =>
+              document.id.startsWith('LEAVE-') &&
+              document.status == '결재대기',
+        )
+        .toList();
+    final documentIds = pendingDocuments.map((document) => document.id).toSet();
+    pending.removeWhere((request) => !documentIds.contains(request.id));
     final knownIds = pending.map((request) => request.id).toSet();
-    for (final document in documents) {
-      if (!document.id.startsWith('LEAVE-') ||
-          document.status != '결재대기' ||
-          !knownIds.add(document.id)) {
+    for (final document in pendingDocuments) {
+      if (!knownIds.add(document.id)) {
         continue;
       }
       pending.add(_leaveRequestFromDocument(document));
