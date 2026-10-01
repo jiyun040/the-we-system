@@ -486,15 +486,26 @@ class ApprovalDashboardState {
 
   LeaveRequest _leaveRequestFromDocument(ApprovalDocument document) {
     final fields = document.formFields;
+    final contentDates = RegExp(r'\d{4}-\d{2}-\d{2}')
+        .allMatches(document.content)
+        .map((match) => match.group(0)!)
+        .toList();
     final employee = accounts
         .where((account) => account.name == document.drafter)
         .firstOrNull;
-    final startDate = fields['startDate'] ?? fields['leaveStartDate'] ?? '';
-    final endDate = fields['endDate'] ?? fields['leaveEndDate'] ?? startDate;
+    final startDate = fields['startDate'] ??
+        fields['leaveStartDate'] ??
+        (contentDates.isNotEmpty ? contentDates.first : '');
+    final endDate = fields['endDate'] ??
+        fields['leaveEndDate'] ??
+        (contentDates.length > 1 ? contentDates[1] : startDate);
     final type = fields['type'] ?? fields['leaveType'] ?? '휴가';
     final parsedDays = double.tryParse(
       fields['days'] ?? fields['leaveDays'] ?? '',
     );
+    final contentDays = RegExp(r'사용\s*일수\s*[:：]\s*([\d.]+)')
+        .firstMatch(document.content)
+        ?.group(1);
     final calculatedDays = _calculateLeaveDays(
       startDate,
       endDate,
@@ -506,7 +517,9 @@ class ApprovalDashboardState {
       type: type,
       startDate: startDate.isEmpty ? document.draftedAt : startDate,
       endDate: endDate.isEmpty ? document.draftedAt : endDate,
-      days: parsedDays != null && parsedDays > 0 ? parsedDays : calculatedDays,
+      days: parsedDays != null && parsedDays > 0
+          ? parsedDays
+          : (double.tryParse(contentDays ?? '') ?? calculatedDays),
       reason: fields['reason'] ?? fields['leaveReason'] ?? document.content,
       status: '결재대기',
     );
