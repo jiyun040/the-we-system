@@ -484,16 +484,35 @@ class ApprovalDashboardState {
         .firstOrNull;
     final startDate = fields['startDate'] ?? fields['leaveStartDate'] ?? '';
     final endDate = fields['endDate'] ?? fields['leaveEndDate'] ?? startDate;
+    final type = fields['type'] ?? fields['leaveType'] ?? '휴가';
+    final parsedDays = double.tryParse(
+      fields['days'] ?? fields['leaveDays'] ?? '',
+    );
+    final calculatedDays = _calculateLeaveDays(
+      startDate,
+      endDate,
+      type,
+    );
     return LeaveRequest(
       id: document.id,
       userId: employee?.id ?? document.drafter,
-      type: fields['type'] ?? fields['leaveType'] ?? '휴가',
+      type: type,
       startDate: startDate.isEmpty ? document.draftedAt : startDate,
       endDate: endDate.isEmpty ? document.draftedAt : endDate,
-      days: double.tryParse(fields['days'] ?? fields['leaveDays'] ?? '') ?? 0,
+      days: parsedDays != null && parsedDays > 0 ? parsedDays : calculatedDays,
       reason: fields['reason'] ?? fields['leaveReason'] ?? document.content,
       status: '결재대기',
     );
+  }
+
+  double _calculateLeaveDays(String start, String end, String type) {
+    final startDate = DateTime.tryParse(start);
+    final endDate = DateTime.tryParse(end);
+    if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
+      return 0;
+    }
+    if (type.contains('반차')) return .5;
+    return endDate.difference(startDate).inDays + 1;
   }
 
   List<LeaveRequest> get unacknowledgedApprovedLeaveRequests => leaveRequests
