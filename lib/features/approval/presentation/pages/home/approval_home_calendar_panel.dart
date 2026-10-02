@@ -305,7 +305,7 @@ class _ApprovalHomeCalendarPanelState
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['월', '화', '수', '목', '금', '토', '일'];
+    const labels = ['일', '월', '화', '수', '목', '금', '토'];
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -378,7 +378,7 @@ class _ApprovalHomeCalendarPanelState
               daysOfWeekVisible: false,
               selectedDayPredicate: (day) => isSameDay(day, _selectedDay),
               eventLoader: _eventsForDay,
-              startingDayOfWeek: StartingDayOfWeek.monday,
+              startingDayOfWeek: StartingDayOfWeek.sunday,
               calendarStyle: const CalendarStyle(
                 outsideDaysVisible: true,
                 markerSize: 0,
