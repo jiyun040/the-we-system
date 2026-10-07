@@ -28,6 +28,7 @@ class ApprovalBoardPage extends ConsumerStatefulWidget {
 class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   List<Map<String, dynamic>> posts = [];
   String selectedDepartment = '';
+  bool onlyMyPosts = false;
   String? error;
   bool loading = true;
 
@@ -78,6 +79,30 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
         .toList();
     var message = '';
     var saving = false;
+    var draggingFiles = false;
+
+    Future<void> addFiles(
+      Iterable<XFile> selectedFiles,
+      StateSetter update,
+    ) async {
+      for (final file in selectedFiles) {
+        if (files.length >= 5) break;
+        final bytes = await file.readAsBytes();
+        if (bytes.isEmpty || bytes.length > 10 * 1024 * 1024) {
+          update(() => message = '파일은 각 10MB 이하로 첨부해 주세요.');
+          continue;
+        }
+        files.add(
+          ApprovalAttachment.fromBytes(
+            name: file.name,
+            mimeType: file.mimeType ?? 'application/octet-stream',
+            bytes: bytes,
+          ),
+        );
+      }
+      update(() {});
+    }
+
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => StatefulBuilder(
@@ -116,63 +141,93 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                   ),
                   const SizedBox(height: 12),
                   DropTarget(
+                    onDragEntered: (_) => update(() => draggingFiles = true),
+                    onDragExited: (_) => update(() => draggingFiles = false),
                     onDragDone: (details) async {
-                      for (final file in details.files) {
-                        if (files.length >= 5) break;
-                        final bytes = await file.readAsBytes();
-                        if (bytes.isNotEmpty &&
-                            bytes.length <= 10 * 1024 * 1024) {
-                          files.add(
-                            ApprovalAttachment.fromBytes(
-                              name: file.name,
-                              mimeType:
-                                  file.mimeType ?? 'application/octet-stream',
-                              bytes: bytes,
-                            ),
-                          );
-                        }
-                      }
-                      update(() {});
+                      update(() => draggingFiles = false);
+                      await addFiles(details.files, update);
                     },
-                    child: OutlinedButton.icon(
-                      onPressed: saving || files.length >= 5
-                          ? null
-                          : () async {
-                              final picked = await openFiles();
-                              for (final file in picked) {
-                                final bytes = await file.readAsBytes();
-                                if (bytes.isEmpty ||
-                                    bytes.length > 10 * 1024 * 1024) {
-                                  update(
-                                    () => message = '파일은 각 10MB 이하로 첨부해 주세요.',
-                                  );
-                                  continue;
-                                }
-                                if (files.length >= 5) break;
-                                files.add(
-                                  ApprovalAttachment.fromBytes(
-                                    name: file.name,
-                                    mimeType:
-                                        file.mimeType ??
-                                        'application/octet-stream',
-                                    bytes: bytes,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 140),
+                      constraints: const BoxConstraints(minHeight: 152),
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: draggingFiles
+                            ? TheWeColor.blueSurface
+                            : TheWeColor.white,
+                        border: Border.all(
+                          color: draggingFiles
+                              ? TheWeColor.blue300
+                              : TheWeColor.black300.withValues(alpha: .6),
+                          width: draggingFiles ? 2 : 1,
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: saving || files.length >= 5
+                                ? null
+                                : () async {
+                                    final picked = await openFiles();
+                                    await addFiles(picked, update);
+                                  },
+                            icon: const Icon(Icons.attach_file),
+                            label: const Text('자료 첨부 (최대 5개)'),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            draggingFiles
+                                ? '여기에 놓으면 파일이 첨부됩니다.'
+                                : '파일을 이 넓은 영역에 끌어 놓아도 됩니다.',
+                            style: TheWeTextStyle.caption.copyWith(
+                              color: draggingFiles
+                                  ? TheWeColor.blue300
+                                  : TheWeColor.black500,
+                            ),
+                          ),
+                          if (files.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                for (final file in files)
+                                  InputChip(
+                                    avatar: const Icon(
+                                      Icons.attach_file_outlined,
+                                      size: 18,
+                                    ),
+                                    label: ConstrainedBox(
+                                      constraints: const BoxConstraints(
+                                        maxWidth: 360,
+                                      ),
+                                      child: Text(
+                                        file.name,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    tooltip: '미리보기',
+                                    onPressed: () =>
+                                        showApprovalAttachmentPreview(
+                                          context,
+                                          file,
+                                        ),
+                                    onDeleted: saving
+                                        ? null
+                                        : () =>
+                                              update(() => files.remove(file)),
                                   ),
-                                );
-                              }
-                              update(() {});
-                            },
-                      icon: const Icon(Icons.attach_file),
-                      label: const Text('자료 첨부 (최대 5개)'),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   ),
-                  Text('파일을 이 영역에 끌어 놓아도 됩니다.', style: TheWeTextStyle.caption),
-                  for (final file in files)
-                    InputChip(
-                      label: Text(file.name),
-                      onDeleted: saving
-                          ? null
-                          : () => update(() => files.remove(file)),
-                    ),
                   if (message.isNotEmpty)
                     Text(
                       message,
@@ -342,6 +397,9 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
           (post) =>
               (post['department']?.toString() ?? '') == selectedDepartment,
         )
+        .where(
+          (post) => !onlyMyPosts || post['authorId'] == state?.currentUser?.id,
+        )
         .toList();
     final mobile = MediaQuery.sizeOf(context).width < 700;
     return Scaffold(
@@ -394,6 +452,14 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                               ),
                             ),
                           ),
+                        ChoiceChip(
+                          key: const ValueKey('board-my-posts-filter'),
+                          avatar: const Icon(Icons.person_outline, size: 18),
+                          label: const Text('내 자료공유'),
+                          selected: onlyMyPosts,
+                          onSelected: (selected) =>
+                              setState(() => onlyMyPosts = selected),
+                        ),
                       ],
                     ),
                   ),
@@ -459,8 +525,11 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                                     ),
                                   ),
                               if (post['authorId'] == state?.currentUser?.id ||
-                                (state?.currentUser?.isAdmin == true ||
-                                    state?.currentUser?.isSystemAdministrator == true))
+                                  (state?.currentUser?.isAdmin == true ||
+                                      state
+                                              ?.currentUser
+                                              ?.isSystemAdministrator ==
+                                          true))
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
