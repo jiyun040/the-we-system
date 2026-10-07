@@ -447,9 +447,10 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                                 department.isEmpty ? '전체게시판' : department,
                               ),
                               selected: selectedDepartment == department,
-                              onSelected: (_) => setState(
-                                () => selectedDepartment = department,
-                              ),
+                              onSelected: (_) => setState(() {
+                                selectedDepartment = department;
+                                onlyMyPosts = false;
+                              }),
                             ),
                           ),
                         ChoiceChip(
@@ -457,8 +458,10 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                           avatar: const Icon(Icons.person_outline, size: 18),
                           label: const Text('내 자료공유'),
                           selected: onlyMyPosts,
-                          onSelected: (selected) =>
-                              setState(() => onlyMyPosts = selected),
+                          onSelected: (_) => setState(() {
+                            onlyMyPosts = true;
+                            selectedDepartment = '';
+                          }),
                         ),
                       ],
                     ),
