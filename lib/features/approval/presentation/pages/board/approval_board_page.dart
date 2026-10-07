@@ -446,7 +446,9 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                               label: Text(
                                 department.isEmpty ? '전체게시판' : department,
                               ),
-                              selected: selectedDepartment == department,
+                              selected:
+                                  !onlyMyPosts &&
+                                  selectedDepartment == department,
                               onSelected: (_) => setState(() {
                                 selectedDepartment = department;
                                 onlyMyPosts = false;
