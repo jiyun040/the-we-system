@@ -683,7 +683,11 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
       initialDate: current ?? DateTime.now(),
       firstDate: DateTime(DateTime.now().year - 5),
       lastDate: DateTime.now(),
-      title: '$kind 날짜 선택',
+      title: '${switch (kind) {
+        'billing' => '청구',
+        'invoice' => '계산서 발행',
+        _ => '입금',
+      }} 날짜 선택',
     );
     if (selected == null) return;
     setState(() {
@@ -1016,6 +1020,43 @@ class _StatementDialog extends StatelessWidget {
             onClose: () => Navigator.pop(context),
           ),
           const SizedBox(height: 18),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: TheWeColor.black900, width: 1.5)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _statementInfo('수신', statement.items.firstOrNull?.contractor ?? '-'),
+                      const SizedBox(height: 10),
+                      _statementInfo('현장명', statement.projectName),
+                      const SizedBox(height: 10),
+                      _statementInfo('결제일', '계산서 발행 후 익월 말일 이내'),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('우리기술 주식회사', style: TheWeTextStyle.subtitle.copyWith(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
+                      Text('등록번호 : 787-88-01517', style: TheWeTextStyle.caption),
+                      Text('대표이사 : 조성률', style: TheWeTextStyle.caption),
+                      Text('TEL 070-4334-9000  FAX 042-933-0104', style: TheWeTextStyle.caption),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
           Wrap(
             spacing: 24,
             runSpacing: 12,
@@ -1145,8 +1186,35 @@ Future<void> _downloadStatementPdf(
               ),
             ),
             pw.SizedBox(height: 22),
-            pw.Text('수신 : ${statement.items.firstOrNull?.partner ?? '-'}'),
-            pw.Text('현장명 : ${statement.projectName}'),
+            pw.Row(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('수신 : ${statement.items.firstOrNull?.contractor ?? '-'}'),
+                      pw.SizedBox(height: 6),
+                      pw.Text('현장명 : ${statement.projectName}'),
+                      pw.SizedBox(height: 6),
+                      pw.Text('결제일 : 계산서 발행 후 익월 말일 이내'),
+                    ],
+                  ),
+                ),
+                pw.Expanded(
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text('우리기술 주식회사', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.Text('등록번호 : 787-88-01517'),
+                      pw.Text('대표이사 : 조성률'),
+                      pw.Text('TEL 070-4334-9000  FAX 042-933-0104'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 8),
             pw.Text('발행일 : ${DateFormat('yyyy-MM-dd').format(DateTime.now())}'),
             pw.SizedBox(height: 16),
             pw.Container(

@@ -42,6 +42,7 @@ class TheWeDataTable extends StatelessWidget {
       builder: (context, constraints) {
         final width = math.max(constraints.maxWidth, minWidth);
         final horizontalController = ScrollController();
+        final verticalController = ScrollController();
         final table = SingleChildScrollView(
           controller: horizontalController,
           scrollDirection: Axis.horizontal,
@@ -130,10 +131,20 @@ class TheWeDataTable extends StatelessWidget {
             );
           },
           child: Scrollbar(
-            controller: horizontalController,
+            controller: verticalController,
             thumbVisibility: true,
             trackVisibility: true,
-            child: table,
+            child: SingleChildScrollView(
+              controller: verticalController,
+              child: Scrollbar(
+                controller: horizontalController,
+                thumbVisibility: true,
+                trackVisibility: true,
+                notificationPredicate: (notification) =>
+                    notification.depth == 1,
+                child: table,
+              ),
+            ),
           ),
         );
       },
