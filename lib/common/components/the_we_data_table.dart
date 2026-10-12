@@ -41,6 +41,77 @@ class TheWeDataTable extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = math.max(constraints.maxWidth, minWidth);
+        final horizontalController = ScrollController();
+        final table = SingleChildScrollView(
+          controller: horizontalController,
+          scrollDirection: Axis.horizontal,
+          child: SizedBox(
+            width: width,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(
+                    color: TheWeColor.blue200.withValues(alpha: .58),
+                  ),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Table(
+                  columnWidths: {
+                    for (var index = 0; index < headers.length; index++)
+                      index: FlexColumnWidth(columnFlexes?[index] ?? 1),
+                  },
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+                  children: [
+                    TableRow(
+                      decoration: const BoxDecoration(
+                        color: TheWeColor.blueSurface,
+                      ),
+                      children: [
+                        for (var index = 0; index < headers.length; index++)
+                          _TableCell(
+                            rightBorder: index != headers.length - 1,
+                            alignment: Alignment.center,
+                            child: Text(
+                              headers[index],
+                              textAlign: TextAlign.center,
+                              style: TheWeTextStyle.body.copyWith(
+                                color: TheWeColor.black900,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    for (var rowIndex = 0; rowIndex < rows.length; rowIndex++)
+                      TableRow(
+                        decoration: BoxDecoration(
+                          color: rowIndex.isEven
+                              ? Colors.white
+                              : TheWeColor.blueSurface.withValues(alpha: .55),
+                        ),
+                        children: [
+                          for (
+                            var columnIndex = 0;
+                            columnIndex < rows[rowIndex].length;
+                            columnIndex++
+                          )
+                            _TableCell(
+                              rightBorder:
+                                  columnIndex != rows[rowIndex].length - 1,
+                              bottomBorder: rowIndex != rows.length - 1,
+                              onTap: onRowTaps?[rowIndex],
+                              child: rows[rowIndex][columnIndex],
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
         return Listener(
           onPointerSignal: (event) {
             final controller = verticalScrollController;
@@ -58,74 +129,11 @@ class TheWeDataTable extends StatelessWidget {
               ),
             );
           },
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: width,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(
-                      color: TheWeColor.blue200.withValues(alpha: .58),
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Table(
-                    columnWidths: {
-                      for (var index = 0; index < headers.length; index++)
-                        index: FlexColumnWidth(columnFlexes?[index] ?? 1),
-                    },
-                    defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                    children: [
-                      TableRow(
-                        decoration: const BoxDecoration(
-                          color: TheWeColor.blueSurface,
-                        ),
-                        children: [
-                          for (var index = 0; index < headers.length; index++)
-                            _TableCell(
-                              rightBorder: index != headers.length - 1,
-                              alignment: Alignment.center,
-                              child: Text(
-                                headers[index],
-                                textAlign: TextAlign.center,
-                                style: TheWeTextStyle.body.copyWith(
-                                  color: TheWeColor.black900,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      for (var rowIndex = 0; rowIndex < rows.length; rowIndex++)
-                        TableRow(
-                          decoration: BoxDecoration(
-                            color: rowIndex.isEven
-                                ? Colors.white
-                                : TheWeColor.blueSurface.withValues(alpha: .55),
-                          ),
-                          children: [
-                            for (
-                              var columnIndex = 0;
-                              columnIndex < rows[rowIndex].length;
-                              columnIndex++
-                            )
-                              _TableCell(
-                                rightBorder:
-                                    columnIndex != rows[rowIndex].length - 1,
-                                bottomBorder: rowIndex != rows.length - 1,
-                                onTap: onRowTaps?[rowIndex],
-                                child: rows[rowIndex][columnIndex],
-                              ),
-                          ],
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+          child: Scrollbar(
+            controller: horizontalController,
+            thumbVisibility: true,
+            trackVisibility: true,
+            child: table,
           ),
         );
       },
