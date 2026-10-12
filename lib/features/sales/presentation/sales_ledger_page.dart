@@ -647,6 +647,11 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
   late TextEditingController amount;
   late TextEditingController installment;
   late TextEditingController note;
+  late TextEditingController adjustment;
+  late TextEditingController adjustmentReason;
+  late TextEditingController invoiceIssuer;
+  late DateTime usageStart;
+  DateTime? usageEnd;
   DateTime? billing;
   DateTime? invoice;
   DateTime? deposit;
@@ -659,6 +664,12 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     amount = TextEditingController(text: _money(item.supplyAmount));
     installment = TextEditingController(text: item.installment.toString());
     note = TextEditingController(text: item.note);
+    adjustment = TextEditingController(text: '0');
+    adjustmentReason = TextEditingController();
+    invoiceIssuer = TextEditingController();
+    invoiceIssuer.text = item.invoiceIssuer;
+    usageStart = item.startDate;
+    usageEnd = item.endDate;
     billing = item.billingDate;
     invoice = item.invoiceDate;
     deposit = item.depositDate;
@@ -669,11 +680,16 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     amount.dispose();
     installment.dispose();
     note.dispose();
+    adjustment.dispose();
+    adjustmentReason.dispose();
+    invoiceIssuer.dispose();
     super.dispose();
   }
 
   Future<void> choose(String kind) async {
     final current = switch (kind) {
+      'start' => usageStart,
+      'end' => usageEnd,
       'billing' => billing,
       'invoice' => invoice,
       _ => deposit,
@@ -695,6 +711,8 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
       if (kind == 'billing') billing = selected;
       if (kind == 'invoice') invoice = selected;
       if (kind == 'deposit') deposit = selected;
+      if (kind == 'start') usageStart = selected;
+      if (kind == 'end') usageEnd = selected;
     });
   }
 
@@ -705,8 +723,8 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     final supply = int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
     final tax = (supply * .1).round();
     final fieldWidth = compact ? double.infinity : 260.0;
-    Widget field(String label, Widget child) => SizedBox(
-      width: fieldWidth,
+    Widget field(String label, Widget child, {double? width}) => SizedBox(
+      width: width ?? fieldWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -795,6 +813,27 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                         setState(() => category = value ?? ''),
                   ),
                 ),
+                dateField('시작일', usageStart, 'start'),
+                dateField('종료일', usageEnd, 'end'),
+                field(
+                  '조정액 (+ / -)',
+                  TextField(
+                    controller: adjustment,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(isDense: true),
+                    onChanged: (_) => setState(() {}),
+                  ),
+                ),
+                field(
+                  '조정사유',
+                  TextField(
+                    controller: adjustmentReason,
+                    decoration: const InputDecoration(
+                      isDense: true,
+                      hintText: '예) 계약 특가, 장기사용',
+                    ),
+                  ),
+                ),
                 field(
                   '상태',
                   DropdownButtonFormField<String>(
@@ -860,14 +899,31 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                     child: Text('합계 ${_money(supply + tax)}'),
                   ),
                 ),
+                SizedBox(
+                  width: compact ? double.infinity : 536,
+                  child: field(
+                    '계산서 발행처',
+                    TextField(
+                      controller: invoiceIssuer,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        hintText: '비워두면 협력사로 발행됩니다.',
+                      ),
+                    ),
+                    width: compact ? double.infinity : 536,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 14),
-            field(
-              '비고',
-              TextField(
-                controller: note,
-                decoration: const InputDecoration(isDense: true),
+            SizedBox(
+              width: double.infinity,
+              child: field(
+                '비고',
+                TextField(
+                  controller: note,
+                  decoration: const InputDecoration(isDense: true),
+                ),
               ),
             ),
             const SizedBox(height: 24),
@@ -880,12 +936,16 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                 Navigator.pop(
                   context,
                   item.copyWith(
+                    startDate: usageStart,
+                    endDate: usageEnd,
+                    clearEndDate: usageEnd == null,
                     category: category,
                     status: status,
                     installment: cycle < 1 ? 1 : cycle,
                     supplyAmount:
                         int.tryParse(amount.text.replaceAll(',', '')) ?? 0,
                     note: note.text.trim(),
+                    invoiceIssuer: invoiceIssuer.text.trim(),
                     billingDate: billing,
                     clearBillingDate: billing == null,
                     invoiceDate: invoice,

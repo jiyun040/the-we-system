@@ -15,6 +15,7 @@ class SalesLedgerEntry {
     required this.installment,
     required this.status,
     required this.note,
+    this.invoiceIssuer = '',
   });
 
   final String id;
@@ -32,6 +33,7 @@ class SalesLedgerEntry {
   final int installment;
   final String status;
   final String note;
+  final String invoiceIssuer;
 
   factory SalesLedgerEntry.fromJson(Map<String, dynamic> json) {
     DateTime parseDate(dynamic value, {bool required = false}) {
@@ -52,7 +54,10 @@ class SalesLedgerEntry {
       projectName: json['projectName']?.toString() ?? '',
       contractor: json['contractor']?.toString() ?? '',
       partner: json['partner']?.toString() ?? '',
-      elevator: json['machineNumber']?.toString() ?? json['elevator']?.toString() ?? '',
+      elevator:
+          json['machineNumber']?.toString() ??
+          json['elevator']?.toString() ??
+          '',
       startDate: parseDate(json['startDate'], required: true),
       endDate: nullableDate(json['endDate']),
       category: (() {
@@ -67,10 +72,13 @@ class SalesLedgerEntry {
       installment: integer(json['installment']),
       status: json['status']?.toString() ?? '신규',
       note: json['note']?.toString() ?? '',
+      invoiceIssuer: json['invoiceIssuer']?.toString() ?? '',
     );
   }
 
   Map<String, dynamic> toEditableJson() => {
+    'startDate': startDate.toIso8601String().substring(0, 10),
+    'endDate': endDate?.toIso8601String().substring(0, 10),
     'category': category,
     'billingDate': billingDate?.toIso8601String().substring(0, 10),
     'invoiceDate': invoiceDate?.toIso8601String().substring(0, 10),
@@ -79,9 +87,13 @@ class SalesLedgerEntry {
     'installment': installment,
     'status': status,
     'note': note,
+    'invoiceIssuer': invoiceIssuer,
   };
 
   SalesLedgerEntry copyWith({
+    DateTime? startDate,
+    DateTime? endDate,
+    bool clearEndDate = false,
     String? category,
     DateTime? billingDate,
     bool clearBillingDate = false,
@@ -93,14 +105,15 @@ class SalesLedgerEntry {
     int? installment,
     String? status,
     String? note,
+    String? invoiceIssuer,
   }) => SalesLedgerEntry(
     id: id,
     projectName: projectName,
     contractor: contractor,
     partner: partner,
     elevator: elevator,
-    startDate: startDate,
-    endDate: endDate,
+    startDate: startDate ?? this.startDate,
+    endDate: clearEndDate ? null : endDate ?? this.endDate,
     category: category ?? this.category,
     billingDate: clearBillingDate ? null : billingDate ?? this.billingDate,
     invoiceDate: clearInvoiceDate ? null : invoiceDate ?? this.invoiceDate,
@@ -109,6 +122,7 @@ class SalesLedgerEntry {
     installment: installment ?? this.installment,
     status: status ?? this.status,
     note: note ?? this.note,
+    invoiceIssuer: invoiceIssuer ?? this.invoiceIssuer,
   );
 }
 
