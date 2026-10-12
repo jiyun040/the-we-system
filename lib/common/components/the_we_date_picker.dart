@@ -9,6 +9,7 @@ Future<DateTime?> showTheWeDatePicker(
   required DateTime lastDate,
   required String title,
   Key? dialogKey,
+  bool clearOnReselect = false,
 }) {
   final normalizedFirst = DateUtils.dateOnly(firstDate);
   final normalizedLast = DateUtils.dateOnly(lastDate);
@@ -101,8 +102,14 @@ Future<DateTime?> showTheWeDatePicker(
                       initialDate: selectedDate,
                       firstDate: normalizedFirst,
                       lastDate: normalizedLast,
-                      onDateChanged: (date) =>
-                          setDialogState(() => selectedDate = date),
+                      onDateChanged: (date) {
+                        if (clearOnReselect &&
+                            date == DateUtils.dateOnly(initialDate)) {
+                          Navigator.pop(dialogContext, DateTime(1));
+                          return;
+                        }
+                        setDialogState(() => selectedDate = date);
+                      },
                     ),
                   ),
                   const SizedBox(height: 8),

@@ -108,7 +108,14 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       if (!mounted) return;
       setState(
         () => _items = _items
-            .map((item) => item.id == saved.id ? saved : item)
+            .map(
+              (item) => item.id == changed.id
+                  ? (saved.invoiceIssuer.isEmpty &&
+                            changed.invoiceIssuer.isNotEmpty
+                        ? changed
+                        : saved)
+                  : item,
+            )
             .toList(),
       );
       await _load();
@@ -233,7 +240,6 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       '상태',
       '비고',
       '분류',
-      '계산서 발행처',
     ];
     for (final h in headers) {
       html.write('<th>$h</th>');
@@ -242,9 +248,11 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     String esc(Object? v) => const HtmlEscape().convert(v?.toString() ?? '');
     for (var index = 0; index < _items.length; index++) {
       final item = _items[index];
-      final issuerClass = _issuerType(item) == '시공사'
-          ? 'contractor'
-          : (_issuerType(item) == '협력사' ? 'partner' : '');
+      final issuerClass = item.invoiceIssuer.trim().isEmpty
+          ? ''
+          : (_issuerType(item) == '시공사'
+                ? 'contractor'
+                : (_issuerType(item) == '협력사' ? 'partner' : ''));
       final values = [
         index + 1,
         item.projectName,
@@ -263,13 +271,13 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         item.status,
         _mergeNote(item.note, item.adjustmentReason),
         item.category,
-        item.invoiceIssuer.isEmpty ? '협력사' : item.invoiceIssuer,
       ];
       html.write('<tr>');
       for (var i = 0; i < values.length; i++) {
-        html.write(
-          '<td class="${i == 17 ? issuerClass : ''}">${esc(values[i])}</td>',
-        );
+        final cellClass = i == 2 && issuerClass == 'contractor'
+            ? issuerClass
+            : (i == 3 && issuerClass == 'partner' ? issuerClass : '');
+        html.write('<td class="$cellClass">${esc(values[i])}</td>');
       }
       html.write('</tr>');
     }
@@ -680,7 +688,10 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     final item = widget.item;
     category = item.category;
     status = item.status;
-    amount = TextEditingController(text: _money(item.supplyAmount));
+    final baseAmount = item.supplyAmount + item.adjustmentAmount;
+    amount = TextEditingController(
+      text: _money(baseAmount == 0 ? 3000000 : baseAmount),
+    );
     installment = TextEditingController(text: item.installment.toString());
     note = TextEditingController(text: item.note);
     adjustment = TextEditingController(text: item.adjustmentAmount.toString());
@@ -713,18 +724,9 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
       'invoice' => invoice,
       _ => deposit,
     };
-    if (current != null) {
-      setState(() {
-        if (kind == 'billing') billing = null;
-        if (kind == 'invoice') invoice = null;
-        if (kind == 'deposit') deposit = null;
-        if (kind == 'end') usageEnd = null;
-      });
-      return;
-    }
     final selected = await showTheWeDatePicker(
       context,
-      initialDate: DateTime.now(),
+      initialDate: current ?? DateTime.now(),
       firstDate: DateTime(DateTime.now().year - 5),
       lastDate: DateTime.now(),
       title:
@@ -735,6 +737,15 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
           }} 날짜 선택',
     );
     if (selected == null) return;
+    if (selected.year == 1) {
+      setState(() {
+        if (kind == 'end') usageEnd = null;
+        if (kind == 'billing') billing = null;
+        if (kind == 'invoice') invoice = null;
+        if (kind == 'deposit') deposit = null;
+      });
+      return;
+    }
     setState(() {
       if (kind == 'billing') billing = selected;
       if (kind == 'invoice') invoice = selected;
@@ -1163,15 +1174,20 @@ String _issuerType(SalesLedgerEntry item) {
   return '기타';
 }
 
-Color _issuerColor(SalesLedgerEntry item) => _issuerType(item) == '시공사'
-    ? const Color(0xFFE7EFFF)
-    : (_issuerType(item) == '협력사' ? const Color(0xFFE8F5E9) : Colors.white);
-Color _issuerColorForText(String text, SalesLedgerEntry item) =>
-    _issuerType(item.copyWith(invoiceIssuer: text)) == '시공사'
-    ? const Color(0xFFE7EFFF)
-    : (_issuerType(item.copyWith(invoiceIssuer: text)) == '협력사'
-          ? const Color(0xFFE8F5E9)
-          : Colors.white);
+Color _issuerColor(SalesLedgerEntry item) => item.invoiceIssuer.trim().isEmpty
+    ? Colors.white
+    : (_issuerType(item) == '시공사'
+          ? const Color(0xFFE7EFFF)
+          : (_issuerType(item) == '협력사'
+                ? const Color(0xFFE8F5E9)
+                : Colors.white));
+Color _issuerColorForText(String text, SalesLedgerEntry item) {
+  if (text.trim().isEmpty) return Colors.white;
+  final typed = item.copyWith(invoiceIssuer: text);
+  return _issuerType(typed) == '시공사'
+      ? const Color(0xFFE7EFFF)
+      : (_issuerType(typed) == '협력사' ? const Color(0xFFE8F5E9) : Colors.white);
+}
 
 Widget _editAmountRow(String label, String value, {bool bold = false}) =>
     Padding(
@@ -1444,7 +1460,8 @@ class _StatementDialog extends StatelessWidget {
                   label: const Text('엑셀 다운로드'),
                 ),
                 FilledButton.icon(
-                  onPressed: () => _downloadStatementPdf(context, statement, month),
+                  onPressed: () =>
+                      _downloadStatementPdf(context, statement, month),
                   icon: const Icon(Icons.picture_as_pdf_outlined),
                   label: const Text('PDF 다운로드'),
                 ),
@@ -1488,17 +1505,45 @@ Widget _statementLine(
   ),
 );
 
-Future<void> _downloadStatementExcel(BuildContext context, SalesStatement statement) async {
-  final total = statement.items.fold<int>(0, (sum, item) => sum + item.supplyAmount);
+Future<void> _downloadStatementExcel(
+  BuildContext context,
+  SalesStatement statement,
+) async {
+  final total = statement.items.fold<int>(
+    0,
+    (sum, item) => sum + item.supplyAmount,
+  );
   final vat = (total * .1).round();
   String esc(Object? v) => const HtmlEscape().convert(v?.toString() ?? '');
-  final b = StringBuffer('<html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:7px}th{background:#d9effb}</style></head><body>');
-  b.write('<h2 style="text-align:center">내 역 서</h2><p>수신 : ${esc(statement.items.firstOrNull?.contractor ?? '')}<br>발신 : 우리기술㈜<br>현장명 : ${esc(statement.projectName)}<br>결제일 : 계산서 발행 후 익월 말일 이내</p>');
-  b.write('<table><tr><th>종목</th><th>사용 기간</th><th>단위</th><th>수량</th><th>공급가</th><th>세액</th><th>합계</th><th>비고</th></tr>');
-  for (final item in statement.items) { b.write('<tr><td>PDAM시스템 공급 ${esc(item.elevator)} ${item.installment}회</td><td>${_date(item.startDate)} ~ ${item.endDate == null ? '사용중' : _date(item.endDate!)}</td><td>SET</td><td>1</td><td>${_money(item.supplyAmount)}</td><td>${_money((item.supplyAmount * .1).round())}</td><td>${_money((item.supplyAmount * 1.1).round())}</td><td>${esc(_mergeNote(item.note, item.adjustmentReason))}</td></tr>'); }
-  for (var i = statement.items.length; i < 12; i++) { b.write('<tr><td></td><td></td><td></td><td></td><td></td><td>-</td><td>-</td><td></td></tr>'); }
-  b.write('</table><p style="text-align:right"><b>합계 ${_money(total)} / ${_money(vat)} / ${_money(total + vat)}</b></p><p>비고 *입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사</p></body></html>');
-  await FileSaver.instance.saveFile(name: '내역서_${statement.projectName}', bytes: Uint8List.fromList(utf8.encode(b.toString())), fileExtension: 'xls', mimeType: MimeType.custom, customMimeType: 'application/vnd.ms-excel');
+  final b = StringBuffer(
+    '<html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:7px}th{background:#d9effb}</style></head><body>',
+  );
+  b.write(
+    '<h2 style="text-align:center">내 역 서</h2><p>수신 : ${esc(statement.items.firstOrNull?.contractor ?? '')}<br>발신 : 우리기술㈜<br>현장명 : ${esc(statement.projectName)}<br>결제일 : 계산서 발행 후 익월 말일 이내</p>',
+  );
+  b.write(
+    '<table><tr><th>종목</th><th>사용 기간</th><th>단위</th><th>수량</th><th>공급가</th><th>세액</th><th>합계</th><th>비고</th></tr>',
+  );
+  for (final item in statement.items) {
+    b.write(
+      '<tr><td>PDAM시스템 공급 ${esc(item.elevator)} ${item.installment}회</td><td>${_date(item.startDate)} ~ ${item.endDate == null ? '사용중' : _date(item.endDate!)}</td><td>SET</td><td>1</td><td>${_money(item.supplyAmount)}</td><td>${_money((item.supplyAmount * .1).round())}</td><td>${_money((item.supplyAmount * 1.1).round())}</td><td>${esc(_mergeNote(item.note, item.adjustmentReason))}</td></tr>',
+    );
+  }
+  for (var i = statement.items.length; i < 12; i++) {
+    b.write(
+      '<tr><td></td><td></td><td></td><td></td><td></td><td>-</td><td>-</td><td></td></tr>',
+    );
+  }
+  b.write(
+    '</table><p style="text-align:right"><b>합계 ${_money(total)} / ${_money(vat)} / ${_money(total + vat)}</b></p><p>비고 *입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사</p></body></html>',
+  );
+  await FileSaver.instance.saveFile(
+    name: '내역서_${statement.projectName}',
+    bytes: Uint8List.fromList(utf8.encode(b.toString())),
+    fileExtension: 'xls',
+    mimeType: MimeType.custom,
+    customMimeType: 'application/vnd.ms-excel',
+  );
   if (context.mounted) showTheWeSnackBar(context, message: '엑셀 파일로 저장했습니다.');
 }
 
