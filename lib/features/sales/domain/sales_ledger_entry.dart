@@ -16,6 +16,8 @@ class SalesLedgerEntry {
     required this.status,
     required this.note,
     this.invoiceIssuer = '',
+    this.adjustmentAmount = 0,
+    this.adjustmentReason = '',
   });
 
   final String id;
@@ -34,6 +36,8 @@ class SalesLedgerEntry {
   final String status;
   final String note;
   final String invoiceIssuer;
+  final int adjustmentAmount;
+  final String adjustmentReason;
 
   factory SalesLedgerEntry.fromJson(Map<String, dynamic> json) {
     DateTime parseDate(dynamic value, {bool required = false}) {
@@ -73,6 +77,8 @@ class SalesLedgerEntry {
       status: json['status']?.toString() ?? '신규',
       note: json['note']?.toString() ?? '',
       invoiceIssuer: json['invoiceIssuer']?.toString() ?? '',
+      adjustmentAmount: integer(json['adjustmentAmount'] ?? json['adjustment']),
+      adjustmentReason: json['adjustmentReason']?.toString() ?? '',
     );
   }
 
@@ -88,6 +94,8 @@ class SalesLedgerEntry {
     'status': status,
     'note': note,
     'invoiceIssuer': invoiceIssuer,
+    'adjustmentAmount': adjustmentAmount,
+    'adjustmentReason': adjustmentReason,
   };
 
   SalesLedgerEntry copyWith({
@@ -106,6 +114,8 @@ class SalesLedgerEntry {
     String? status,
     String? note,
     String? invoiceIssuer,
+    int? adjustmentAmount,
+    String? adjustmentReason,
   }) => SalesLedgerEntry(
     id: id,
     projectName: projectName,
@@ -123,6 +133,8 @@ class SalesLedgerEntry {
     status: status ?? this.status,
     note: note ?? this.note,
     invoiceIssuer: invoiceIssuer ?? this.invoiceIssuer,
+    adjustmentAmount: adjustmentAmount ?? this.adjustmentAmount,
+    adjustmentReason: adjustmentReason ?? this.adjustmentReason,
   );
 }
 

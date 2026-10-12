@@ -13,6 +13,7 @@ class TheWeDataTable extends StatelessWidget {
     this.columnFlexes,
     this.minWidth = 920,
     this.onRowTaps,
+    this.rowColors,
     this.verticalScrollController,
   });
 
@@ -21,6 +22,7 @@ class TheWeDataTable extends StatelessWidget {
   final List<double>? columnFlexes;
   final double minWidth;
   final List<VoidCallback?>? onRowTaps;
+  final List<Color?>? rowColors;
   final ScrollController? verticalScrollController;
 
   @override
@@ -103,9 +105,12 @@ class TheWeDataTable extends StatelessWidget {
                     for (var rowIndex = 0; rowIndex < rows.length; rowIndex++)
                       TableRow(
                         decoration: BoxDecoration(
-                          color: rowIndex.isEven
-                              ? Colors.white
-                              : TheWeColor.blueSurface.withValues(alpha: .55),
+                          color:
+                              rowColors != null &&
+                                  rowIndex < rowColors!.length &&
+                                  rowColors![rowIndex] != null
+                              ? rowColors![rowIndex]
+                              : Colors.white,
                         ),
                         children: [
                           for (
