@@ -11,6 +11,7 @@ import 'package:the_we_system/common/components/mobile_navigation.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
 import 'package:the_we_system/common/components/the_we_date_picker.dart';
+import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
@@ -722,7 +723,10 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     final compact = MediaQuery.sizeOf(context).width < 600;
     final supply = int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
     final tax = (supply * .1).round();
-    final fieldWidth = compact ? double.infinity : 260.0;
+    final modalContentWidth = compact
+        ? MediaQuery.sizeOf(context).width - 72
+        : 640.0 - 56;
+    final fieldWidth = compact ? double.infinity : (modalContentWidth - 16) / 2;
     Widget field(String label, Widget child, {double? width}) => SizedBox(
       width: width ?? fieldWidth,
       child: Column(
@@ -770,12 +774,24 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  '${item.contractor} / ${item.partner} · ${item.startDate.year}년 ${item.startDate.month}월 · ${item.installment}회차',
+                  '${item.contractor} / ${item.partner} · ${item.startDate.year}년 ${item.startDate.month}월 ·',
                   style: TheWeTextStyle.caption.copyWith(
                     color: TheWeColor.black500,
                   ),
                 ),
-                _StatusPill(status: status),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '${item.installment}회차',
+                      style: TheWeTextStyle.caption.copyWith(
+                        color: TheWeColor.black500,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _StatusPill(status: status),
+                  ],
+                ),
               ],
             ),
             const Divider(height: 30),
@@ -801,27 +817,23 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
               children: [
                 field(
                   '분류',
-                  DropdownButtonFormField<String>(
-                    initialValue: category.isEmpty ? null : category,
-                    decoration: const InputDecoration(isDense: true, hintText: '선택'),
-                    items: const [
-                      DropdownMenuItem(value: '본사', child: Text('본사')),
-                      DropdownMenuItem(value: '가맹', child: Text('가맹')),
-                    ],
+                  TheWeDropdown<String>(
+                    value: category.isEmpty ? null : category,
+                    items: const ['본사', '가맹'],
+                    labelBuilder: (value) => value,
+                    hintText: '선택',
+                    width: double.infinity,
                     onChanged: (value) =>
                         setState(() => category = value ?? ''),
                   ),
                 ),
                 field(
                   '상태',
-                  DropdownButtonFormField<String>(
-                    initialValue: status,
-                    decoration: const InputDecoration(isDense: true),
-                    items: const [
-                      DropdownMenuItem(value: '신규', child: Text('신규')),
-                      DropdownMenuItem(value: '진행', child: Text('진행')),
-                      DropdownMenuItem(value: '종료', child: Text('종료')),
-                    ],
+                  TheWeDropdown<String>(
+                    value: status,
+                    items: const ['신규', '진행', '종료'],
+                    labelBuilder: (value) => value,
+                    width: double.infinity,
                     onChanged: (value) =>
                         setState(() => status = value ?? '신규'),
                   ),
@@ -899,7 +911,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                   ),
                 ),
                 SizedBox(
-                  width: compact ? double.infinity : 536,
+                  width: double.infinity,
                   child: field(
                     '계산서 발행처',
                     TextField(
@@ -909,7 +921,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                         hintText: '비워두면 협력사로 발행됩니다.',
                       ),
                     ),
-                    width: compact ? double.infinity : 536,
+                    width: double.infinity,
                   ),
                 ),
               ],
