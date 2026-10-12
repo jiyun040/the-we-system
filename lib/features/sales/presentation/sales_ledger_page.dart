@@ -683,11 +683,12 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
       initialDate: current ?? DateTime.now(),
       firstDate: DateTime(DateTime.now().year - 5),
       lastDate: DateTime.now(),
-      title: '${switch (kind) {
-        'billing' => '청구',
-        'invoice' => '계산서 발행',
-        _ => '입금',
-      }} 날짜 선택',
+      title:
+          '${switch (kind) {
+            'billing' => '청구',
+            'invoice' => '계산서 발행',
+            _ => '입금',
+          }} 날짜 선택',
     );
     if (selected == null) return;
     setState(() {
@@ -698,135 +699,208 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => TheWeModalSurface(
-    width: 720,
-    maxWidth: 720,
-    maxHeightFactor: .92,
-    child: SingleChildScrollView(
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final compact = MediaQuery.sizeOf(context).width < 600;
+    final supply = int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
+    final tax = (supply * .1).round();
+    final fieldWidth = compact ? double.infinity : 260.0;
+    Widget field(String label, Widget child) => SizedBox(
+      width: fieldWidth,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TheWeModalHeader(
-            title: '${widget.item.projectName} · ${widget.item.elevator}',
-            onClose: () => Navigator.pop(context),
-          ),
-          const SizedBox(height: 20),
-          Text('PDAM 연동 정보', style: TheWeTextStyle.section),
-          const SizedBox(height: 8),
           Text(
-            '${widget.item.contractor} · ${widget.item.partner}\n${_date(widget.item.startDate)} ~ ${widget.item.endDate == null ? '진행 중' : _date(widget.item.endDate!)}  (${_duration(widget.item.startDate, widget.item.endDate)})',
-            style: TheWeTextStyle.body,
-          ),
-          const Divider(height: 32),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              SizedBox(
-                width: 205,
-                child: DropdownButtonFormField<String>(
-                  initialValue: category,
-                  decoration: const InputDecoration(labelText: '분류'),
-                  items: const [
-                    DropdownMenuItem(value: '', child: Text('미분류')),
-                    DropdownMenuItem(value: '본사', child: Text('본사')),
-                    DropdownMenuItem(value: '가맹', child: Text('가맹')),
-                  ],
-                  onChanged: (value) => setState(() => category = value ?? ''),
-                ),
-              ),
-              SizedBox(
-                width: 205,
-                child: DropdownButtonFormField<String>(
-                  initialValue: status,
-                  decoration: const InputDecoration(labelText: '상태'),
-                  items: const [
-                    DropdownMenuItem(value: '신규', child: Text('신규')),
-                    DropdownMenuItem(value: '진행', child: Text('진행')),
-                    DropdownMenuItem(value: '종료', child: Text('종료')),
-                  ],
-                  onChanged: (value) => setState(() => status = value ?? '신규'),
-                ),
-              ),
-              SizedBox(
-                width: 205,
-                child: TextField(
-                  controller: installment,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: '회차'),
-                ),
-              ),
-              SizedBox(
-                width: 205,
-                child: TextField(
-                  controller: amount,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [_currencyInputFormatter],
-                  decoration: const InputDecoration(labelText: '공급가'),
-                ),
-              ),
-              _dateButton('청구일', billing, () => choose('billing')),
-              _dateButton('계산서 발행일', invoice, () => choose('invoice')),
-              _dateButton('입금일', deposit, () => choose('deposit')),
-            ],
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: note,
-            maxLines: 3,
-            decoration: const InputDecoration(labelText: '비고'),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            '입금액은 공급가와 부가세를 기준으로 자동 계산됩니다. 회차 1회는 신규, 2회 이상은 진행으로 정리됩니다.',
+            label,
             style: TheWeTextStyle.hintText.copyWith(color: TheWeColor.black500),
           ),
-          const SizedBox(height: 22),
-          TheWeModalActions(
-            primaryLabel: '저장',
-            secondaryLabel: '취소',
-            primaryColor: TheWeColor.black900,
-            onSecondaryPressed: () => Navigator.pop(context),
-            onPrimaryPressed: () {
-              final cycle = int.tryParse(installment.text) ?? 1;
-              Navigator.pop(
-                context,
-                widget.item.copyWith(
-                  category: category,
-                  status: status,
-                  installment: cycle < 1 ? 1 : cycle,
-                  supplyAmount:
-                      int.tryParse(amount.text.replaceAll(',', '')) ?? 0,
-                  note: note.text.trim(),
-                  billingDate: billing,
-                  clearBillingDate: billing == null,
-                  invoiceDate: invoice,
-                  clearInvoiceDate: invoice == null,
-                  depositDate: deposit,
-                  clearDepositDate: deposit == null,
-                ),
-              );
-            },
-          ),
+          const SizedBox(height: 5),
+          child,
         ],
       ),
-    ),
-  );
-  Widget _dateButton(String label, DateTime? value, VoidCallback onPressed) =>
-      SizedBox(
-        width: 205,
-        child: InkWell(
-          onTap: onPressed,
-          borderRadius: BorderRadius.circular(10),
-          child: InputDecorator(
-            decoration: InputDecoration(
-              labelText: label,
-              suffixIcon: const Icon(Icons.calendar_today_outlined, size: 18),
-            ),
-            child: Text(_date(value)),
-          ),
+    );
+    Widget dateField(String label, DateTime? value, String kind) => field(
+      label,
+      OutlinedButton.icon(
+        onPressed: () => choose(kind),
+        icon: const Icon(Icons.calendar_month_outlined, size: 18),
+        label: Text(value == null ? 'YYYY.MM.DD' : _date(value)),
+        style: OutlinedButton.styleFrom(
+          alignment: Alignment.centerLeft,
+          minimumSize: const Size.fromHeight(42),
+          foregroundColor: TheWeColor.black900,
+          side: const BorderSide(color: TheWeColor.blue100),
         ),
-      );
+      ),
+    );
+    return TheWeModalSurface(
+      width: 640,
+      maxWidth: 640,
+      maxHeightFactor: .94,
+      padding: EdgeInsets.all(compact ? 18 : 28),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: '${item.projectName} · ${item.elevator}',
+              onClose: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Text(
+                  '${item.contractor} / ${item.partner} · ${item.startDate.year}년 ${item.startDate.month}월 · ${item.installment}회차',
+                  style: TheWeTextStyle.caption.copyWith(
+                    color: TheWeColor.black500,
+                  ),
+                ),
+                _StatusPill(status: status),
+              ],
+            ),
+            const Divider(height: 30),
+            Text('계약 조건', style: TheWeTextStyle.section),
+            const SizedBox(height: 10),
+            Text(
+              '단가     월정산 · 월 ${_money(item.supplyAmount)}원',
+              style: TheWeTextStyle.caption,
+            ),
+            const SizedBox(height: 5),
+            Text('정산일  말일', style: TheWeTextStyle.caption),
+            const SizedBox(height: 5),
+            Text(
+              '계약기간  ${_date(item.startDate)} ~ ${item.endDate == null ? '사용중' : _date(item.endDate)}',
+              style: TheWeTextStyle.caption,
+            ),
+            const SizedBox(height: 25),
+            Text('사용기간 · 금액', style: TheWeTextStyle.section),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 14,
+              children: [
+                field(
+                  '분류',
+                  DropdownButtonFormField<String>(
+                    initialValue: category,
+                    decoration: const InputDecoration(isDense: true),
+                    items: const [
+                      DropdownMenuItem(value: '', child: Text('미분류')),
+                      DropdownMenuItem(value: '본사', child: Text('본사')),
+                      DropdownMenuItem(value: '가맹', child: Text('가맹')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => category = value ?? ''),
+                  ),
+                ),
+                field(
+                  '상태',
+                  DropdownButtonFormField<String>(
+                    initialValue: status,
+                    decoration: const InputDecoration(isDense: true),
+                    items: const [
+                      DropdownMenuItem(value: '신규', child: Text('신규')),
+                      DropdownMenuItem(value: '진행', child: Text('진행')),
+                      DropdownMenuItem(value: '종료', child: Text('종료')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => status = value ?? '신규'),
+                  ),
+                ),
+                field(
+                  '회차',
+                  TextField(
+                    controller: installment,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(isDense: true),
+                  ),
+                ),
+                field(
+                  '공급가',
+                  TextField(
+                    controller: amount,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [_currencyInputFormatter],
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(isDense: true),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: TheWeColor.blue100),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  _editAmountRow('공급가', _money(supply)),
+                  _editAmountRow('부가세 10%', _money(tax)),
+                  _editAmountRow('합계', _money(supply + tax), bold: true),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+            Text('청구 · 계산서 · 입금', style: TheWeTextStyle.section),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 14,
+              children: [
+                dateField('청구일', billing, 'billing'),
+                dateField('계산서 발행일', invoice, 'invoice'),
+                dateField('입금일', deposit, 'deposit'),
+                field(
+                  '입금액 (자동계산)',
+                  InputDecorator(
+                    decoration: const InputDecoration(isDense: true),
+                    child: Text('합계 ${_money(supply + tax)}'),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            field(
+              '비고',
+              TextField(
+                controller: note,
+                decoration: const InputDecoration(isDense: true),
+              ),
+            ),
+            const SizedBox(height: 24),
+            TheWeModalActions(
+              primaryLabel: '저장',
+              secondaryLabel: '취소',
+              onSecondaryPressed: () => Navigator.pop(context),
+              onPrimaryPressed: () {
+                final cycle = int.tryParse(installment.text) ?? 1;
+                Navigator.pop(
+                  context,
+                  item.copyWith(
+                    category: category,
+                    status: status,
+                    installment: cycle < 1 ? 1 : cycle,
+                    supplyAmount:
+                        int.tryParse(amount.text.replaceAll(',', '')) ?? 0,
+                    note: note.text.trim(),
+                    billingDate: billing,
+                    clearBillingDate: billing == null,
+                    invoiceDate: invoice,
+                    clearInvoiceDate: invoice == null,
+                    depositDate: deposit,
+                    clearDepositDate: deposit == null,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /*
@@ -962,6 +1036,28 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
 
 */
 
+Widget _editAmountRow(String label, String value, {bool bold = false}) =>
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: TheWeTextStyle.caption.copyWith(
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            value,
+            style: TheWeTextStyle.caption.copyWith(
+              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+
 class _StatementDialog extends StatelessWidget {
   const _StatementDialog({required this.statement, required this.month});
   final SalesStatement statement;
@@ -969,150 +1065,237 @@ class _StatementDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = statement.items.fold(
+    final total = statement.items.fold<int>(
       0,
-      (value, item) => value + item.supplyAmount,
+      (sum, item) => sum + item.supplyAmount,
     );
     final vat = (total * .1).round();
+    final issueDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final first = statement.items.firstOrNull;
+    final rowCount = statement.items.length < 12 ? 12 : statement.items.length;
     final rows = <TableRow>[
       TableRow(
-        decoration: const BoxDecoration(color: TheWeColor.blueSurface),
         children: [
           for (final label in const [
-            '종목',
-            '사용 기간',
+            '종 목',
+            '사 용 기 간',
             '단위',
             '수량',
             '공급가',
-            '세액',
-            '합계',
-            '비고',
+            '세 액',
+            '합 계',
+            '비 고',
           ])
             _statementCell(label, bold: true),
         ],
       ),
-      for (final item in statement.items)
+      for (var i = 0; i < rowCount; i++)
         TableRow(
-          children: [
-            _statementCell('PDAM시스템 공급\n${item.elevator}'),
-            _statementCell(
-              '${_date(item.startDate)} ~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
-            ),
-            _statementCell('SET'),
-            _statementCell('1'),
-            _statementCell(_money(item.supplyAmount)),
-            _statementCell(_money((item.supplyAmount * .1).round())),
-            _statementCell(_money((item.supplyAmount * 1.1).round())),
-            _statementCell(item.note),
-          ],
+          children: i < statement.items.length
+              ? [
+                  _statementCell(
+                    'PDAM시스템 공급\n${statement.items[i].elevator} ${statement.items[i].installment}회',
+                  ),
+                  _statementCell(
+                    '${_date(statement.items[i].startDate)} ~ ${statement.items[i].endDate == null ? '사용중' : _date(statement.items[i].endDate)}',
+                  ),
+                  _statementCell('SET'),
+                  _statementCell('1'),
+                  _statementCell(_money(statement.items[i].supplyAmount)),
+                  _statementCell(
+                    _money((statement.items[i].supplyAmount * .1).round()),
+                  ),
+                  _statementCell(
+                    _money((statement.items[i].supplyAmount * 1.1).round()),
+                  ),
+                  _statementCell(statement.items[i].note),
+                ]
+              : [
+                  for (var col = 0; col < 8; col++)
+                    _statementCell(col == 5 || col == 6 ? '-' : ''),
+                ],
         ),
     ];
     return TheWeModalSurface(
-      maxWidth: 980,
-      maxHeightFactor: .92,
-      padding: const EdgeInsets.fromLTRB(28, 24, 28, 24),
+      maxWidth: 1000,
+      maxHeightFactor: .94,
+      padding: const EdgeInsets.all(18),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TheWeModalHeader(
-            title: '내 역 서',
-            onClose: () => Navigator.pop(context),
-          ),
-          const SizedBox(height: 18),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(0, 4, 0, 14),
-            decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: TheWeColor.black900, width: 1.5)),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _statementInfo('수신', statement.items.firstOrNull?.contractor ?? '-'),
-                      const SizedBox(height: 10),
-                      _statementInfo('현장명', statement.projectName),
-                      const SizedBox(height: 10),
-                      _statementInfo('결제일', '계산서 발행 후 익월 말일 이내'),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text('우리기술 주식회사', style: TheWeTextStyle.subtitle.copyWith(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 4),
-                      Text('등록번호 : 787-88-01517', style: TheWeTextStyle.caption),
-                      Text('대표이사 : 조성률', style: TheWeTextStyle.caption),
-                      Text('TEL 070-4334-9000  FAX 042-933-0104', style: TheWeTextStyle.caption),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            color: TheWeColor.blueSurface,
-            child: Text(
-              '아래 품목의 내역을 제출하오니 검토 바랍니다.  ${month.year}-${month.month.toString().padLeft(2, '0')}',
-              style: TheWeTextStyle.body,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '내역 합계 금액(Total)  ${_money((total + vat))}원 (VAT 포함)',
-              style: TheWeTextStyle.subtitle,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: SizedBox(
-              width: 900,
-              child: Table(
-                border: TableBorder.all(color: TheWeColor.blue100),
-                columnWidths: const {
-                  0: FlexColumnWidth(1.5),
-                  1: FlexColumnWidth(2.2),
-                  2: FlexColumnWidth(.7),
-                  3: FlexColumnWidth(.6),
-                  4: FlexColumnWidth(1.1),
-                  5: FlexColumnWidth(.9),
-                  6: FlexColumnWidth(1.1),
-                  7: FlexColumnWidth(1.4),
-                },
-                children: rows,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           Row(
             children: [
               const Spacer(),
-              Text(
-                '합계  ${_money(total)}  ${_money(vat)}  ${_money(total + vat)}',
-                style: TheWeTextStyle.subtitle,
+              IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: const Color(0xFFF4F6E9),
-            child: const Text('비고  *입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사'),
+          Expanded(
+            child: SingleChildScrollView(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Container(
+                  width: 920,
+                  height: 1130,
+                  padding: const EdgeInsets.fromLTRB(34, 10, 34, 24),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      right: BorderSide(color: Colors.blue, width: 3),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '내 역 서',
+                        textAlign: TextAlign.center,
+                        style: TheWeTextStyle.pageTitle.copyWith(
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 10,
+                        ),
+                      ),
+                      const SizedBox(height: 70),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: [
+                                _statementLine('수 신', first?.contractor ?? ''),
+                                _statementLine('발 신', '우리기술㈜'),
+                                _statementLine(
+                                  '현 장 명',
+                                  statement.projectName,
+                                  highlighted: true,
+                                ),
+                                _statementLine('결 제 일', '계산서 발행 후 익월 말일 이내'),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 32),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Image.asset(
+                                      'assets/images/theWeLogo.png',
+                                      width: 50,
+                                      height: 32,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      '우리기술 주식회사',
+                                      style: TheWeTextStyle.subtitle.copyWith(
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Text(
+                                  '등록번호 : 787-88-01517   대표이사 : 조 성 률',
+                                  style: TheWeTextStyle.caption,
+                                ),
+                                Text(
+                                  '본사 : 대전광역시 대덕구 신일동로 105, 304호',
+                                  style: TheWeTextStyle.caption,
+                                ),
+                                Text(
+                                  '업태 : 제조업, 정보통신업',
+                                  style: TheWeTextStyle.caption,
+                                ),
+                                Text(
+                                  '종목 : PDAM시스템제조및공급, 응용소프트웨어개발및공급',
+                                  style: TheWeTextStyle.caption,
+                                  textAlign: TextAlign.center,
+                                ),
+                                Text(
+                                  'TEL 070-4334-9000  FAX 042-933-0104',
+                                  style: TheWeTextStyle.caption,
+                                ),
+                                Text(
+                                  'e-mail : we8104@hanmail.net',
+                                  style: TheWeTextStyle.caption,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 28),
+                      Container(
+                        color: const Color(0xFFD9EFFB),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 11,
+                        ),
+                        child: Row(
+                          children: [
+                            const Expanded(
+                              child: Text('아래 품목의 내역을 제출하오니 검토 바랍니다.'),
+                            ),
+                            Text(issueDate),
+                          ],
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Text(
+                          '내역 합계 금액(Total)              ${_money(total + vat)}  원 (VAT 포함)',
+                          textAlign: TextAlign.center,
+                          style: TheWeTextStyle.subtitle,
+                        ),
+                      ),
+                      const Divider(
+                        color: Colors.black,
+                        thickness: 2,
+                        height: 2,
+                      ),
+                      Table(
+                        columnWidths: const {
+                          0: FlexColumnWidth(1.7),
+                          1: FlexColumnWidth(2.4),
+                          2: FlexColumnWidth(.6),
+                          3: FlexColumnWidth(.6),
+                          4: FlexColumnWidth(1.1),
+                          5: FlexColumnWidth(1),
+                          6: FlexColumnWidth(1.2),
+                          7: FlexColumnWidth(.9),
+                        },
+                        border: const TableBorder(
+                          horizontalInside: BorderSide(
+                            color: Color(0xFFE7E7E7),
+                          ),
+                        ),
+                        children: rows,
+                      ),
+                      const Spacer(),
+                      const Divider(color: Colors.black54, height: 2),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Text(
+                          '합     계                     ${statement.items.length}      ${_money(total)}       ${_money(vat)}       ${_money(total + vat)}',
+                          textAlign: TextAlign.right,
+                          style: TheWeTextStyle.subtitle,
+                        ),
+                      ),
+                      Container(
+                        color: const Color(0xFFF0F4E6),
+                        padding: const EdgeInsets.all(12),
+                        child: const Text(
+                          '비   고     *입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ),
-          const SizedBox(height: 16),
           Align(
             alignment: Alignment.centerRight,
             child: FilledButton.icon(
@@ -1127,6 +1310,37 @@ class _StatementDialog extends StatelessWidget {
   }
 }
 
+Widget _statementLine(
+  String label,
+  String value, {
+  bool highlighted = false,
+}) => Container(
+  color: highlighted ? const Color(0xFFE9EFFC) : Colors.transparent,
+  padding: const EdgeInsets.symmetric(vertical: 7),
+  child: Row(
+    children: [
+      SizedBox(
+        width: 78,
+        child: Text(
+          '$label :',
+          style: TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ),
+      Expanded(
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.black)),
+          ),
+          child: Text(
+            value,
+            style: TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+      ),
+    ],
+  ),
+);
+
 Future<void> _downloadStatementPdf(
   BuildContext context,
   SalesStatement statement,
@@ -1138,6 +1352,11 @@ Future<void> _downloadStatementPdf(
     );
     final bold = pw.Font.ttf(
       await rootBundle.load('assets/fonts/SUIT-Bold.ttf'),
+    );
+    final logo = pw.MemoryImage(
+      (await rootBundle.load(
+        'assets/images/theWeLogo.png',
+      )).buffer.asUint8List(),
     );
     final total = statement.items.fold(
       0,
@@ -1163,7 +1382,7 @@ Future<void> _downloadStatementPdf(
                 ),
               ),
             ),
-            pw.SizedBox(height: 22),
+            pw.SizedBox(height: 65),
             pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
@@ -1171,7 +1390,11 @@ Future<void> _downloadStatementPdf(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
-                      pw.Text('수신 : ${statement.items.firstOrNull?.contractor ?? '-'}'),
+                      pw.Text(
+                        '수신 : ${statement.items.firstOrNull?.contractor ?? '-'}',
+                      ),
+                      pw.SizedBox(height: 6),
+                      pw.Text('발신 : 우리기술㈜'),
                       pw.SizedBox(height: 6),
                       pw.Text('현장명 : ${statement.projectName}'),
                       pw.SizedBox(height: 6),
@@ -1183,23 +1406,38 @@ Future<void> _downloadStatementPdf(
                   child: pw.Column(
                     crossAxisAlignment: pw.CrossAxisAlignment.end,
                     children: [
-                      pw.Text('우리기술 주식회사', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                      pw.Row(
+                        mainAxisAlignment: pw.MainAxisAlignment.end,
+                        children: [
+                          pw.Image(logo, width: 28, height: 20),
+                          pw.SizedBox(width: 4),
+                          pw.Text(
+                            '우리기술 주식회사',
+                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                          ),
+                        ],
+                      ),
                       pw.Text('등록번호 : 787-88-01517'),
                       pw.Text('대표이사 : 조성률'),
+                      pw.Text('본사 : 대전광역시 대덕구 신일동로 105, 304호'),
+                      pw.Text('업태 : 제조업, 정보통신업'),
+                      pw.Text('종목 : PDAM시스템제조및공급, 응용소프트웨어개발및공급'),
                       pw.Text('TEL 070-4334-9000  FAX 042-933-0104'),
+                      pw.Text('e-mail : we8104@hanmail.net'),
                     ],
                   ),
                 ),
               ],
             ),
-            pw.SizedBox(height: 8),
-            pw.Text('발행일 : ${DateFormat('yyyy-MM-dd').format(DateTime.now())}'),
-            pw.SizedBox(height: 16),
+            pw.SizedBox(height: 26),
             pw.Container(
               color: PdfColor.fromInt(0xffd9efff),
               padding: const pw.EdgeInsets.all(10),
-              child: pw.Text(
-                '아래 품목의 내역을 제출하오니 검토 바랍니다.  ${month.year}-${month.month.toString().padLeft(2, '0')}',
+              child: pw.Row(
+                children: [
+                  pw.Expanded(child: pw.Text('아래 품목의 내역을 제출하오니 검토 바랍니다.')),
+                  pw.Text(DateFormat('yyyy-MM-dd').format(DateTime.now())),
+                ],
               ),
             ),
             pw.SizedBox(height: 12),
@@ -1210,12 +1448,10 @@ Future<void> _downloadStatementPdf(
                 style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
               ),
             ),
-            pw.SizedBox(height: 10),
+            pw.Divider(thickness: 2),
             pw.TableHelper.fromTextArray(
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              headerDecoration: const pw.BoxDecoration(
-                color: PdfColor.fromInt(0xffd9efff),
-              ),
+              headerDecoration: const pw.BoxDecoration(color: PdfColors.white),
               cellAlignment: pw.Alignment.center,
               headers: const [
                 '종목',
@@ -1230,8 +1466,8 @@ Future<void> _downloadStatementPdf(
               data: [
                 for (final item in statement.items)
                   [
-                    'PDAM시스템 공급\n${item.elevator}',
-                    '${_date(item.startDate)} ~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
+                    'PDAM시스템 공급\n${item.elevator} ${item.installment}회',
+                    '${_date(item.startDate)} ~ ${item.endDate == null ? '사용중' : _date(item.endDate!)}',
                     'SET',
                     '1',
                     _money(item.supplyAmount),
@@ -1239,9 +1475,11 @@ Future<void> _downloadStatementPdf(
                     _money((item.supplyAmount * 1.1).round()),
                     item.note,
                   ],
+                for (var i = statement.items.length; i < 12; i++)
+                  ['', '', '', '', '', '-', '-', ''],
               ],
             ),
-            pw.SizedBox(height: 14),
+            pw.Spacer(),
             pw.Align(
               alignment: pw.Alignment.centerRight,
               child: pw.Text(
