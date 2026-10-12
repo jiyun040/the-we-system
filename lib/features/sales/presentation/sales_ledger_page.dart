@@ -593,7 +593,7 @@ class _LedgerTable extends StatelessWidget {
     _cell(
       '${_date(item.startDate)}\n~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
     ),
-    _cell(_duration(item.startDate, item.endDate), maxLines: 1),
+    _cell(_duration(item.startDate, item.endDate), maxLines: 2),
     _cell(_shortDate(item.billingDate)),
     _cell(_shortDate(item.invoiceDate)),
     _cell(_shortDate(item.depositDate)),
