@@ -132,16 +132,16 @@ class TheWeDataTable extends StatelessWidget {
           },
           child: Scrollbar(
             controller: verticalController,
+            interactive: true,
             thumbVisibility: true,
             trackVisibility: true,
             child: SingleChildScrollView(
               controller: verticalController,
               child: Scrollbar(
                 controller: horizontalController,
+                interactive: true,
                 thumbVisibility: true,
                 trackVisibility: true,
-                notificationPredicate: (notification) =>
-                    notification.depth == 1,
                 child: table,
               ),
             ),

@@ -548,7 +548,7 @@ class _LedgerTable extends StatelessWidget {
     ],
     minWidth: 1580,
     columnFlexes: const [
-      .45,
+      .65,
       2.6,
       1.15,
       1.2,
@@ -1057,28 +1057,6 @@ class _StatementDialog extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 18),
-          Wrap(
-            spacing: 24,
-            runSpacing: 12,
-            children: [
-              SizedBox(
-                width: 220,
-                child: _statementInfo(
-                  '수신',
-                  statement.items.firstOrNull?.partner ?? '-',
-                ),
-              ),
-              SizedBox(
-                width: 280,
-                child: _statementInfo('현장명', statement.projectName),
-              ),
-              _statementInfo(
-                '발행일',
-                DateFormat('yyyy-MM-dd').format(DateTime.now()),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -1333,7 +1311,7 @@ Widget _statementCell(String value, {bool bold = false}) => Padding(
 Widget _cell(String value, {bool left = false}) => Align(
   alignment: left ? Alignment.centerLeft : Alignment.center,
   child: Padding(
-    padding: const EdgeInsets.symmetric(vertical: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
     child: Text(
       value,
       textAlign: left ? TextAlign.left : TextAlign.center,
