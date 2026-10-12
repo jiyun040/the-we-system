@@ -29,9 +29,7 @@ class SalesLedgerPage extends ConsumerStatefulWidget {
 
 class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   final _search = TextEditingController();
-  // Statements are ordinarily issued for the completed month, not the month
-  // currently in progress.
-  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month - 1);
+  DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   String _status = '';
   bool _loading = true;
   String? _error;
