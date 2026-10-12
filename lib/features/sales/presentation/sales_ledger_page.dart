@@ -802,15 +802,28 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                 field(
                   '분류',
                   DropdownButtonFormField<String>(
-                    initialValue: category,
-                    decoration: const InputDecoration(isDense: true),
+                    initialValue: category.isEmpty ? null : category,
+                    decoration: const InputDecoration(isDense: true, hintText: '선택'),
                     items: const [
-                      DropdownMenuItem(value: '', child: Text('미분류')),
                       DropdownMenuItem(value: '본사', child: Text('본사')),
                       DropdownMenuItem(value: '가맹', child: Text('가맹')),
                     ],
                     onChanged: (value) =>
                         setState(() => category = value ?? ''),
+                  ),
+                ),
+                field(
+                  '상태',
+                  DropdownButtonFormField<String>(
+                    initialValue: status,
+                    decoration: const InputDecoration(isDense: true),
+                    items: const [
+                      DropdownMenuItem(value: '신규', child: Text('신규')),
+                      DropdownMenuItem(value: '진행', child: Text('진행')),
+                      DropdownMenuItem(value: '종료', child: Text('종료')),
+                    ],
+                    onChanged: (value) =>
+                        setState(() => status = value ?? '신규'),
                   ),
                 ),
                 dateField('시작일', usageStart, 'start'),
@@ -832,20 +845,6 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                       isDense: true,
                       hintText: '예) 계약 특가, 장기사용',
                     ),
-                  ),
-                ),
-                field(
-                  '상태',
-                  DropdownButtonFormField<String>(
-                    initialValue: status,
-                    decoration: const InputDecoration(isDense: true),
-                    items: const [
-                      DropdownMenuItem(value: '신규', child: Text('신규')),
-                      DropdownMenuItem(value: '진행', child: Text('진행')),
-                      DropdownMenuItem(value: '종료', child: Text('종료')),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => status = value ?? '신규'),
                   ),
                 ),
                 field(

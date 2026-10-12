@@ -42,7 +42,22 @@ class TheWeDataTable extends StatelessWidget {
       builder: (context, constraints) {
         final width = math.max(constraints.maxWidth, minWidth);
         final horizontalController = ScrollController();
+        final scrollbarController = ScrollController();
         final verticalController = ScrollController();
+        var syncingScrollbars = false;
+        void sync(ScrollController from, ScrollController to) {
+          if (syncingScrollbars || !from.hasClients || !to.hasClients) return;
+          syncingScrollbars = true;
+          to.jumpTo(from.offset.clamp(0.0, to.position.maxScrollExtent));
+          syncingScrollbars = false;
+        }
+
+        horizontalController.addListener(
+          () => sync(horizontalController, scrollbarController),
+        );
+        scrollbarController.addListener(
+          () => sync(scrollbarController, horizontalController),
+        );
         final table = SingleChildScrollView(
           controller: horizontalController,
           scrollDirection: Axis.horizontal,
@@ -130,21 +145,37 @@ class TheWeDataTable extends StatelessWidget {
               ),
             );
           },
-          child: Scrollbar(
-            controller: verticalController,
-            interactive: true,
-            thumbVisibility: true,
-            trackVisibility: true,
-            child: SingleChildScrollView(
-              controller: verticalController,
-              child: Scrollbar(
-                controller: horizontalController,
+          child: Stack(
+            children: [
+              Scrollbar(
+                controller: verticalController,
                 interactive: true,
                 thumbVisibility: true,
                 trackVisibility: true,
-                child: table,
+                child: SingleChildScrollView(
+                  controller: verticalController,
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: table,
+                ),
               ),
-            ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 18,
+                child: Scrollbar(
+                  controller: scrollbarController,
+                  interactive: true,
+                  thumbVisibility: true,
+                  trackVisibility: true,
+                  child: SingleChildScrollView(
+                    controller: scrollbarController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(width: width, height: 1),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
