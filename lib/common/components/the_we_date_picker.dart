@@ -122,8 +122,14 @@ Future<DateTime?> showTheWeDatePicker(
                       ),
                       SizedBox(width: compact ? 4 : 8),
                       FilledButton(
-                        onPressed: () =>
-                            Navigator.pop(dialogContext, selectedDate),
+                        onPressed: () => Navigator.pop(
+                          dialogContext,
+                          clearOnReselect &&
+                                  selectedDate ==
+                                      DateUtils.dateOnly(initialDate)
+                              ? DateTime(1)
+                              : selectedDate,
+                        ),
                         style: FilledButton.styleFrom(
                           backgroundColor: TheWeColor.black900,
                           foregroundColor: Colors.white,

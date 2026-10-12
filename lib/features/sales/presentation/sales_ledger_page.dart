@@ -614,8 +614,8 @@ class _LedgerTable extends StatelessWidget {
         ),
       ),
     ),
-    _cell(item.contractor),
-    _cell(item.partner),
+    _issuerCell(item.contractor, item, isContractor: true),
+    _issuerCell(item.partner, item, isContractor: false),
     _cell(item.elevator, maxLines: 1),
     _cell(
       '${_date(item.startDate)}\n~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
@@ -1751,6 +1751,31 @@ Widget _statementCell(String value, {bool bold = false}) => Padding(
     ),
   ),
 );
+
+Widget _issuerCell(
+  String value,
+  SalesLedgerEntry item, {
+  required bool isContractor,
+}) {
+  final explicitIssuer = item.invoiceIssuer.trim();
+  final matches =
+      explicitIssuer.isNotEmpty &&
+      ((isContractor && _issuerType(item) == '시공사') ||
+          (!isContractor && _issuerType(item) == '협력사'));
+  return Container(
+    width: double.infinity,
+    color: matches
+        ? (isContractor ? const Color(0xFFE7EFFF) : const Color(0xFFE8F5E9))
+        : Colors.transparent,
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+    child: Text(
+      value,
+      textAlign: TextAlign.center,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    ),
+  );
+}
 
 Widget _cell(String value, {bool left = false, int maxLines = 2}) => Align(
   alignment: left ? Alignment.centerLeft : Alignment.center,
