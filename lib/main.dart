@@ -79,7 +79,7 @@ class MyApp extends ConsumerWidget {
         1.0;
 
     return MaterialApp.router(
-      title: '우리기술 전자결재',
+      title: '우리기술 ERP',
       debugShowCheckedModeBanner: false,
       locale: const Locale('ko', 'KR'),
       supportedLocales: const [Locale('ko', 'KR')],

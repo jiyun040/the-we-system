@@ -88,7 +88,7 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
     final notification = message.notification;
     if (notification == null) return;
     showBrowserNotification(
-      title: notification.title ?? '우리기술 전자결재',
+      title: notification.title ?? '우리기술 ERP',
       body: notification.body ?? '새로운 결재 알림이 있습니다.',
     );
   }

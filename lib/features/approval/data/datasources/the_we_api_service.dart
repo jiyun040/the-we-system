@@ -190,9 +190,9 @@ class TheWeApiService {
         logoBytes = null;
       }
     }
-    var leaveRequests = _list(data['leaveRequests'])
-        .map((item) => _leaveRequest(_map(item)))
-        .toList();
+    var leaveRequests = _list(
+      data['leaveRequests'],
+    ).map((item) => _leaveRequest(_map(item))).toList();
     final currentUser = _account(_map(data['currentUser']));
     if (currentUser.isAdmin) {
       try {
@@ -203,8 +203,8 @@ class TheWeApiService {
             : _list(
                 leaveData is Map<String, dynamic>
                     ? (leaveData['requests'] ??
-                        leaveData['items'] ??
-                        leaveData['data'])
+                          leaveData['items'] ??
+                          leaveData['data'])
                     : null,
               );
         if (leaveItems.isNotEmpty) {
@@ -242,8 +242,7 @@ class TheWeApiService {
       acknowledgedLeaveRequestIds: _strings(
         data['acknowledgedLeaveRequestIds'],
       ).toSet(),
-      portalName: (settings['portalName']?.toString() ?? '우리기술 전자결재')
-          .replaceAll('더우리기술', '우리기술'),
+      portalName: _erpPortalName(settings['portalName']?.toString()),
       annualLeaveByYear: _intMap(settings['annualLeaveByYear']),
       monthlyLeavePerMonth: _integer(settings['monthlyLeavePerMonth'], 1),
       adminOtpEnabled: settings['adminOtpEnabled'] != false,
@@ -373,9 +372,7 @@ class TheWeApiService {
       '/leave/requests/$id/${approve ? 'approve' : 'reject'}',
       data: approve
           ? const <String, dynamic>{}
-          : {
-              'rejectionReason': rejectionReason,
-            },
+          : {'rejectionReason': rejectionReason},
     );
   });
 
@@ -539,7 +536,9 @@ EmployeeAccount _account(Map<String, dynamic> data) => EmployeeAccount(
   position: data['position']?.toString() ?? '',
   hireDate: data['hireDate']?.toString() ?? '',
   isAdmin:
-      _flag(data['isAdmin']) || _flag(data['is_staff']) || _flag(data['isStaff']),
+      _flag(data['isAdmin']) ||
+      _flag(data['is_staff']) ||
+      _flag(data['isStaff']),
   canChangeAdminOtp: data['canChangeAdminOtp'] == true,
   annualLeaveDays: (data['annualLeaveDays'] as num?)?.toDouble(),
   monthlyLeaveDays: (data['monthlyLeaveDays'] as num?)?.toDouble(),
@@ -616,3 +615,9 @@ PortalNotice _notice(Map<String, dynamic> data) => PortalNotice(
   updatedAt: data['updatedAt']?.toString() ?? '',
   isPinned: data['isPinned'] == true,
 );
+
+String _erpPortalName(String? value) {
+  final portalName = (value ?? '').trim();
+  if (portalName.isEmpty || portalName.contains('전자결재')) return '우리기술 ERP';
+  return portalName.replaceAll('더우리기술', '우리기술');
+}

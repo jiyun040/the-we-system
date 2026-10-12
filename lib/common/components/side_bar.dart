@@ -71,6 +71,7 @@ class SideBar extends ConsumerWidget {
     final onAttendancePage = currentPath == AppRoutePath.absence;
     final onLeavePage = currentPath == AppRoutePath.leave;
     final onBoardPage = currentPath == AppRoutePath.board;
+    final onSalesLedgerPage = currentPath == AppRoutePath.salesLedger;
     final onReceivedPage = currentPath.contains('/approval/box/received');
     final onDraftPage = currentPath.contains('/approval/box/drafts');
     final onTemporaryPage = currentPath == AppRoutePath.temporaryBox;
@@ -138,7 +139,8 @@ class SideBar extends ConsumerWidget {
                               !onAttendancePage &&
                               !onLeavePage &&
                               !onHomePage &&
-                              !onBoardPage,
+                              !onBoardPage &&
+                              !onSalesLedgerPage,
                           children: [
                             SideBarMenuSection(
                               title: '자주 쓰는 양식',
@@ -299,6 +301,14 @@ class SideBar extends ConsumerWidget {
                           onTap: () => context.go('/board'),
                         ),
                       ],
+                      TheWeGaps.verticalSm,
+                      SideBarMenuItem(
+                        icon: Icons.receipt_long_outlined,
+                        label: '매출관리대장',
+                        selected: onSalesLedgerPage,
+                        isCompact: isCompact,
+                        onTap: () => navigateNamed(AppRouteName.salesLedger),
+                      ),
                       if (state?.isAdminMode == true && attendanceEnabled) ...[
                         TheWeGaps.verticalXxl,
                         SideBarCategorySection(

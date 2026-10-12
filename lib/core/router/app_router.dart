@@ -12,6 +12,7 @@ import 'package:the_we_system/features/approval/presentation/pages/admin/approva
 import 'package:the_we_system/features/approval/presentation/pages/leave/approval_leave_page.dart';
 import 'package:the_we_system/features/approval/presentation/pages/board/approval_board_page.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_auth_gate.dart';
+import 'package:the_we_system/features/sales/presentation/sales_ledger_page.dart';
 
 abstract final class AppRouteName {
   static const home = 'approvalHome';
@@ -27,6 +28,7 @@ abstract final class AppRouteName {
   static const leave = 'approvalLeave';
   static const admin = 'approvalAdmin';
   static const board = 'approvalBoard';
+  static const salesLedger = 'salesLedger';
 }
 
 abstract final class AppRoutePath {
@@ -43,6 +45,7 @@ abstract final class AppRoutePath {
   static const leave = '/leave';
   static const admin = '/admin';
   static const board = '/board';
+  static const salesLedger = '/sales/ledger';
 }
 
 final appRouter = GoRouter(
@@ -135,6 +138,13 @@ final appRouter = GoRouter(
       path: AppRoutePath.leave,
       pageBuilder: (context, state) => const NoTransitionPage(
         child: ApprovalAuthGate(child: ApprovalLeavePage()),
+      ),
+    ),
+    GoRoute(
+      name: AppRouteName.salesLedger,
+      path: AppRoutePath.salesLedger,
+      pageBuilder: (context, state) => const NoTransitionPage(
+        child: ApprovalAuthGate(child: SalesLedgerPage()),
       ),
     ),
     GoRoute(

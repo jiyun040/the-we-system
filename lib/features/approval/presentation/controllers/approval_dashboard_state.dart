@@ -22,7 +22,7 @@ class ApprovalDashboardState {
     this.restrictedDocumentIds = const <String>{},
     this.leaveRequests = const <LeaveRequest>[],
     this.acknowledgedLeaveRequestIds = const <String>{},
-    this.portalName = '우리기술 전자결재',
+    this.portalName = '우리기술 ERP',
     this.customLogoBytes,
     this.customLogoFileName,
     this.adminOtpEnabled = true,
@@ -467,8 +467,7 @@ class ApprovalDashboardState {
     final pendingDocuments = documents
         .where(
           (document) =>
-              document.id.startsWith('LEAVE-') &&
-              document.status == '결재대기',
+              document.id.startsWith('LEAVE-') && document.status == '결재대기',
         )
         .toList();
     final documentIds = pendingDocuments.map((document) => document.id).toSet();
@@ -486,31 +485,28 @@ class ApprovalDashboardState {
 
   LeaveRequest _leaveRequestFromDocument(ApprovalDocument document) {
     final fields = document.formFields;
-    final contentDates = RegExp(r'\d{4}-\d{2}-\d{2}')
-        .allMatches(document.content)
-        .map((match) => match.group(0)!)
-        .toList();
+    final contentDates = RegExp(
+      r'\d{4}-\d{2}-\d{2}',
+    ).allMatches(document.content).map((match) => match.group(0)!).toList();
     final employee = accounts
         .where((account) => account.name == document.drafter)
         .firstOrNull;
-    final startDate = fields['startDate'] ??
+    final startDate =
+        fields['startDate'] ??
         fields['leaveStartDate'] ??
         (contentDates.isNotEmpty ? contentDates.first : '');
-    final endDate = fields['endDate'] ??
+    final endDate =
+        fields['endDate'] ??
         fields['leaveEndDate'] ??
         (contentDates.length > 1 ? contentDates[1] : startDate);
     final type = fields['type'] ?? fields['leaveType'] ?? '휴가';
     final parsedDays = double.tryParse(
       fields['days'] ?? fields['leaveDays'] ?? '',
     );
-    final contentDays = RegExp(r'사용\s*일수\s*[:：]\s*([\d.]+)')
-        .firstMatch(document.content)
-        ?.group(1);
-    final calculatedDays = _calculateLeaveDays(
-      startDate,
-      endDate,
-      type,
-    );
+    final contentDays = RegExp(
+      r'사용\s*일수\s*[:：]\s*([\d.]+)',
+    ).firstMatch(document.content)?.group(1);
+    final calculatedDays = _calculateLeaveDays(startDate, endDate, type);
     return LeaveRequest(
       id: document.id,
       userId: employee?.id ?? document.drafter,
@@ -705,10 +701,7 @@ class ApprovalDashboardState {
 }
 
 bool _isPendingLeaveStatus(String status) =>
-    status == '승인대기' ||
-    status == '진행중' ||
-    status == '대기' ||
-    status == '결재대기';
+    status == '승인대기' || status == '진행중' || status == '대기' || status == '결재대기';
 
 bool _audienceIncludesCurrentUser(
   Iterable<String> audience,

@@ -24,12 +24,12 @@ Future<DateTime?> showTheWeDatePicker(
         return Dialog(
           key: dialogKey,
           backgroundColor: TheWeColor.surfaceAlt,
-          insetPadding: EdgeInsets.all(compact ? 16 : 24),
+          insetPadding: EdgeInsets.all(compact ? 12 : 24),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(30),
           ),
           child: SizedBox(
-            width: 420,
+            width: compact ? double.infinity : 720,
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 compact ? 14 : 22,
@@ -67,7 +67,7 @@ Future<DateTime?> showTheWeDatePicker(
                       ),
                     ],
                   ),
-                  SizedBox(height: compact ? 12 : 16),
+                  SizedBox(height: compact ? 14 : 20),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
@@ -76,12 +76,12 @@ Future<DateTime?> showTheWeDatePicker(
                     ),
                     decoration: BoxDecoration(
                       color: TheWeColor.blueSurface,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(18),
                     ),
                     child: Text(
                       _formatKoreanDate(selectedDate),
                       textAlign: TextAlign.center,
-                      style: TheWeTextStyle.body.copyWith(
+                      style: TheWeTextStyle.subtitle.copyWith(
                         color: TheWeColor.blue300,
                         fontWeight: FontWeight.w700,
                       ),
