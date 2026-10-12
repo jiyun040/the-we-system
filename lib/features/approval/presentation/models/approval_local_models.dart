@@ -65,6 +65,13 @@ class EmployeeAccount {
   bool get canAccessAdminMode =>
       isAdmin || isDesignatedAdministrator;
 
+  bool get canAccessSalesLedger {
+    if (isSystemAdministrator) return true;
+    if (department.trim() == '공무부서' || department.trim() == '공무') return true;
+    return (department.trim() == '현장운영팀' || department.trim() == '현장운영') &&
+        (name.trim() == '송형숙' || name.trim() == '조세훈');
+  }
+
   EmployeeAccount copyWith({
     String? id,
     String? password,

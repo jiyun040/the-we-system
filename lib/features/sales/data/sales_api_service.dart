@@ -31,6 +31,7 @@ class SalesApiService {
       return SalesLedgerResponse(
         items: rawItems
             .whereType<Map>()
+            .where((item) => item['isDel'] != true && item['isDel']?.toString().toLowerCase() != 'true')
             .map(
               (item) =>
                   SalesLedgerEntry.fromJson(Map<String, dynamic>.from(item)),

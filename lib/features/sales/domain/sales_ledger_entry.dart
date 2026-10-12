@@ -52,10 +52,14 @@ class SalesLedgerEntry {
       projectName: json['projectName']?.toString() ?? '',
       contractor: json['contractor']?.toString() ?? '',
       partner: json['partner']?.toString() ?? '',
-      elevator: json['elevator']?.toString() ?? '',
+      elevator: json['machineNumber']?.toString() ?? json['elevator']?.toString() ?? '',
       startDate: parseDate(json['startDate'], required: true),
       endDate: nullableDate(json['endDate']),
-      category: json['category']?.toString() ?? '',
+      category: (() {
+        final value = json['category']?.toString() ?? '';
+        final status = json['status']?.toString() ?? '신규';
+        return status == '종료' && value != '가맹' && value != '본사' ? '' : value;
+      })(),
       billingDate: nullableDate(json['billingDate']),
       invoiceDate: nullableDate(json['invoiceDate']),
       depositDate: nullableDate(json['depositDate']),

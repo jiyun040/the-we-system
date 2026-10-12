@@ -302,13 +302,14 @@ class SideBar extends ConsumerWidget {
                         ),
                       ],
                       TheWeGaps.verticalSm,
-                      SideBarMenuItem(
-                        icon: Icons.receipt_long_outlined,
-                        label: '매출관리대장',
-                        selected: onSalesLedgerPage,
-                        isCompact: isCompact,
-                        onTap: () => navigateNamed(AppRouteName.salesLedger),
-                      ),
+                      if (currentUser?.canAccessSalesLedger == true)
+                        SideBarMenuItem(
+                          icon: Icons.receipt_long_outlined,
+                          label: '매출관리대장',
+                          selected: onSalesLedgerPage,
+                          isCompact: isCompact,
+                          onTap: () => navigateNamed(AppRouteName.salesLedger),
+                        ),
                       if (state?.isAdminMode == true && attendanceEnabled) ...[
                         TheWeGaps.verticalXxl,
                         SideBarCategorySection(

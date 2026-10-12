@@ -143,6 +143,10 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         .watch(approvalDashboardControllerProvider)
         .asData
         ?.value;
+    final user = dashboard?.currentUser;
+    if (user != null && !user.canAccessSalesLedger) {
+      return const Scaffold(body: Center(child: Text('매출관리대장 접근 권한이 없습니다.')));
+    }
     final sideBar = dashboard == null
         ? null
         : SideBar(
@@ -194,13 +198,12 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
 
   Future<void> _pickMonth() async {
     final today = DateTime.now();
-    final selected = await showDatePicker(
+    final selected = await showTheWeDatePicker(
       context: context,
       initialDate: _month,
       firstDate: DateTime(today.year - 5),
       lastDate: today,
-      initialDatePickerMode: DatePickerMode.year,
-      helpText: '조회할 연월 선택',
+      title: '조회할 연월 선택',
     );
     if (selected == null) return;
     setState(() => _month = DateTime(selected.year, selected.month));
