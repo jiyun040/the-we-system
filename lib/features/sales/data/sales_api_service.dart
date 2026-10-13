@@ -63,7 +63,13 @@ class SalesApiService {
         data: entry.toEditableJson(),
       );
       _ledgerCache.clear();
-      return SalesLedgerEntry.fromJson(response.data ?? const {});
+      final saved = SalesLedgerEntry.fromJson(response.data ?? const {});
+      if (saved.invoiceIssuer.trim() != entry.invoiceIssuer.trim()) {
+        throw const ApiException(
+          '계산서 발행처가 서버에 저장되지 않았습니다. 서버 업데이트 적용 여부를 확인해 주세요.',
+        );
+      }
+      return saved;
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }

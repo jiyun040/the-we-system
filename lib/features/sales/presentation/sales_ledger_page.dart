@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/features/sales/export/sales_xlsx.dart';
 
 import 'package:file_saver/file_saver.dart';
@@ -109,21 +110,21 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       if (!mounted) return;
       setState(
         () => _items = _items
-            .map(
-              (item) => item.id == changed.id
-                  ? (saved.invoiceIssuer.isEmpty &&
-                            changed.invoiceIssuer.isNotEmpty
-                        ? changed
-                        : saved)
-                  : item,
-            )
+            .map((item) => item.id == saved.id ? saved : item)
             .toList(),
       );
       await _load();
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('저장하지 못했습니다. 다시 시도해 주세요.')),
+          SnackBar(
+            content: Text(
+              userFacingErrorMessage(
+                error,
+                fallback: '저장하지 못했습니다. 다시 시도해 주세요.',
+              ),
+            ),
+          ),
         );
       }
     }
@@ -709,7 +710,9 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     adjustment = TextEditingController(text: item.adjustmentAmount.toString());
     adjustmentReason = TextEditingController(text: item.adjustmentReason);
     invoiceIssuer = TextEditingController();
-    invoiceIssuer.text = item.invoiceIssuer;
+    invoiceIssuer.text = item.invoiceIssuerType.isNotEmpty
+        ? item.invoiceIssuerType
+        : item.invoiceIssuer;
     usageStart = item.startDate;
     usageEnd = item.endDate;
     billing = item.billingDate;
@@ -972,18 +975,24 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                   width: double.infinity,
                   child: field(
                     '계산서 발행처',
-                    TextField(
-                      controller: invoiceIssuer,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: '시공사 또는 협력사를 입력하세요.',
-                        filled: true,
-                        fillColor: _issuerColorForText(
+                    TheWeDropdown<String>(
+                      value: invoiceIssuer.text,
+                      width: double.infinity,
+                      items: [
+                        '',
+                        '시공사',
+                        '협력사',
+                        if (!['', '시공사', '협력사'].contains(invoiceIssuer.text))
                           invoiceIssuer.text,
-                          item,
-                        ).withValues(alpha: .16),
-                      ),
+                      ],
+                      labelBuilder: (value) => switch (value) {
+                        '' => '미지정',
+                        '시공사' => '시공사 · ${item.contractor}',
+                        '협력사' => '협력사 · ${item.partner}',
+                        _ => value,
+                      },
+                      onChanged: (value) =>
+                          setState(() => invoiceIssuer.text = value ?? ''),
                     ),
                     width: double.infinity,
                   ),
@@ -1181,18 +1190,7 @@ String _mergeNote(String note, String reason) {
   return '$n / $r';
 }
 
-String _issuerType(SalesLedgerEntry item) {
-  final issuer = item.invoiceIssuer.trim();
-  if (issuer == '시공사' ||
-      (item.contractor.trim().isNotEmpty && issuer == item.contractor.trim())) {
-    return '시공사';
-  }
-  if (issuer == '협력사' ||
-      (item.partner.trim().isNotEmpty && issuer == item.partner.trim())) {
-    return '협력사';
-  }
-  return '기타';
-}
+String _issuerType(SalesLedgerEntry item) => item.invoiceIssuerType;
 
 Color _issuerColor(SalesLedgerEntry item) => item.invoiceIssuer.trim().isEmpty
     ? Colors.white
@@ -1201,14 +1199,6 @@ Color _issuerColor(SalesLedgerEntry item) => item.invoiceIssuer.trim().isEmpty
           : (_issuerType(item) == '협력사'
                 ? const Color(0xFFE8F5E9)
                 : Colors.white));
-Color _issuerColorForText(String text, SalesLedgerEntry item) {
-  if (text.trim().isEmpty) return Colors.white;
-  final typed = item.copyWith(invoiceIssuer: text);
-  return _issuerType(typed) == '시공사'
-      ? const Color(0xFFE7EFFF)
-      : (_issuerType(typed) == '협력사' ? const Color(0xFFE8F5E9) : Colors.white);
-}
-
 Widget _editAmountRow(String label, String value, {bool bold = false}) =>
     Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

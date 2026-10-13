@@ -36,6 +36,22 @@ class SalesLedgerEntry {
   final String status;
   final String note;
   final String invoiceIssuer;
+
+  String get invoiceIssuerType {
+    String normalize(String value) => value.replaceAll(RegExp(r'\s+'), '');
+    final issuer = normalize(invoiceIssuer);
+    if (issuer.isEmpty) return '';
+    if (issuer == '시공사') return '시공사';
+    if (issuer == '협력사') return '협력사';
+    if (normalize(contractor).isNotEmpty && issuer == normalize(contractor)) {
+      return '시공사';
+    }
+    if (normalize(partner).isNotEmpty && issuer == normalize(partner)) {
+      return '협력사';
+    }
+    return '';
+  }
+
   final int adjustmentAmount;
   final String adjustmentReason;
 
