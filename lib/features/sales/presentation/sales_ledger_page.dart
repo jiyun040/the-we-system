@@ -250,11 +250,9 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     String esc(Object? v) => const HtmlEscape().convert(v?.toString() ?? '');
     for (var index = 0; index < _items.length; index++) {
       final item = _items[index];
-      final issuerClass = item.invoiceIssuer.trim().isEmpty
-          ? ''
-          : (_issuerType(item) == '시공사'
-                ? 'contractor'
-                : (_issuerType(item) == '협력사' ? 'partner' : ''));
+      final issuerClass = (_issuerType(item) == '시공사'
+          ? 'contractor'
+          : (_issuerType(item) == '협력사' ? 'partner' : ''));
       final values = [
         index + 1,
         item.projectName,
@@ -979,20 +977,18 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                       value: invoiceIssuer.text,
                       width: double.infinity,
                       items: [
-                        '',
                         '시공사',
                         '협력사',
                         if (!['', '시공사', '협력사'].contains(invoiceIssuer.text))
                           invoiceIssuer.text,
                       ],
                       labelBuilder: (value) => switch (value) {
-                        '' => '미지정',
                         '시공사' => '시공사 · ${item.contractor}',
                         '협력사' => '협력사 · ${item.partner}',
                         _ => value,
                       },
                       onChanged: (value) =>
-                          setState(() => invoiceIssuer.text = value ?? ''),
+                          setState(() => invoiceIssuer.text = value ?? '협력사'),
                     ),
                     width: double.infinity,
                   ),
@@ -1192,13 +1188,9 @@ String _mergeNote(String note, String reason) {
 
 String _issuerType(SalesLedgerEntry item) => item.invoiceIssuerType;
 
-Color _issuerColor(SalesLedgerEntry item) => item.invoiceIssuer.trim().isEmpty
-    ? Colors.white
-    : (_issuerType(item) == '시공사'
-          ? const Color(0xFFE7EFFF)
-          : (_issuerType(item) == '협력사'
-                ? const Color(0xFFE8F5E9)
-                : Colors.white));
+Color _issuerColor(SalesLedgerEntry item) => (_issuerType(item) == '시공사'
+    ? const Color(0xFFE7EFFF)
+    : (_issuerType(item) == '협력사' ? const Color(0xFFE8F5E9) : Colors.white));
 Widget _editAmountRow(String label, String value, {bool bold = false}) =>
     Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

@@ -19,7 +19,8 @@ void main() {
       expect(entry('시공사').invoiceIssuerType, '시공사');
       expect(entry('삼창 건설').invoiceIssuerType, '협력사');
       expect(entry('협력사').invoiceIssuerType, '협력사');
-      expect(entry('').invoiceIssuerType, '');
+      expect(entry('').invoiceIssuerType, '협력사');
+      expect(entry('').toEditableJson()['invoiceIssuer'], '협력사');
       expect(entry('다른회사').invoiceIssuerType, '');
     },
   );

@@ -15,7 +15,7 @@ class SalesLedgerEntry {
     required this.installment,
     required this.status,
     required this.note,
-    this.invoiceIssuer = '',
+    this.invoiceIssuer = '협력사',
     this.adjustmentAmount = 0,
     this.adjustmentReason = '',
   });
@@ -40,7 +40,7 @@ class SalesLedgerEntry {
   String get invoiceIssuerType {
     String normalize(String value) => value.replaceAll(RegExp(r'\s+'), '');
     final issuer = normalize(invoiceIssuer);
-    if (issuer.isEmpty) return '';
+    if (issuer.isEmpty) return '협력사';
     if (issuer == '시공사') return '시공사';
     if (issuer == '협력사') return '협력사';
     if (normalize(contractor).isNotEmpty && issuer == normalize(contractor)) {
@@ -85,7 +85,10 @@ class SalesLedgerEntry {
       installment: integer(json['installment']),
       status: json['status']?.toString() ?? '신규',
       note: json['note']?.toString() ?? '',
-      invoiceIssuer: json['invoiceIssuer']?.toString() ?? '',
+      invoiceIssuer:
+          (json['invoiceIssuer']?.toString().trim().isNotEmpty ?? false)
+          ? json['invoiceIssuer'].toString().trim()
+          : '협력사',
       adjustmentAmount: integer(json['adjustmentAmount'] ?? json['adjustment']),
       adjustmentReason: json['adjustmentReason']?.toString() ?? '',
     );
@@ -102,7 +105,7 @@ class SalesLedgerEntry {
     'installment': installment,
     'status': status,
     'note': note,
-    'invoiceIssuer': invoiceIssuer,
+    'invoiceIssuer': invoiceIssuer.trim().isEmpty ? '협력사' : invoiceIssuer,
     'adjustmentAmount': adjustmentAmount,
     'adjustmentReason': adjustmentReason,
   };
