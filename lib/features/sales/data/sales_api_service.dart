@@ -70,6 +70,14 @@ class SalesApiService {
           '계산서 발행처가 서버에 저장되지 않았습니다. 서버 업데이트 적용 여부를 확인해 주세요.',
         );
       }
+      if (response.data?['adjustmentAmount'] == null ||
+          response.data?['adjustmentReason'] == null ||
+          saved.adjustmentAmount != entry.adjustmentAmount ||
+          saved.adjustmentReason != entry.adjustmentReason) {
+        throw const ApiException(
+          '조정액과 조정사항이 서버에 저장되지 않았습니다. 서버 업데이트 적용 여부를 확인해 주세요.',
+        );
+      }
       return saved;
     } on DioException catch (error) {
       throw ApiException.fromDio(error);

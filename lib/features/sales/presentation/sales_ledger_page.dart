@@ -835,7 +835,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                 dateField('시작일', usageStart, 'start'),
                 dateField('종료일', usageEnd, 'end'),
                 field(
-                  '조정액 (+ / -)',
+                  '조정액 (네고)',
                   TextField(
                     controller: adjustment,
                     keyboardType: TextInputType.number,

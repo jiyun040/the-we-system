@@ -145,6 +145,23 @@ class SalesTemplateWorkbook {
     _rows[number] = copy;
   }
 
+  void resetOpenPosition(XmlDocument worksheet) {
+    for (final view in worksheet.findAllElements('sheetView')) {
+      view.setAttribute('topLeftCell', 'A1');
+      final pane = view.findElements('pane').firstOrNull;
+      final frozenRows = int.tryParse(pane?.getAttribute('ySplit') ?? '') ?? 0;
+      final firstVisible = 'A${frozenRows + 1}';
+      pane?.setAttribute('topLeftCell', firstVisible);
+      for (final selection in view.findElements('selection')) {
+        final active = selection.getAttribute('pane') == 'bottomLeft'
+            ? firstVisible
+            : 'A1';
+        selection.setAttribute('activeCell', active);
+        selection.setAttribute('sqref', active);
+      }
+    }
+  }
+
   Uint8List export({
     required List<XmlDocument> sheets,
     required List<String> names,
@@ -164,6 +181,7 @@ class SalesTemplateWorkbook {
     for (var i = 0; i < sheets.length; i++) {
       final n = i + 1;
       final path = 'xl/worksheets/sheet$n.xml';
+      resetOpenPosition(sheets[i]);
       write(path, sheets[i]);
       files['xl/worksheets/_rels/sheet$n.xml.rels'] =
           files['xl/worksheets/_rels/sheet1.xml.rels']!;

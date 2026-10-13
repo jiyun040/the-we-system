@@ -49,6 +49,10 @@ void main() {
       expect(cells['Q3']!.findElements('v').single.innerText, '320');
       expect(cells['J322']!.findElements('v').single.innerText, '960000000');
       expect(
+        xml.findAllElements('pane').single.getAttribute('topLeftCell'),
+        'A2',
+      );
+      expect(
         cells['C2']!.getAttribute('s'),
         isNot(cells['D2']!.getAttribute('s')),
       );
@@ -94,6 +98,18 @@ void main() {
       expect(v(first, 'G29'), '56100000');
       expect(v(second, 'G29'), '3300000');
       expect(v(first, 'C10'), '59400000');
+      expect(
+        first.findAllElements('pane').single.getAttribute('topLeftCell'),
+        'A12',
+      );
+      expect(
+        second
+            .findAllElements('c')
+            .firstWhere((c) => c.getAttribute('r') == 'G13')
+            .findElements('v'),
+        isEmpty,
+      );
+      expect(second.findAllElements('row').last.getAttribute('r'), '31');
       expect(
         first.findAllElements('mergeCells').single.toXmlString(),
         XmlDocument.parse(
