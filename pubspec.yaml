@@ -45,6 +45,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+    - assets/templates/
     - assets/images/
     - assets/fonts/SUIT-Medium.ttf
     - assets/fonts/SUIT-Bold.ttf

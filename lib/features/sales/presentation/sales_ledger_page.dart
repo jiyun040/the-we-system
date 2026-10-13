@@ -1,14 +1,12 @@
-import 'dart:convert';
 import 'package:the_we_system/core/network/api_exception.dart';
-import 'package:the_we_system/features/sales/export/sales_xlsx.dart';
+import 'package:the_we_system/features/sales/export/sales_template_workbook.dart';
 
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
+import 'sales_statement_preview.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
 import 'package:the_we_system/common/components/the_we_data_table.dart';
@@ -221,74 +219,11 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   }
 
   Future<void> _exportExcel() async {
-    final html = StringBuffer(
-      '<html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:6px}th{background:#d9effb} .contractor{background:#e7efff}.partner{background:#e8f5e9}</style></head><body><table><tr>',
-    );
-    const headers = [
-      '번호',
-      '공사명',
-      '시공사',
-      '협력사',
-      '호기',
-      '사용 시작일',
-      '사용 종료일',
-      '일수',
-      '청구',
-      '계산서',
-      '입금',
-      '공급가',
-      '조정액',
-      '회차',
-      '상태',
-      '비고',
-      '분류',
-    ];
-    for (final h in headers) {
-      html.write('<th>$h</th>');
-    }
-    html.write('</tr>');
-    String esc(Object? v) => const HtmlEscape().convert(v?.toString() ?? '');
-    for (var index = 0; index < _items.length; index++) {
-      final item = _items[index];
-      final issuerClass = (_issuerType(item) == '시공사'
-          ? 'contractor'
-          : (_issuerType(item) == '협력사' ? 'partner' : ''));
-      final values = [
-        index + 1,
-        item.projectName,
-        item.contractor,
-        item.partner,
-        item.elevator,
-        _date(item.startDate),
-        _date(item.endDate),
-        _duration(item.startDate, item.endDate),
-        _date(item.billingDate),
-        _date(item.invoiceDate),
-        _date(item.depositDate),
-        item.supplyAmount,
-        item.adjustmentAmount,
-        '${item.installment}회차',
-        item.status,
-        _mergeNote(item.note, item.adjustmentReason),
-        item.category,
-      ];
-      html.write('<tr>');
-      for (var i = 0; i < values.length; i++) {
-        final cellClass = i == 2 && issuerClass == 'contractor'
-            ? issuerClass
-            : (i == 3 && issuerClass == 'partner' ? issuerClass : '');
-        html.write('<td class="$cellClass">${esc(values[i])}</td>');
-      }
-      html.write('</tr>');
-    }
-    html.write('</table></body></html>');
     await FileSaver.instance.saveFile(
       name: '매출관리대장_${_month.year}${_month.month.toString().padLeft(2, '0')}',
-      bytes: salesXlsx(html.toString(), sheetName: '매출관리대장'),
+      bytes: await ledgerTemplateXlsx(_items, _month),
       fileExtension: 'xlsx',
-      mimeType: MimeType.custom,
-      customMimeType:
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      mimeType: MimeType.microsoftExcel,
     );
   }
 }
@@ -1217,335 +1152,49 @@ class _StatementDialog extends StatelessWidget {
   const _StatementDialog({required this.statement, required this.month});
   final SalesStatement statement;
   final DateTime month;
-
   @override
-  Widget build(BuildContext context) {
-    final total = statement.items.fold<int>(
-      0,
-      (sum, item) => sum + item.supplyAmount,
-    );
-    final vat = (total * .1).round();
-    final issueDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final first = statement.items.firstOrNull;
-    final rowCount = statement.items.length < 12 ? 12 : statement.items.length;
-    final rows = <TableRow>[
-      TableRow(
-        children: [
-          for (final label in const [
-            '종 목',
-            '사 용 기 간',
-            '단위',
-            '수량',
-            '공급가',
-            '세 액',
-            '합 계',
-            '비 고',
-          ])
-            _statementCell(label, bold: true),
-        ],
-      ),
-      for (var i = 0; i < rowCount; i++)
-        TableRow(
-          children: i < statement.items.length
-              ? [
-                  _statementCell(
-                    'PDAM시스템 공급\n${statement.items[i].elevator} ${statement.items[i].installment}회',
-                  ),
-                  _statementCell(
-                    '${_date(statement.items[i].startDate)} ~ ${statement.items[i].endDate == null ? '사용중' : _date(statement.items[i].endDate)}',
-                  ),
-                  _statementCell('SET'),
-                  _statementCell('1'),
-                  _statementCell(_money(statement.items[i].supplyAmount)),
-                  _statementCell(
-                    _money((statement.items[i].supplyAmount * .1).round()),
-                  ),
-                  _statementCell(
-                    _money((statement.items[i].supplyAmount * 1.1).round()),
-                  ),
-                  _statementCell(statement.items[i].note),
-                ]
-              : [
-                  for (var col = 0; col < 8; col++)
-                    _statementCell(col == 5 || col == 6 ? '-' : ''),
-                ],
+  Widget build(BuildContext context) => TheWeModalSurface(
+    maxWidth: 1000,
+    maxHeightFactor: .94,
+    padding: const EdgeInsets.all(18),
+    child: Column(
+      children: [
+        TheWeModalHeader(title: '내역서', onClose: () => Navigator.pop(context)),
+        Expanded(
+          child: SalesStatementPreview(
+            statement: statement,
+            issued: DateTime.now(),
+          ),
         ),
-    ];
-    return TheWeModalSurface(
-      maxWidth: 1000,
-      maxHeightFactor: .94,
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              const Spacer(),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
-          Expanded(
-            child: SingleChildScrollView(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Container(
-                  width: 920,
-                  height: 1130,
-                  padding: const EdgeInsets.fromLTRB(34, 10, 34, 24),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(
-                      right: BorderSide(color: Colors.blue, width: 3),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        '내 역 서',
-                        textAlign: TextAlign.center,
-                        style: TheWeTextStyle.pageTitle.copyWith(
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 10,
-                        ),
-                      ),
-                      const SizedBox(height: 70),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              children: [
-                                _statementLine('수 신', first?.contractor ?? ''),
-                                _statementLine('발 신', '우리기술㈜'),
-                                _statementLine(
-                                  '현 장 명',
-                                  statement.projectName,
-                                  highlighted: true,
-                                ),
-                                _statementLine('결 제 일', '계산서 발행 후 익월 말일 이내'),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 32),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Image.asset(
-                                      'assets/images/theWeLogo.png',
-                                      width: 50,
-                                      height: 32,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      '우리기술 주식회사',
-                                      style: TheWeTextStyle.subtitle.copyWith(
-                                        fontWeight: FontWeight.w800,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                Text(
-                                  '등록번호 : 787-88-01517   대표이사 : 조 성 률',
-                                  style: TheWeTextStyle.caption,
-                                ),
-                                Text(
-                                  '본사 : 대전광역시 대덕구 신일동로 105, 304호',
-                                  style: TheWeTextStyle.caption,
-                                ),
-                                Text(
-                                  '업태 : 제조업, 정보통신업',
-                                  style: TheWeTextStyle.caption,
-                                ),
-                                Text(
-                                  '종목 : PDAM시스템제조및공급, 응용소프트웨어개발및공급',
-                                  style: TheWeTextStyle.caption,
-                                  textAlign: TextAlign.center,
-                                ),
-                                Text(
-                                  'TEL 070-4334-9000  FAX 042-933-0104',
-                                  style: TheWeTextStyle.caption,
-                                ),
-                                Text(
-                                  'e-mail : we8104@hanmail.net',
-                                  style: TheWeTextStyle.caption,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 28),
-                      Container(
-                        color: const Color(0xFFD9EFFB),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 11,
-                        ),
-                        child: Row(
-                          children: [
-                            const Expanded(
-                              child: Text('아래 품목의 내역을 제출하오니 검토 바랍니다.'),
-                            ),
-                            Text(issueDate),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Text(
-                          '내역 합계 금액(Total)              ${_money(total + vat)}  원 (VAT 포함)',
-                          textAlign: TextAlign.center,
-                          style: TheWeTextStyle.subtitle,
-                        ),
-                      ),
-                      const Divider(
-                        color: Colors.black,
-                        thickness: 2,
-                        height: 2,
-                      ),
-                      Table(
-                        columnWidths: const {
-                          0: FlexColumnWidth(1.7),
-                          1: FlexColumnWidth(2.4),
-                          2: FlexColumnWidth(.6),
-                          3: FlexColumnWidth(.6),
-                          4: FlexColumnWidth(1.1),
-                          5: FlexColumnWidth(1),
-                          6: FlexColumnWidth(1.2),
-                          7: FlexColumnWidth(.9),
-                        },
-                        border: const TableBorder(
-                          horizontalInside: BorderSide(
-                            color: Color(0xFFE7E7E7),
-                          ),
-                        ),
-                        children: rows,
-                      ),
-                      const Spacer(),
-                      const Divider(color: Colors.black54, height: 2),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                        child: Text(
-                          '합     계                     ${statement.items.length}      ${_money(total)}       ${_money(vat)}       ${_money(total + vat)}',
-                          textAlign: TextAlign.right,
-                          style: TheWeTextStyle.subtitle,
-                        ),
-                      ),
-                      Container(
-                        color: const Color(0xFFF0F4E6),
-                        padding: const EdgeInsets.all(12),
-                        child: const Text(
-                          '비   고     *입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+        Wrap(
+          spacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () => _downloadStatementExcel(context, statement),
+              icon: const Icon(Icons.table_view_outlined),
+              label: const Text('엑셀 다운로드'),
             ),
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Wrap(
-              spacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: () => _downloadStatementExcel(context, statement),
-                  icon: const Icon(Icons.table_view_outlined),
-                  label: const Text('엑셀 다운로드'),
-                ),
-                FilledButton.icon(
-                  onPressed: () =>
-                      _downloadStatementPdf(context, statement, month),
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text('PDF 다운로드'),
-                ),
-              ],
+            FilledButton.icon(
+              onPressed: () => _downloadStatementPdf(context, statement, month),
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: const Text('PDF 다운로드'),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+      ],
+    ),
+  );
 }
-
-Widget _statementLine(
-  String label,
-  String value, {
-  bool highlighted = false,
-}) => Container(
-  color: highlighted ? const Color(0xFFE9EFFC) : Colors.transparent,
-  padding: const EdgeInsets.symmetric(vertical: 7),
-  child: Row(
-    children: [
-      SizedBox(
-        width: 78,
-        child: Text(
-          '$label :',
-          style: TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
-        ),
-      ),
-      Expanded(
-        child: Container(
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.black)),
-          ),
-          child: Text(
-            value,
-            style: TheWeTextStyle.caption.copyWith(fontWeight: FontWeight.w700),
-          ),
-        ),
-      ),
-    ],
-  ),
-);
 
 Future<void> _downloadStatementExcel(
   BuildContext context,
   SalesStatement statement,
 ) async {
-  final total = statement.items.fold<int>(
-    0,
-    (sum, item) => sum + item.supplyAmount,
-  );
-  final vat = (total * .1).round();
-  String esc(Object? v) => const HtmlEscape().convert(v?.toString() ?? '');
-  final b = StringBuffer(
-    '<html><head><meta charset="utf-8"><style>table{border-collapse:collapse}th,td{border:1px solid #999;padding:7px}th{background:#d9effb}</style></head><body>',
-  );
-  b.write(
-    '<h2 style="text-align:center">내 역 서</h2><p>수신 : ${esc(statement.items.firstOrNull?.contractor ?? '')}<br>발신 : 우리기술㈜<br>현장명 : ${esc(statement.projectName)}<br>결제일 : 계산서 발행 후 익월 말일 이내</p>',
-  );
-  b.write(
-    '<table><tr><th>종목</th><th>사용 기간</th><th>단위</th><th>수량</th><th>공급가</th><th>세액</th><th>합계</th><th>비고</th></tr>',
-  );
-  for (final item in statement.items) {
-    b.write(
-      '<tr><td>PDAM시스템 공급 ${esc(item.elevator)} ${item.installment}회</td><td>${_date(item.startDate)} ~ ${item.endDate == null ? '사용중' : _date(item.endDate!)}</td><td>SET</td><td>1</td><td>${_money(item.supplyAmount)}</td><td>${_money((item.supplyAmount * .1).round())}</td><td>${_money((item.supplyAmount * 1.1).round())}</td><td>${esc(_mergeNote(item.note, item.adjustmentReason))}</td></tr>',
-    );
-  }
-  for (var i = statement.items.length; i < 12; i++) {
-    b.write(
-      '<tr><td></td><td></td><td></td><td></td><td></td><td>-</td><td>-</td><td></td></tr>',
-    );
-  }
-  b.write(
-    '</table><p style="text-align:right"><b>합계 ${_money(total)} / ${_money(vat)} / ${_money(total + vat)}</b></p><p>비고 *입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사</p></body></html>',
-  );
   await FileSaver.instance.saveFile(
     name: '내역서_${statement.projectName}',
-    bytes: salesXlsx(b.toString(), sheetName: '내역서'),
+    bytes: await statementTemplateXlsx(statement),
     fileExtension: 'xlsx',
-    mimeType: MimeType.custom,
-    customMimeType:
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    mimeType: MimeType.microsoftExcel,
   );
   if (context.mounted) showTheWeSnackBar(context, message: '엑셀 파일로 저장했습니다.');
 }
@@ -1556,155 +1205,9 @@ Future<void> _downloadStatementPdf(
   DateTime month,
 ) async {
   try {
-    final regular = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/SUIT-Medium.ttf'),
-    );
-    final bold = pw.Font.ttf(
-      await rootBundle.load('assets/fonts/SUIT-Bold.ttf'),
-    );
-    final logo = pw.MemoryImage(
-      (await rootBundle.load(
-        'assets/images/theWeLogo.png',
-      )).buffer.asUint8List(),
-    );
-    final total = statement.items.fold(
-      0,
-      (sum, item) => sum + item.supplyAmount,
-    );
-    final vat = (total * .1).round();
-    final document = pw.Document(
-      theme: pw.ThemeData.withFont(base: regular, bold: bold),
-    );
-    document.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(28),
-        build: (_) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.stretch,
-          children: [
-            pw.Center(
-              child: pw.Text(
-                '내 역 서',
-                style: pw.TextStyle(
-                  fontSize: 22,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ),
-            pw.SizedBox(height: 65),
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        '수신 : ${statement.items.firstOrNull?.contractor ?? '-'}',
-                      ),
-                      pw.SizedBox(height: 6),
-                      pw.Text('발신 : 우리기술㈜'),
-                      pw.SizedBox(height: 6),
-                      pw.Text('현장명 : ${statement.projectName}'),
-                      pw.SizedBox(height: 6),
-                      pw.Text('결제일 : 계산서 발행 후 익월 말일 이내'),
-                    ],
-                  ),
-                ),
-                pw.Expanded(
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.end,
-                        children: [
-                          pw.Image(logo, width: 28, height: 20),
-                          pw.SizedBox(width: 4),
-                          pw.Text(
-                            '우리기술 주식회사',
-                            style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                          ),
-                        ],
-                      ),
-                      pw.Text('등록번호 : 787-88-01517'),
-                      pw.Text('대표이사 : 조성률'),
-                      pw.Text('본사 : 대전광역시 대덕구 신일동로 105, 304호'),
-                      pw.Text('업태 : 제조업, 정보통신업'),
-                      pw.Text('종목 : PDAM시스템제조및공급, 응용소프트웨어개발및공급'),
-                      pw.Text('TEL 070-4334-9000  FAX 042-933-0104'),
-                      pw.Text('e-mail : we8104@hanmail.net'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 26),
-            pw.Container(
-              color: PdfColor.fromInt(0xffd9efff),
-              padding: const pw.EdgeInsets.all(10),
-              child: pw.Row(
-                children: [
-                  pw.Expanded(child: pw.Text('아래 품목의 내역을 제출하오니 검토 바랍니다.')),
-                  pw.Text(DateFormat('yyyy-MM-dd').format(DateTime.now())),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 12),
-            pw.Align(
-              alignment: pw.Alignment.centerRight,
-              child: pw.Text(
-                '내역 합계 금액(Total)  ${_money(total + vat)}원 (VAT 포함)',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-            pw.Divider(thickness: 2),
-            pw.TableHelper.fromTextArray(
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              headerDecoration: const pw.BoxDecoration(color: PdfColors.white),
-              cellAlignment: pw.Alignment.center,
-              headers: const [
-                '종목',
-                '사용 기간',
-                '단위',
-                '수량',
-                '공급가',
-                '세액',
-                '합계',
-                '비고',
-              ],
-              data: [
-                for (final item in statement.items)
-                  [
-                    'PDAM시스템 공급\n${item.elevator} ${item.installment}회',
-                    '${_date(item.startDate)} ~ ${item.endDate == null ? '사용중' : _date(item.endDate!)}',
-                    'SET',
-                    '1',
-                    _money(item.supplyAmount),
-                    _money((item.supplyAmount * .1).round()),
-                    _money((item.supplyAmount * 1.1).round()),
-                    item.note,
-                  ],
-                for (var i = statement.items.length; i < 12; i++)
-                  ['', '', '', '', '', '-', '-', ''],
-              ],
-            ),
-            pw.Spacer(),
-            pw.Align(
-              alignment: pw.Alignment.centerRight,
-              child: pw.Text(
-                '합계  ${_money(total)}  ${_money(vat)}  ${_money(total + vat)}',
-                style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-            pw.SizedBox(height: 18),
-            pw.Text('비고  *입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사'),
-          ],
-        ),
-      ),
-    );
     await FileSaver.instance.saveFile(
       name: '내역서_${statement.projectName}',
-      bytes: await document.save(),
+      bytes: await statementTemplatePdf(statement),
       fileExtension: 'pdf',
       mimeType: MimeType.pdf,
     );
@@ -1721,19 +1224,6 @@ Future<void> _downloadStatementPdf(
     }
   }
 }
-
-Widget _statementCell(String value, {bool bold = false}) => Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
-  child: Text(
-    value,
-    textAlign: TextAlign.center,
-    maxLines: 3,
-    overflow: TextOverflow.ellipsis,
-    style: TheWeTextStyle.caption.copyWith(
-      fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-    ),
-  ),
-);
 
 Widget _cell(String value, {bool left = false, int maxLines = 2}) => Align(
   alignment: left ? Alignment.centerLeft : Alignment.center,
