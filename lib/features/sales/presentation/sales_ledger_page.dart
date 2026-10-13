@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:the_we_system/features/sales/export/sales_xlsx.dart';
 
 import 'package:file_saver/file_saver.dart';
 import 'package:flutter/material.dart';
@@ -284,10 +285,11 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     html.write('</table></body></html>');
     await FileSaver.instance.saveFile(
       name: '매출관리대장_${_month.year}${_month.month.toString().padLeft(2, '0')}',
-      bytes: Uint8List.fromList(utf8.encode(html.toString())),
-      fileExtension: 'xls',
+      bytes: salesXlsx(html.toString(), sheetName: '매출관리대장'),
+      fileExtension: 'xlsx',
       mimeType: MimeType.custom,
-      customMimeType: 'application/vnd.ms-excel',
+      customMimeType:
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     );
   }
 }
@@ -594,7 +596,17 @@ class _LedgerTable extends StatelessWidget {
       for (var index = 0; index < items.length; index++)
         _row(context, index, items[index]),
     ],
-    rowColors: [for (final item in items) _issuerColor(item)],
+    rowColors: List.filled(items.length, Colors.white),
+    cellColors: [
+      for (final item in items)
+        [
+          for (var col = 0; col < 15; col++)
+            (col == 2 && _issuerType(item) == '시공사') ||
+                    (col == 3 && _issuerType(item) == '협력사')
+                ? _issuerColor(item)
+                : null,
+        ],
+    ],
     onRowTaps: [for (final item in items) () => onEdit(item)],
   );
   List<Widget> _row(BuildContext context, int index, SalesLedgerEntry item) => [
@@ -614,8 +626,8 @@ class _LedgerTable extends StatelessWidget {
         ),
       ),
     ),
-    _issuerCell(item.contractor, item, isContractor: true),
-    _issuerCell(item.partner, item, isContractor: false),
+    _cell(item.contractor),
+    _cell(item.partner),
     _cell(item.elevator, maxLines: 1),
     _cell(
       '${_date(item.startDate)}\n~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
@@ -677,7 +689,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
   late TextEditingController adjustment;
   late TextEditingController adjustmentReason;
   late TextEditingController invoiceIssuer;
-  late DateTime usageStart;
+  DateTime? usageStart;
   DateTime? usageEnd;
   DateTime? billing;
   DateTime? invoice;
@@ -727,10 +739,14 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     final selected = await showTheWeDatePicker(
       context,
       initialDate: current ?? DateTime.now(),
+      clearOnReselect: true,
+      hasSelection: current != null,
       firstDate: DateTime(DateTime.now().year - 5),
       lastDate: DateTime.now(),
       title:
           '${switch (kind) {
+            'start' => '시작일',
+            'end' => '종료일',
             'billing' => '청구',
             'invoice' => '계산서 발행',
             _ => '입금',
@@ -739,6 +755,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     if (selected == null) return;
     if (selected.year == 1) {
       setState(() {
+        if (kind == 'start') usageStart = null;
         if (kind == 'end') usageEnd = null;
         if (kind == 'billing') billing = null;
         if (kind == 'invoice') invoice = null;
@@ -815,7 +832,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Text(
-                  '${item.contractor} / ${item.partner} · ${item.startDate.year}년 ${item.startDate.month}월 ·',
+                  '${item.contractor} / ${item.partner} · ${item.startDate?.year ?? "-"}년 ${item.startDate?.month ?? "-"}월 ·',
                   style: TheWeTextStyle.caption.copyWith(
                     color: TheWeColor.black500,
                   ),
@@ -995,6 +1012,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                   context,
                   item.copyWith(
                     startDate: usageStart,
+                    clearStartDate: usageStart == null,
                     endDate: usageEnd,
                     clearEndDate: usageEnd == null,
                     category: category,
@@ -1165,12 +1183,14 @@ String _mergeNote(String note, String reason) {
 
 String _issuerType(SalesLedgerEntry item) {
   final issuer = item.invoiceIssuer.trim();
-  if (issuer.isEmpty) return '협력사';
-  if (issuer == item.contractor.trim() ||
-      issuer.contains(item.contractor.trim()))
+  if (issuer == '시공사' ||
+      (item.contractor.trim().isNotEmpty && issuer == item.contractor.trim())) {
     return '시공사';
-  if (issuer == item.partner.trim() || issuer.contains(item.partner.trim()))
+  }
+  if (issuer == '협력사' ||
+      (item.partner.trim().isNotEmpty && issuer == item.partner.trim())) {
     return '협력사';
+  }
   return '기타';
 }
 
@@ -1539,10 +1559,11 @@ Future<void> _downloadStatementExcel(
   );
   await FileSaver.instance.saveFile(
     name: '내역서_${statement.projectName}',
-    bytes: Uint8List.fromList(utf8.encode(b.toString())),
-    fileExtension: 'xls',
+    bytes: salesXlsx(b.toString(), sheetName: '내역서'),
+    fileExtension: 'xlsx',
     mimeType: MimeType.custom,
-    customMimeType: 'application/vnd.ms-excel',
+    customMimeType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   );
   if (context.mounted) showTheWeSnackBar(context, message: '엑셀 파일로 저장했습니다.');
 }
@@ -1719,26 +1740,6 @@ Future<void> _downloadStatementPdf(
   }
 }
 
-Widget _statementInfo(String label, String value) => Padding(
-  padding: const EdgeInsets.only(right: 22),
-  child: Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: TheWeTextStyle.hintText.copyWith(color: TheWeColor.black500),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        value,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700),
-      ),
-    ],
-  ),
-);
-
 Widget _statementCell(String value, {bool bold = false}) => Padding(
   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
   child: Text(
@@ -1751,31 +1752,6 @@ Widget _statementCell(String value, {bool bold = false}) => Padding(
     ),
   ),
 );
-
-Widget _issuerCell(
-  String value,
-  SalesLedgerEntry item, {
-  required bool isContractor,
-}) {
-  final explicitIssuer = item.invoiceIssuer.trim();
-  final matches =
-      explicitIssuer.isNotEmpty &&
-      ((isContractor && _issuerType(item) == '시공사') ||
-          (!isContractor && _issuerType(item) == '협력사'));
-  return Container(
-    width: double.infinity,
-    color: matches
-        ? (isContractor ? const Color(0xFFE7EFFF) : const Color(0xFFE8F5E9))
-        : Colors.transparent,
-    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-    child: Text(
-      value,
-      textAlign: TextAlign.center,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-    ),
-  );
-}
 
 Widget _cell(String value, {bool left = false, int maxLines = 2}) => Align(
   alignment: left ? Alignment.centerLeft : Alignment.center,
@@ -1809,7 +1785,8 @@ final _currencyInputFormatter = TextInputFormatter.withFunction((
   );
 });
 
-String _duration(DateTime start, DateTime? end) {
+String _duration(DateTime? start, DateTime? end) {
+  if (start == null) return "-";
   final days = (end ?? DateTime.now()).difference(start).inDays + 1;
   if (days <= 31) return '$days일';
   return '${days ~/ 31}개월 ${days % 31}일';

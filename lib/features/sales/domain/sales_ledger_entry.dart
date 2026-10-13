@@ -25,7 +25,7 @@ class SalesLedgerEntry {
   final String contractor;
   final String partner;
   final String elevator;
-  final DateTime startDate;
+  final DateTime? startDate;
   final DateTime? endDate;
   final String category;
   final DateTime? billingDate;
@@ -40,13 +40,6 @@ class SalesLedgerEntry {
   final String adjustmentReason;
 
   factory SalesLedgerEntry.fromJson(Map<String, dynamic> json) {
-    DateTime parseDate(dynamic value, {bool required = false}) {
-      final parsed = DateTime.tryParse(value?.toString() ?? '');
-      if (parsed != null) return parsed;
-      if (required) throw const FormatException('사용 시작일이 올바르지 않습니다.');
-      return DateTime.now();
-    }
-
     DateTime? nullableDate(dynamic value) {
       final raw = value?.toString() ?? '';
       return raw.isEmpty ? null : DateTime.tryParse(raw);
@@ -62,7 +55,7 @@ class SalesLedgerEntry {
           json['machineNumber']?.toString() ??
           json['elevator']?.toString() ??
           '',
-      startDate: parseDate(json['startDate'], required: true),
+      startDate: nullableDate(json['startDate']),
       endDate: nullableDate(json['endDate']),
       category: (() {
         final value = json['category']?.toString() ?? '';
@@ -83,7 +76,7 @@ class SalesLedgerEntry {
   }
 
   Map<String, dynamic> toEditableJson() => {
-    'startDate': startDate.toIso8601String().substring(0, 10),
+    'startDate': startDate?.toIso8601String().substring(0, 10),
     'endDate': endDate?.toIso8601String().substring(0, 10),
     'category': category,
     'billingDate': billingDate?.toIso8601String().substring(0, 10),
@@ -100,6 +93,7 @@ class SalesLedgerEntry {
 
   SalesLedgerEntry copyWith({
     DateTime? startDate,
+    bool clearStartDate = false,
     DateTime? endDate,
     bool clearEndDate = false,
     String? category,
@@ -122,7 +116,7 @@ class SalesLedgerEntry {
     contractor: contractor,
     partner: partner,
     elevator: elevator,
-    startDate: startDate ?? this.startDate,
+    startDate: clearStartDate ? null : startDate ?? this.startDate,
     endDate: clearEndDate ? null : endDate ?? this.endDate,
     category: category ?? this.category,
     billingDate: clearBillingDate ? null : billingDate ?? this.billingDate,

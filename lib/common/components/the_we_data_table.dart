@@ -14,6 +14,7 @@ class TheWeDataTable extends StatelessWidget {
     this.minWidth = 920,
     this.onRowTaps,
     this.rowColors,
+    this.cellColors,
     this.verticalScrollController,
   });
 
@@ -23,6 +24,7 @@ class TheWeDataTable extends StatelessWidget {
   final double minWidth;
   final List<VoidCallback?>? onRowTaps;
   final List<Color?>? rowColors;
+  final List<List<Color?>>? cellColors;
   final ScrollController? verticalScrollController;
 
   @override
@@ -123,6 +125,7 @@ class TheWeDataTable extends StatelessWidget {
                                   columnIndex != rows[rowIndex].length - 1,
                               bottomBorder: rowIndex != rows.length - 1,
                               onTap: onRowTaps?[rowIndex],
+                              color: cellColors?[rowIndex][columnIndex],
                               child: rows[rowIndex][columnIndex],
                             ),
                         ],
@@ -195,6 +198,7 @@ class _TableCell extends StatelessWidget {
     this.bottomBorder = false,
     this.alignment = Alignment.center,
     this.onTap,
+    this.color,
   });
 
   final Widget child;
@@ -202,11 +206,12 @@ class _TableCell extends StatelessWidget {
   final bool bottomBorder;
   final AlignmentGeometry alignment;
   final VoidCallback? onTap;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: color ?? Colors.transparent,
       child: InkWell(
         onTap: onTap,
         hoverColor: TheWeColor.blueSurface.withValues(alpha: .7),

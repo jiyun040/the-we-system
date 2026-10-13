@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 
@@ -10,9 +11,11 @@ Future<DateTime?> showTheWeDatePicker(
   required String title,
   Key? dialogKey,
   bool clearOnReselect = false,
+  bool hasSelection = true,
 }) {
   final normalizedFirst = DateUtils.dateOnly(firstDate);
   final normalizedLast = DateUtils.dateOnly(lastDate);
+  var selectionActive = hasSelection;
   var selectedDate = DateUtils.dateOnly(initialDate);
   if (selectedDate.isBefore(normalizedFirst)) selectedDate = normalizedFirst;
   if (selectedDate.isAfter(normalizedLast)) selectedDate = normalizedLast;
@@ -31,7 +34,7 @@ Future<DateTime?> showTheWeDatePicker(
           ),
           child: SizedBox(
             width: compact ? double.infinity : 720,
-            child: Padding(
+            child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 compact ? 14 : 22,
                 compact ? 16 : 20,
@@ -98,19 +101,37 @@ Future<DateTime?> showTheWeDatePicker(
                         onSurface: TheWeColor.black900,
                       ),
                     ),
-                    child: CalendarDatePicker(
-                      initialDate: selectedDate,
-                      firstDate: normalizedFirst,
-                      lastDate: normalizedLast,
-                      onDateChanged: (date) {
-                        if (clearOnReselect &&
-                            date == DateUtils.dateOnly(initialDate)) {
-                          Navigator.pop(dialogContext, DateTime(1));
-                          return;
-                        }
-                        setDialogState(() => selectedDate = date);
-                      },
-                    ),
+                    child: clearOnReselect
+                        ? TableCalendar<void>(
+                            locale: Localizations.localeOf(context).toString(),
+                            firstDay: normalizedFirst,
+                            lastDay: normalizedLast,
+                            focusedDay: selectedDate,
+                            selectedDayPredicate: (day) =>
+                                selectionActive && isSameDay(day, selectedDate),
+                            headerStyle: const HeaderStyle(
+                              formatButtonVisible: false,
+                              titleCentered: true,
+                            ),
+                            onDaySelected: (day, focused) {
+                              if (selectionActive &&
+                                  isSameDay(day, selectedDate)) {
+                                Navigator.pop(dialogContext, DateTime(1));
+                              } else {
+                                setDialogState(() {
+                                  selectedDate = day;
+                                  selectionActive = true;
+                                });
+                              }
+                            },
+                          )
+                        : CalendarDatePicker(
+                            initialDate: selectedDate,
+                            firstDate: normalizedFirst,
+                            lastDate: normalizedLast,
+                            onDateChanged: (date) =>
+                                setDialogState(() => selectedDate = date),
+                          ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -122,14 +143,8 @@ Future<DateTime?> showTheWeDatePicker(
                       ),
                       SizedBox(width: compact ? 4 : 8),
                       FilledButton(
-                        onPressed: () => Navigator.pop(
-                          dialogContext,
-                          clearOnReselect &&
-                                  selectedDate ==
-                                      DateUtils.dateOnly(initialDate)
-                              ? DateTime(1)
-                              : selectedDate,
-                        ),
+                        onPressed: () =>
+                            Navigator.pop(dialogContext, selectedDate),
                         style: FilledButton.styleFrom(
                           backgroundColor: TheWeColor.black900,
                           foregroundColor: Colors.white,
