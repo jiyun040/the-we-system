@@ -345,7 +345,7 @@ class _LedgerContent extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              'PDAM DB에서 현장·호기 정보를 자동 반영합니다. 행을 눌러 청구, 계산서, 입금과 금액을 수정할 수 있습니다.',
+              'PDAM DB에서 현장·호기 정보를 자동 반영합니다. 행을 눌러 청구, 계산서, 입금과 금액을 수정할 수 있으며, 공사명을 눌러 내역서를 확인할 수 있습니다.',
               style: TheWeTextStyle.caption.copyWith(
                 color: TheWeColor.black500,
               ),
