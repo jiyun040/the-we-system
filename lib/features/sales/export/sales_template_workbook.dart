@@ -44,6 +44,19 @@ class SalesTemplateWorkbook {
     return _data!;
   }
 
+  void setAutoFilter(String range) {
+    final children = sheet.rootElement.children;
+    children.removeWhere(
+      (node) => node is XmlElement && node.name.local == 'autoFilter',
+    );
+    children.insert(
+      children.indexOf(data) + 1,
+      XmlElement(XmlName.parts('autoFilter'), [
+        XmlAttribute(XmlName.parts('ref'), range),
+      ]),
+    );
+  }
+
   XmlElement row(int number) {
     data;
     return _rows[number]!;
@@ -632,6 +645,7 @@ Uint8List buildLedgerTemplate(
       .findAllElements('dimension')
       .single
       .setAttribute('ref', 'A1:V$count');
+  book.setAutoFilter('A1:N${items.length + 1}');
   return book.export(
     sheets: [book.sheet],
     names: ['${month.month}월'],

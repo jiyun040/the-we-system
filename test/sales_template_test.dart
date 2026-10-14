@@ -52,6 +52,10 @@ void main() {
       expect(cells['Q3']!.findElements('v').single.innerText, '320');
       expect(cells['J322']!.findElements('v').single.innerText, '960000000');
       expect(
+        xml.findAllElements('autoFilter').single.getAttribute('ref'),
+        'A1:N321',
+      );
+      expect(
         xml.findAllElements('pane').single.getAttribute('topLeftCell'),
         'A2',
       );
