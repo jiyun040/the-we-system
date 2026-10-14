@@ -25,6 +25,7 @@ class SalesTemplateWorkbook {
   late XmlDocument sheet;
   late XmlDocument styles;
   final _styleCache = <String, int>{};
+  final _fontCache = <String, int>{};
   XmlDocument read(String path) => XmlDocument.parse(utf8.decode(files[path]!));
   void write(String path, XmlDocument xml) =>
       files[path] = Uint8List.fromList(utf8.encode(xml.toXmlString()));
@@ -103,8 +104,9 @@ class SalesTemplateWorkbook {
 
   int fillStyle(
     int base,
-    String color,
-  ) => _styleCache.putIfAbsent('$base:$color', () {
+    String color, {
+    String? textColor,
+  }) => _styleCache.putIfAbsent('$base:$color:$textColor', () {
     final fills = styles.findAllElements('fills').single;
     final fillId = fills.childElements.length;
     fills.children.add(
@@ -117,16 +119,37 @@ class SalesTemplateWorkbook {
     final style = xfs.childElements.elementAt(base).copy();
     style.setAttribute('fillId', '$fillId');
     style.setAttribute('applyFill', '1');
+    if (textColor != null) {
+      final fonts = styles.findAllElements('fonts').single;
+      final baseFont = int.parse(style.getAttribute('fontId') ?? '0');
+      final fontId = _fontCache.putIfAbsent('$baseFont:$textColor', () {
+        final font = fonts.childElements.elementAt(baseFont).copy();
+        font.children.removeWhere(
+          (child) => child is XmlElement && child.name.local == 'color',
+        );
+        font.children.add(
+          XmlElement(XmlName.parts('color'), [
+            XmlAttribute(XmlName.parts('rgb'), textColor),
+          ]),
+        );
+        final id = fonts.childElements.length;
+        fonts.children.add(font);
+        fonts.setAttribute('count', '${id + 1}');
+        return id;
+      });
+      style.setAttribute('fontId', '$fontId');
+      style.setAttribute('applyFont', '1');
+    }
     final id = xfs.childElements.length;
     xfs.children.add(style);
     xfs.setAttribute('count', '${id + 1}');
     return id;
   });
-  void color(String address, String value) {
+  void color(String address, String value, {String? textColor}) {
     final c = cell(address);
     c.setAttribute(
       's',
-      '${fillStyle(int.parse(c.getAttribute('s') ?? '0'), value)}',
+      '${fillStyle(int.parse(c.getAttribute('s') ?? '0'), value, textColor: textColor)}',
     );
   }
 
@@ -282,6 +305,13 @@ Uint8List buildLedgerTemplate(
   ].reduce((a, b) => a > b ? a : b);
   for (var r = 2; r <= count; r++) {
     book.cloneRow(r == 2 ? prototype : summary, r);
+    for (var c = 0; c < 14; c++) {
+      book.color(
+        '${String.fromCharCode(65 + c)}$r',
+        'FFFFFFFF',
+        textColor: 'FF000000',
+      );
+    }
   }
   // Use the source's body formatting consistently, including rows beyond its original capacity.
   for (var i = 0; i < items.length; i++) {
@@ -306,12 +336,24 @@ Uint8List buildLedgerTemplate(
     for (var c = 0; c < 14; c++) {
       final address = '${String.fromCharCode(65 + c)}$r';
       book.set(address, values[c]);
-      book.color(address, 'FFFFFFFF');
     }
     book.color(
       '${item.invoiceIssuerType == '시공사' ? 'C' : 'D'}$r',
-      item.invoiceIssuerType == '시공사' ? 'FFE7EFFF' : 'FFE8F5E9',
+      item.invoiceIssuerType == '시공사' ? 'FF2563EB' : 'FF16A34A',
+      textColor: 'FFFFFFFF',
     );
+    if (item.billingDate != null) {
+      book.color('G$r', 'FFFFD43B', textColor: 'FF000000');
+    }
+    final statusColor = switch (item.status) {
+      '신규' => 'FF2563EB',
+      '진행' => 'FF16A34A',
+      '종료' => 'FFDC2626',
+      _ => null,
+    };
+    if (statusColor != null) {
+      book.color('L$r', statusColor, textColor: 'FFFFFFFF');
+    }
   }
   book.set('P1', '${month.month}월 시공사별 집계표');
   for (final entry in {

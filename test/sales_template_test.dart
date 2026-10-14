@@ -121,4 +121,52 @@ void main() {
       );
     },
   );
+
+  test('ledger colors only the issuer, billed date, and status cells', () {
+    final source = File('assets/templates/ledger.xlsx').readAsBytesSync();
+    final entries = items(3);
+    final bytes = buildLedgerTemplate(source, [
+      entries[0].copyWith(billingDate: DateTime(2026, 10, 12)),
+      entries[1].copyWith(status: '진행'),
+      entries[2].copyWith(status: '종료'),
+    ], DateTime(2026, 9));
+    final out = unzip(bytes);
+    final sheet = XmlDocument.parse(
+      utf8.decode(out['xl/worksheets/sheet1.xml']!),
+    );
+    final styles = XmlDocument.parse(utf8.decode(out['xl/styles.xml']!));
+    final cells = {
+      for (final cell in sheet.findAllElements('c'))
+        cell.getAttribute('r'): cell,
+    };
+    final xfs = styles.findAllElements('cellXfs').single.childElements.toList();
+    final fills = styles.findAllElements('fills').single.childElements.toList();
+    final fonts = styles.findAllElements('fonts').single.childElements.toList();
+    String fill(String address) {
+      final xf = xfs[int.parse(cells[address]!.getAttribute('s')!)];
+      final id = int.parse(xf.getAttribute('fillId')!);
+      return fills[id].findAllElements('fgColor').single.getAttribute('rgb')!;
+    }
+
+    String font(String address) {
+      final xf = xfs[int.parse(cells[address]!.getAttribute('s')!)];
+      final id = int.parse(xf.getAttribute('fontId')!);
+      return fonts[id].findAllElements('color').single.getAttribute('rgb')!;
+    }
+
+    expect(fill('C2'), 'FF2563EB');
+    expect(fill('D2'), 'FFFFFFFF');
+    expect(fill('C3'), 'FFFFFFFF');
+    expect(fill('D3'), 'FF16A34A');
+    expect(fill('G2'), 'FFFFD43B');
+    expect(fill('G3'), 'FFFFFFFF');
+    expect(fill('L2'), 'FF2563EB');
+    expect(fill('L3'), 'FF16A34A');
+    expect(fill('L4'), 'FFDC2626');
+    for (final address in ['D5', 'G5', 'L5']) {
+      expect(fill(address), 'FFFFFFFF');
+    }
+    expect(font('D3'), 'FFFFFFFF');
+    expect(font('G2'), 'FF000000');
+  });
 }
