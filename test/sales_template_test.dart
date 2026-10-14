@@ -134,7 +134,7 @@ void main() {
     final entries = items(3);
     final bytes = buildLedgerTemplate(source, [
       entries[0].copyWith(billingDate: DateTime(2026, 10, 12)),
-      entries[1].copyWith(status: '진행'),
+      entries[1].copyWith(status: '진행', category: '가맹'),
       entries[2].copyWith(status: '종료'),
     ], DateTime(2026, 9));
     final out = unzip(bytes);
@@ -162,6 +162,10 @@ void main() {
     }
 
     expect(fill('C2'), 'FFCADFF7');
+    expect(fill('B2'), 'FFFFFFFF');
+    expect(fill('N2'), 'FFFFFFFF');
+    expect(fill('B3'), 'FFF4B544');
+    expect(fill('N3'), 'FFF4B544');
     expect(fill('D2'), 'FFFFFFFF');
     expect(fill('C3'), 'FFFFFFFF');
     expect(fill('D3'), 'FFDEF0E4');
@@ -174,6 +178,7 @@ void main() {
       expect(fill(address), 'FFFFFFFF');
     }
     expect(font('D3'), 'FF245B39');
+    expect(font('B3'), 'FF5C3A00');
     expect(font('G2'), 'FF6D5010');
     for (final fontNode in fonts) {
       expect(fontNode.findElements('name').single.getAttribute('val'), 'Arial');

@@ -369,6 +369,10 @@ Uint8List buildLedgerTemplate(
       final address = '${String.fromCharCode(65 + c)}$r';
       book.set(address, values[c]);
     }
+    if (item.category == '가맹') {
+      book.color('B$r', 'FFF4B544', textColor: 'FF5C3A00');
+      book.color('N$r', 'FFF4B544', textColor: 'FF5C3A00');
+    }
     book.color(
       '${item.invoiceIssuerType == '시공사' ? 'C' : 'D'}$r',
       item.invoiceIssuerType == '시공사' ? 'FFCADFF7' : 'FFDEF0E4',
