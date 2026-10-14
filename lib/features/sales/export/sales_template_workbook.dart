@@ -153,6 +153,36 @@ class SalesTemplateWorkbook {
     );
   }
 
+  void useLedgerTypography() {
+    final fonts = styles.findAllElements('fonts').single;
+    for (final font in fonts.childElements) {
+      final name = font.findElements('name').firstOrNull;
+      if (name != null) {
+        name.setAttribute('val', 'Arial');
+      } else {
+        font.children.add(
+          XmlElement(XmlName.parts('name'), [
+            XmlAttribute(XmlName.parts('val'), 'Arial'),
+          ]),
+        );
+      }
+    }
+  }
+
+  void widenLedgerDates() {
+    final columns = sheet.findAllElements('cols').single;
+    for (final column in columns.findElements('col')) {
+      final min = column.getAttribute('min');
+      if (min == '6') {
+        column.setAttribute('width', '20');
+        column.setAttribute('customWidth', '1');
+      } else if (min == '7' && column.getAttribute('max') == '8') {
+        column.setAttribute('width', '10');
+        column.setAttribute('customWidth', '1');
+      }
+    }
+  }
+
   void cloneRow(XmlElement prototype, int number) {
     final copy = prototype.copy();
     copy.setAttribute('r', '$number');
@@ -286,6 +316,8 @@ Uint8List buildLedgerTemplate(
   DateTime month,
 ) {
   final book = SalesTemplateWorkbook(template);
+  book.useLedgerTypography();
+  book.widenLedgerDates();
   final prototype = book.row(2).copy();
   final summary = book.row(3).copy();
   book.data.children.removeWhere(
@@ -339,20 +371,25 @@ Uint8List buildLedgerTemplate(
     }
     book.color(
       '${item.invoiceIssuerType == '시공사' ? 'C' : 'D'}$r',
-      item.invoiceIssuerType == '시공사' ? 'FF2563EB' : 'FF16A34A',
-      textColor: 'FFFFFFFF',
+      item.invoiceIssuerType == '시공사' ? 'FFCADFF7' : 'FFDEF0E4',
+      textColor: item.invoiceIssuerType == '시공사' ? 'FF174A7E' : 'FF245B39',
     );
     if (item.billingDate != null) {
-      book.color('G$r', 'FFFFD43B', textColor: 'FF000000');
+      book.color('G$r', 'FFF9E7AD', textColor: 'FF6D5010');
     }
     final statusColor = switch (item.status) {
-      '신규' => 'FF2563EB',
-      '진행' => 'FF16A34A',
-      '종료' => 'FFDC2626',
+      '신규' => 'FFBBD6F6',
+      '진행' => 'FFA8DBB9',
+      '종료' => 'FFF3BABA',
       _ => null,
     };
     if (statusColor != null) {
-      book.color('L$r', statusColor, textColor: 'FFFFFFFF');
+      final statusText = switch (item.status) {
+        '진행' => 'FF14532D',
+        '종료' => 'FF842020',
+        _ => 'FF174A7E',
+      };
+      book.color('L$r', statusColor, textColor: statusText);
     }
   }
   book.set('P1', '${month.month}월 시공사별 집계표');

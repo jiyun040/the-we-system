@@ -59,11 +59,18 @@ void main() {
         cells['C2']!.getAttribute('s'),
         isNot(cells['D2']!.getAttribute('s')),
       );
+      final columns = xml.findAllElements('cols').single.findElements('col');
       expect(
-        xml.findAllElements('cols').single.toXmlString(),
-        XmlDocument.parse(
-          utf8.decode(unzip(source)['xl/worksheets/sheet1.xml']!),
-        ).findAllElements('cols').single.toXmlString(),
+        columns
+            .firstWhere((col) => col.getAttribute('min') == '6')
+            .getAttribute('width'),
+        '20',
+      );
+      expect(
+        columns
+            .firstWhere((col) => col.getAttribute('min') == '7')
+            .getAttribute('width'),
+        '10',
       );
       expect(utf8.decode(out['xl/workbook.xml']!), contains('9월'));
     },
@@ -154,19 +161,22 @@ void main() {
       return fonts[id].findAllElements('color').single.getAttribute('rgb')!;
     }
 
-    expect(fill('C2'), 'FF2563EB');
+    expect(fill('C2'), 'FFCADFF7');
     expect(fill('D2'), 'FFFFFFFF');
     expect(fill('C3'), 'FFFFFFFF');
-    expect(fill('D3'), 'FF16A34A');
-    expect(fill('G2'), 'FFFFD43B');
+    expect(fill('D3'), 'FFDEF0E4');
+    expect(fill('G2'), 'FFF9E7AD');
     expect(fill('G3'), 'FFFFFFFF');
-    expect(fill('L2'), 'FF2563EB');
-    expect(fill('L3'), 'FF16A34A');
-    expect(fill('L4'), 'FFDC2626');
+    expect(fill('L2'), 'FFBBD6F6');
+    expect(fill('L3'), 'FFA8DBB9');
+    expect(fill('L4'), 'FFF3BABA');
     for (final address in ['D5', 'G5', 'L5']) {
       expect(fill(address), 'FFFFFFFF');
     }
-    expect(font('D3'), 'FFFFFFFF');
-    expect(font('G2'), 'FF000000');
+    expect(font('D3'), 'FF245B39');
+    expect(font('G2'), 'FF6D5010');
+    for (final fontNode in fonts) {
+      expect(fontNode.findElements('name').single.getAttribute('val'), 'Arial');
+    }
   });
 }
