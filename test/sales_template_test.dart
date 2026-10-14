@@ -137,6 +137,7 @@ void main() {
       entries[1].copyWith(status: '진행', category: '가맹'),
       entries[2].copyWith(status: '종료'),
     ], DateTime(2026, 9));
+    File('/tmp/sales-ledger-summary-verified.xlsx').writeAsBytesSync(bytes);
     final out = unzip(bytes);
     final sheet = XmlDocument.parse(
       utf8.decode(out['xl/worksheets/sheet1.xml']!),
@@ -180,6 +181,20 @@ void main() {
     expect(font('D3'), 'FF245B39');
     expect(font('B3'), 'FF5C3A00');
     expect(font('G2'), 'FF6D5010');
+    expect(cells['P6']!.innerText, '9월 협력사별 집계표');
+    expect(cells['P11']!.innerText, '9월 본부, 가맹점 집계표');
+    expect(cells['P17']!.innerText, '9월 본부 진행상황');
+    expect(cells['P23']!.innerText, '9월 가맹점 진행상황');
+    expect(cells['P29']!.innerText, '9월 현장상황');
+    expect(cells['Q13']!.findElements('v').single.innerText, '2');
+    expect(cells['Q14']!.findElements('v').single.innerText, '1');
+    expect(cells['R19']!.findElements('v').single.innerText, '1');
+    expect(cells['R20']!.findElements('v').single.innerText, '1');
+    expect(cells['R24']!.findElements('v').single.innerText, '1');
+    expect(cells['R34']!.findElements('v').single.innerText, '3');
+    expect(cells['B34'], isNull);
+    expect(cells['P5'], isNull);
+    expect(cells['T34'], isNull);
     for (final fontNode in fonts) {
       expect(fontNode.findElements('name').single.getAttribute('val'), 'Arial');
     }

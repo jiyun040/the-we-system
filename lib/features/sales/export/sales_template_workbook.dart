@@ -324,19 +324,54 @@ Uint8List buildLedgerTemplate(
     (e) => e is XmlElement && int.parse(e.getAttribute('r')!) > 1,
   );
   final contractors = <String, List<SalesLedgerEntry>>{};
+  final partners = <String, List<SalesLedgerEntry>>{};
   final projects = <String, List<SalesLedgerEntry>>{};
   for (final item in items) {
     contractors.putIfAbsent(item.contractor, () => []).add(item);
+    partners.putIfAbsent(item.partner, () => []).add(item);
     projects.putIfAbsent(item.projectName, () => []).add(item);
   }
+  final mainTotal = items.length + 2;
+  final contractorTotal = 3 + contractors.length;
+  final partnerTitle = contractorTotal + 2;
+  final partnerTotal = partnerTitle + 2 + partners.length;
+  final categoryTitle = partnerTotal + 2;
+  final categoryTotal = categoryTitle + 4;
+  final headquartersTitle = categoryTotal + 2;
+  final headquartersTotal = headquartersTitle + 4;
+  final franchiseTitle = headquartersTotal + 2;
+  final franchiseTotal = franchiseTitle + 4;
+  final siteTitle = franchiseTotal + 2;
+  final siteTotal = siteTitle + 5;
+  final projectTotal = 3 + projects.length;
+  final sectionGaps = {
+    contractorTotal + 1,
+    partnerTotal + 1,
+    categoryTotal + 1,
+    headquartersTotal + 1,
+    franchiseTotal + 1,
+  };
   final count = [
-    items.length + 2,
-    contractors.length + 3,
-    projects.length + 3,
-    3,
+    mainTotal,
+    siteTotal,
+    projectTotal,
   ].reduce((a, b) => a > b ? a : b);
   for (var r = 2; r <= count; r++) {
     book.cloneRow(r == 2 ? prototype : summary, r);
+    book.row(r).children.removeWhere((node) {
+      if (node is! XmlElement || node.name.local != 'c') return false;
+      final column = SalesTemplateWorkbook.columnNumber(
+        node.getAttribute('r')!,
+      );
+      return (r > mainTotal && column <= 14) ||
+          (column >= 16 &&
+              column <= 18 &&
+              (sectionGaps.contains(r) || r > siteTotal)) ||
+          (column >= 20 && column <= 22 && r > projectTotal);
+    });
+    if (r > mainTotal) {
+      continue;
+    }
     for (var c = 0; c < 14; c++) {
       book.color(
         '${String.fromCharCode(65 + c)}$r',
@@ -396,51 +431,201 @@ Uint8List buildLedgerTemplate(
       book.color('L$r', statusColor, textColor: statusText);
     }
   }
-  book.set('P1', '${month.month}월 시공사별 집계표');
-  for (final entry in {
-    'P2': '시공사',
-    'Q2': '기기수량',
-    'R2': '금액',
-    'T2': '현장명',
-    'U2': '기기수량',
-    'V2': '공급가액',
-  }.entries) {
-    book.set(entry.key, entry.value);
-  }
-  void group(
-    Map<String, List<SalesLedgerEntry>> groups,
-    String label,
-    String quantity,
-    String amount,
-  ) {
-    var r = 3;
-    for (final g in groups.entries) {
-      book.set('$label$r', g.key);
-      final source = label == 'P' ? 'C' : 'B';
-      final end = items.length + 1;
-      book.set(
-        '$quantity$r',
-        g.value.length,
-        formula: 'COUNTIF(${source}2:$source$end,$label$r)',
-      );
-      book.set(
-        '$amount$r',
-        g.value.fold<int>(0, (s, e) => s + e.supplyAmount),
-        formula: 'SUMIF(${source}2:$source$end,$label$r,J2:J$end)',
-      );
-      r++;
-    }
-    book.set('$label$r', '합계');
-    book.set('$quantity$r', items.length);
-    book.set('$amount$r', items.fold<int>(0, (s, e) => s + e.supplyAmount));
+  final end = items.length + 1;
+  final totalSupply = items.fold<int>(0, (s, e) => s + e.supplyAmount);
+  void styleLike(String target, String source) =>
+      book.cell(target).setAttribute('s', book.cell(source).getAttribute('s')!);
+  void merge(String range) {
+    final merges = book.sheet.findAllElements('mergeCells').single;
+    merges.children.add(
+      XmlElement(XmlName.parts('mergeCell'), [
+        XmlAttribute(XmlName.parts('ref'), range),
+      ]),
+    );
+    merges.setAttribute('count', '${merges.childElements.length}');
   }
 
-  group(contractors, 'P', 'Q', 'R');
-  group(projects, 'T', 'U', 'V');
+  void title(int row, String value) {
+    for (final column in ['P', 'Q', 'R']) {
+      styleLike('$column$row', '${column}1');
+    }
+    book.set('P$row', value);
+    if (row != 1) merge('P$row:R$row');
+  }
+
+  void header(int row, String first, String second, String third) {
+    for (final column in ['P', 'Q', 'R']) {
+      styleLike('$column$row', '${column}2');
+    }
+    book.set('P$row', first);
+    book.set('Q$row', second);
+    book.set('R$row', third);
+  }
+
+  void total(int row, int quantity, int amount) {
+    book.set('P$row', '합계');
+    book.set('Q$row', quantity);
+    book.set('R$row', amount);
+    for (final column in ['P', 'Q', 'R']) {
+      book.color('$column$row', 'FFE5E7EB', textColor: 'FF111827');
+    }
+  }
+
+  void groupedTable(
+    int titleRow,
+    String heading,
+    String firstHeader,
+    String sourceColumn,
+    Map<String, List<SalesLedgerEntry>> groups,
+  ) {
+    title(titleRow, heading);
+    header(titleRow + 1, firstHeader, '기기수량', '금액');
+    var row = titleRow + 2;
+    for (final group in groups.entries) {
+      book.set('P$row', group.key);
+      book.set(
+        'Q$row',
+        group.value.length,
+        formula: items.isEmpty
+            ? null
+            : 'COUNTIF(${sourceColumn}2:$sourceColumn$end,P$row)',
+      );
+      book.set(
+        'R$row',
+        group.value.fold<int>(0, (sum, item) => sum + item.supplyAmount),
+        formula: items.isEmpty
+            ? null
+            : 'SUMIF(${sourceColumn}2:$sourceColumn$end,P$row,J2:J$end)',
+      );
+      row++;
+    }
+    total(row, items.length, totalSupply);
+  }
+
+  groupedTable(1, '${month.month}월 시공사별 집계표', '시공사', 'C', contractors);
+  groupedTable(partnerTitle, '${month.month}월 협력사별 집계표', '협력사', 'D', partners);
+
+  title(categoryTitle, '${month.month}월 본부, 가맹점 집계표');
+  header(categoryTitle + 1, '가맹점상호', '기기', '금액');
+  for (final (offset, category, label) in [(2, '본사', '본부'), (3, '가맹', '가맹점')]) {
+    final row = categoryTitle + offset;
+    final selected = items.where((item) => item.category == category).toList();
+    book.set('P$row', label);
+    book.set(
+      'Q$row',
+      selected.length,
+      formula: items.isEmpty ? null : 'COUNTIF(N2:N$end,"$category")',
+    );
+    book.set(
+      'R$row',
+      selected.fold<int>(0, (sum, item) => sum + item.supplyAmount),
+      formula: items.isEmpty ? null : 'SUMIF(N2:N$end,"$category",J2:J$end)',
+    );
+  }
+  final categorized = items
+      .where((item) => item.category == '본사' || item.category == '가맹')
+      .toList();
+  total(
+    categoryTotal,
+    categorized.length,
+    categorized.fold<int>(0, (sum, item) => sum + item.supplyAmount),
+  );
+
+  const statuses = ['진행', '신규', '종료'];
+  void statusColor(String address, String status) {
+    final (fill, text) = switch (status) {
+      '진행' => ('FFA8DBB9', 'FF14532D'),
+      '신규' => ('FFBBD6F6', 'FF174A7E'),
+      _ => ('FFF3BABA', 'FF842020'),
+    };
+    book.color(address, fill, textColor: text);
+  }
+
+  void progressTable(int titleRow, String category, String label) {
+    title(titleRow, '${month.month}월 $label 진행상황');
+    for (var i = 0; i < statuses.length; i++) {
+      final row = titleRow + 1 + i;
+      final status = statuses[i];
+      book.set('P$row', label);
+      book.set('Q$row', status);
+      book.set(
+        'R$row',
+        items
+            .where((item) => item.category == category && item.status == status)
+            .length,
+        formula: items.isEmpty
+            ? null
+            : 'COUNTIFS(N2:N$end,"$category",L2:L$end,Q$row)',
+      );
+      statusColor('Q$row', status);
+    }
+    final totalRow = titleRow + 4;
+    book.set('P$totalRow', '합계');
+    book.set(
+      'R$totalRow',
+      items.where((item) => item.category == category).length,
+      formula: 'SUM(R${titleRow + 1}:R${titleRow + 3})',
+    );
+    for (final column in ['P', 'Q', 'R']) {
+      book.color('$column$totalRow', 'FFE5E7EB', textColor: 'FF111827');
+    }
+    merge('P$totalRow:Q$totalRow');
+  }
+
+  progressTable(headquartersTitle, '본사', '본부');
+  progressTable(franchiseTitle, '가맹', '가맹점');
+
+  title(siteTitle, '${month.month}월 현장상황');
+  header(siteTitle + 1, '구분', '상황', '수량');
+  for (var i = 0; i < statuses.length; i++) {
+    final row = siteTitle + 2 + i;
+    final status = statuses[i];
+    book.set('P$row', '전체');
+    book.set('Q$row', status);
+    book.set(
+      'R$row',
+      items.where((item) => item.status == status).length,
+      formula: items.isEmpty ? null : 'COUNTIF(L2:L$end,Q$row)',
+    );
+    statusColor('Q$row', status);
+  }
+  book.set('P$siteTotal', '합계');
+  book.set(
+    'R$siteTotal',
+    items.length,
+    formula: 'SUM(R${siteTitle + 2}:R${siteTitle + 4})',
+  );
+  for (final column in ['P', 'Q', 'R']) {
+    book.color('$column$siteTotal', 'FFE5E7EB', textColor: 'FF111827');
+  }
+  merge('P$siteTotal:Q$siteTotal');
+
+  book.set('T1', '현장별 집계표');
+  for (final entry in {'T2': '현장명', 'U2': '기기수량', 'V2': '공급가액'}.entries) {
+    book.set(entry.key, entry.value);
+  }
+  var projectRow = 3;
+  for (final group in projects.entries) {
+    book.set('T$projectRow', group.key);
+    book.set(
+      'U$projectRow',
+      group.value.length,
+      formula: 'COUNTIF(B2:B$end,T$projectRow)',
+    );
+    book.set(
+      'V$projectRow',
+      group.value.fold<int>(0, (sum, item) => sum + item.supplyAmount),
+      formula: 'SUMIF(B2:B$end,T$projectRow,J2:J$end)',
+    );
+    projectRow++;
+  }
+  book.set('T$projectRow', '합계');
+  book.set('U$projectRow', items.length);
+  book.set('V$projectRow', totalSupply);
   book.set('B${items.length + 2}', '합계');
   book.set(
     'J${items.length + 2}',
-    items.fold<int>(0, (s, e) => s + e.supplyAmount),
+    totalSupply,
     formula: items.isEmpty ? '0' : 'SUM(J2:J${items.length + 1})',
   );
   book.sheet
