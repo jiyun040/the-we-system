@@ -183,8 +183,10 @@ class SalesTemplateWorkbook {
       final path = 'xl/worksheets/sheet$n.xml';
       resetOpenPosition(sheets[i]);
       write(path, sheets[i]);
-      files['xl/worksheets/_rels/sheet$n.xml.rels'] =
-          files['xl/worksheets/_rels/sheet1.xml.rels']!;
+      final sheetRelationships = files['xl/worksheets/_rels/sheet1.xml.rels'];
+      if (sheetRelationships != null) {
+        files['xl/worksheets/_rels/sheet$n.xml.rels'] = sheetRelationships;
+      }
       list.children.add(
         XmlElement(XmlName.parts('sheet'), [
           XmlAttribute(XmlName.parts('name'), names[i]),

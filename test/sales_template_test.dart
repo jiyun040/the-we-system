@@ -44,7 +44,10 @@ void main() {
         for (final c in xml.findAllElements('c')) c.getAttribute('r'): c,
       };
       expect(cells['B2']!.innerText, '테스트 현장');
-      expect(cells['N1']!.innerText, '분류');
+      final shared = XmlDocument.parse(
+        utf8.decode(out['xl/sharedStrings.xml']!),
+      ).findAllElements('si').toList();
+      expect(shared[int.parse(cells['N1']!.innerText)].innerText, '분류');
       expect(cells['P3']!.innerText, '테스트 시공사');
       expect(cells['Q3']!.findElements('v').single.innerText, '320');
       expect(cells['J322']!.findElements('v').single.innerText, '960000000');
