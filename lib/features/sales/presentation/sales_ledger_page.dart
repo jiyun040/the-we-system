@@ -265,83 +265,95 @@ class _LedgerContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 760;
+    final content = <Widget>[
+      Text(
+        '매출관리대장',
+        style: (compact ? TheWeTextStyle.title : TheWeTextStyle.pageTitle)
+            .copyWith(fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        'PDAM DB에서 현장·호기 정보를 자동 반영합니다. 행을 눌러 청구, 계산서, 입금과 금액을 수정할 수 있으며, 공사명을 눌러 내역서를 확인할 수 있습니다.',
+        style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
+      ),
+      const SizedBox(height: 22),
+      _SummaryCards(summary: summary),
+      const SizedBox(height: 20),
+      if (compact) ...[
+        _searchField(fullWidth: true),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: _statusChips()),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: _navigationControls(),
+        ),
+      ] else
+        Row(children: _toolbarChildren()),
+      const SizedBox(height: 16),
+    ];
+    Widget table() => loading
+        ? const Center(child: CircularProgressIndicator())
+        : error != null
+        ? Center(child: Text(error!))
+        : _LedgerTable(items: items, onEdit: onEdit, onStatement: onStatement);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.all(compact ? 18 : 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '매출관리대장',
-              style: (compact ? TheWeTextStyle.title : TheWeTextStyle.pageTitle)
-                  .copyWith(fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'PDAM DB에서 현장·호기 정보를 자동 반영합니다. 행을 눌러 청구, 계산서, 입금과 금액을 수정할 수 있으며, 공사명을 눌러 내역서를 확인할 수 있습니다.',
-              style: TheWeTextStyle.caption.copyWith(
-                color: TheWeColor.black500,
+        child: compact
+            ? LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ...content,
+                      SizedBox(height: constraints.maxHeight, child: table()),
+                    ],
+                  ),
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...content,
+                  Expanded(child: table()),
+                ],
               ),
-            ),
-            const SizedBox(height: 22),
-            _SummaryCards(summary: summary),
-            const SizedBox(height: 20),
-            compact
-                ? Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: _toolbarChildren(fullWidthSearch: true),
-                  )
-                : Row(children: _toolbarChildren(fullWidthSearch: false)),
-            const SizedBox(height: 16),
-            Expanded(
-              child: loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : error != null
-                  ? Center(child: Text(error!))
-                  : _LedgerTable(
-                      items: items,
-                      onEdit: onEdit,
-                      onStatement: onStatement,
-                    ),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  List<Widget> _toolbarChildren({required bool fullWidthSearch}) => [
-    SizedBox(
-      width: fullWidthSearch ? double.infinity : 300,
-      child: TextField(
-        controller: search,
-        onSubmitted: (_) => onSearch(),
-        decoration: const InputDecoration(
-          isDense: true,
-          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          hintText: '공사명, 시공사, 협력사 검색',
-          prefixIcon: Icon(Icons.search),
-        ),
+  Widget _searchField({required bool fullWidth}) => SizedBox(
+    width: fullWidth ? double.infinity : 300,
+    child: TextField(
+      controller: search,
+      onSubmitted: (_) => onSearch(),
+      decoration: const InputDecoration(
+        isDense: true,
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+        hintText: '공사명, 시공사, 협력사 검색',
+        prefixIcon: Icon(Icons.search),
       ),
     ),
-    const SizedBox(width: 8),
-    for (final status in const ['', '신규', '진행', '종료']) ...[
+  );
+
+  List<Widget> _statusChips() => [
+    for (final status in const ['', '신규', '진행', '종료'])
       ChoiceChip(
         label: Text(status.isEmpty ? '전체' : status),
         selected: selectedStatus == status,
         onSelected: (_) => onStatus(status),
       ),
-      const SizedBox(width: 8),
-    ],
-    if (!fullWidthSearch) const Spacer(),
+  ];
+
+  List<Widget> _navigationControls() => [
     OutlinedButton.icon(
       onPressed: onExport,
       icon: const Icon(Icons.download_outlined, size: 18),
       label: const Text('엑셀 내보내기'),
     ),
-    const SizedBox(width: 8),
     IconButton(
       onPressed: onPrevious,
       icon: const Icon(Icons.chevron_left),
@@ -359,6 +371,17 @@ class _LedgerContent extends StatelessWidget {
       icon: const Icon(Icons.chevron_right),
       tooltip: '다음 달',
     ),
+  ];
+
+  List<Widget> _toolbarChildren() => [
+    _searchField(fullWidth: false),
+    const SizedBox(width: 8),
+    for (final chip in _statusChips()) ...[chip, const SizedBox(width: 8)],
+    const Spacer(),
+    for (final control in _navigationControls()) ...[
+      control,
+      const SizedBox(width: 8),
+    ],
   ];
 }
 
@@ -396,45 +419,21 @@ class _SummaryCards extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: constraints.maxWidth < 600
-            ? Wrap(
-                children: cards
-                    .map(
-                      (card) => SizedBox(
-                        width: constraints.maxWidth / 2,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 8,
-                          ),
-                          alignment: Alignment.center,
-                          child: Column(
-                            children: [
-                              Text(
-                                card.$1,
-                                style: TheWeTextStyle.hintText.copyWith(
-                                  color: TheWeColor.black500,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                card.$2,
-                                style: TheWeTextStyle.subtitle.copyWith(
-                                  color: card.$4,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                card.$3,
-                                style: TheWeTextStyle.hintText.copyWith(
-                                  color: TheWeColor.black500,
-                                ),
-                              ),
-                            ],
-                          ),
+            ? Column(
+                children: [
+                  for (var index = 0; index < cards.length; index += 2)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: _summaryCard(cards[index])),
+                        Expanded(
+                          child: index + 1 < cards.length
+                              ? _summaryCard(cards[index + 1])
+                              : const SizedBox.shrink(),
                         ),
-                      ),
-                    )
-                    .toList(),
+                      ],
+                    ),
+                ],
               )
             : Row(
                 children: cards
@@ -477,6 +476,33 @@ class _SummaryCards extends StatelessWidget {
               ),
       );
     },
+  );
+
+  Widget _summaryCard((String, String, String, Color) card) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
+    child: Column(
+      children: [
+        Text(
+          card.$1,
+          textAlign: TextAlign.center,
+          style: TheWeTextStyle.hintText.copyWith(color: TheWeColor.black500),
+        ),
+        const SizedBox(height: 5),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
+            card.$2,
+            style: TheWeTextStyle.subtitle.copyWith(color: card.$4),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          card.$3,
+          textAlign: TextAlign.center,
+          style: TheWeTextStyle.hintText.copyWith(color: TheWeColor.black500),
+        ),
+      ],
+    ),
   );
 }
 
