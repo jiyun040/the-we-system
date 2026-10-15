@@ -8,6 +8,31 @@ import 'package:the_we_system/features/sales/domain/sales_ledger_entry.dart';
 import 'package:the_we_system/features/sales/presentation/sales_statement_preview.dart';
 
 void main() {
+  testWidgets('mobile statement fits one page and supports pinch zoom', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            height: 680,
+            child: SalesStatementPreview(
+              statement: const SalesStatement(projectName: '테스트 현장', items: []),
+              issued: DateTime(2026, 10, 15),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(InteractiveViewer), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('statement preview uses template and shows supplied values', (
     tester,
   ) async {

@@ -151,6 +151,38 @@ class SalesStatementPreview extends StatelessWidget {
     final pages = statement.items.isEmpty
         ? 1
         : (statement.items.length / 17).ceil();
+    if (MediaQuery.sizeOf(context).width < 520) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final pageHeight = (constraints.maxWidth * 841.89 / 595.28).clamp(
+            0.0,
+            constraints.maxHeight,
+          );
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                for (var page = 0; page < pages; page++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: SizedBox(
+                      width: constraints.maxWidth,
+                      height: pageHeight,
+                      child: InteractiveViewer(
+                        minScale: 1,
+                        maxScale: 5,
+                        child: FittedBox(
+                          fit: BoxFit.contain,
+                          child: _page(page, pages),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      );
+    }
     return SingleChildScrollView(
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -162,70 +194,7 @@ class SalesStatementPreview extends StatelessWidget {
                 child: SizedBox(
                   width: 830,
                   height: 1174,
-                  child: FittedBox(
-                    child: SizedBox(
-                      width: 595.28,
-                      height: 841.89,
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Image.asset(
-                              'assets/templates/statement-background.png',
-                              fit: BoxFit.fill,
-                            ),
-                          ),
-                          const Positioned(
-                            left: 0,
-                            right: 0,
-                            top: 800,
-                            bottom: 0,
-                            child: ColoredBox(color: Colors.white),
-                          ),
-                          for (final t in statementPageText(
-                            statement,
-                            page,
-                            issued,
-                          ).where((t) => t.text.isNotEmpty))
-                            Positioned(
-                              left: t.x,
-                              top: t.y,
-                              width: t.width,
-                              height: t.height,
-                              child: Align(
-                                alignment: t.right
-                                    ? Alignment.centerRight
-                                    : t.center
-                                    ? Alignment.center
-                                    : Alignment.centerLeft,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    t.text,
-                                    style: TextStyle(
-                                      fontSize: t.size,
-                                      color: t.red ? Colors.red : Colors.black,
-                                      fontWeight: t.bold
-                                          ? FontWeight.bold
-                                          : FontWeight.normal,
-                                      fontFamily: 'SUIT-Variable',
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (pages > 1)
-                            Positioned(
-                              left: 500,
-                              top: 780,
-                              child: Text(
-                                '${page + 1}/$pages',
-                                style: const TextStyle(fontSize: 9),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  child: FittedBox(child: _page(page, pages)),
                 ),
               ),
           ],
@@ -233,6 +202,67 @@ class SalesStatementPreview extends StatelessWidget {
       ),
     );
   }
+
+  Widget _page(int page, int pages) => SizedBox(
+    width: 595.28,
+    height: 841.89,
+    child: Stack(
+      children: [
+        Positioned.fill(
+          child: Image.asset(
+            'assets/templates/statement-background.png',
+            fit: BoxFit.fill,
+          ),
+        ),
+        const Positioned(
+          left: 0,
+          right: 0,
+          top: 800,
+          bottom: 0,
+          child: ColoredBox(color: Colors.white),
+        ),
+        for (final t in statementPageText(
+          statement,
+          page,
+          issued,
+        ).where((t) => t.text.isNotEmpty))
+          Positioned(
+            left: t.x,
+            top: t.y,
+            width: t.width,
+            height: t.height,
+            child: Align(
+              alignment: t.right
+                  ? Alignment.centerRight
+                  : t.center
+                  ? Alignment.center
+                  : Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  t.text,
+                  style: TextStyle(
+                    fontSize: t.size,
+                    color: t.red ? Colors.red : Colors.black,
+                    fontWeight: t.bold ? FontWeight.bold : FontWeight.normal,
+                    fontFamily: 'SUIT-Variable',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        if (pages > 1)
+          Positioned(
+            left: 500,
+            top: 780,
+            child: Text(
+              '${page + 1}/$pages',
+              style: const TextStyle(fontSize: 9),
+            ),
+          ),
+      ],
+    ),
+  );
 }
 
 Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
