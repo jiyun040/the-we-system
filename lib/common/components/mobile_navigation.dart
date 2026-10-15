@@ -38,7 +38,7 @@ class MobileNavigationAppBar extends ConsumerWidget
           const SizedBox(width: 9),
           Expanded(
             child: Text(
-              state?.portalName ?? '우리기술 전자결재',
+              state?.portalName ?? '우리기술 ERP',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TheWeTextStyle.subtitle.copyWith(fontSize: 16),
