@@ -82,9 +82,7 @@ class TheWeDataTable extends StatelessWidget {
                     for (var index = 0; index < headers.length; index++)
                       index: FlexColumnWidth(columnFlexes?[index] ?? 1),
                   },
-                  // Fill each row so cell backgrounds and borders line up even
-                  // when neighboring cells wrap onto different numbers of lines.
-                  defaultVerticalAlignment: TableCellVerticalAlignment.fill,
+                  defaultVerticalAlignment: TableCellVerticalAlignment.middle,
                   children: [
                     TableRow(
                       decoration: const BoxDecoration(
