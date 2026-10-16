@@ -327,16 +327,18 @@ class _AdminNavigation extends StatelessWidget {
             style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
           ),
           const SizedBox(height: 30),
-          ListTile(
-            key: const ValueKey('admin-home-menu-item'),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: ListTile(
+              key: const ValueKey('admin-home-menu-item'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              leading: const Icon(Icons.home_outlined),
+              title: const Text('홈'),
+              onTap: () => context.goNamed(AppRouteName.home),
             ),
-            leading: const Icon(Icons.home_outlined),
-            title: const Text('홈'),
-            onTap: () => context.goNamed(AppRouteName.home),
           ),
-          const SizedBox(height: 6),
           ..._visibleAdminDestinations(state).map((destination) {
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),

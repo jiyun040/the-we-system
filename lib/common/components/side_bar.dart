@@ -66,6 +66,8 @@ class SideBar extends ConsumerWidget {
     final onHomePage = currentPath == AppRoutePath.home;
     final attendanceSection =
         GoRouterState.of(context).uri.queryParameters['section'] ?? 'my-status';
+    final attendanceManagement =
+        GoRouterState.of(context).uri.queryParameters['menu'] == 'management';
     final attendanceView =
         GoRouterState.of(context).uri.queryParameters['view'] ?? 'weekly';
     final onAttendancePage = currentPath == AppRoutePath.absence;
@@ -93,11 +95,12 @@ class SideBar extends ConsumerWidget {
       );
     }
 
-    void openAttendance(String section) {
+    void openAttendance(String section, {bool management = false}) {
       navigateNamed(
         AppRouteName.absence,
         queryParameters: {
           'section': section,
+          if (management) 'menu': 'management',
           if (section == 'my-status') 'view': attendanceView,
         },
       );
@@ -130,6 +133,7 @@ class SideBar extends ConsumerWidget {
                         isCompact: isCompact,
                         onTap: () => navigateNamed(AppRouteName.home),
                       ),
+                      TheWeGaps.verticalLg,
                       if (approvalEnabled) ...[
                         SideBarCategorySection(
                           title: '전자결재',
@@ -272,51 +276,15 @@ class SideBar extends ConsumerWidget {
                             ),
                           ],
                         ),
-                        TheWeGaps.verticalXxl,
+                        TheWeGaps.verticalLg,
                       ],
-                      if (attendanceEnabled) ...[
-                        SideBarMenuItem(
-                          icon: Icons.schedule_outlined,
-                          label: '근태 현황',
-                          selected: onAttendancePage,
-                          isCompact: isCompact,
-                          onTap: () => openAttendance('my-status'),
-                        ),
-                        TheWeGaps.verticalXxl,
-                      ],
-                      if (leaveEnabled) ...[
-                        SideBarMenuItem(
-                          icon: Icons.beach_access_outlined,
-                          label: '휴가 현황/신청',
-                          selected: onLeavePage,
-                          isCompact: isCompact,
-                          onTap: () => navigateNamed(AppRouteName.leave),
-                        ),
-                        TheWeGaps.verticalSm,
-                        SideBarMenuItem(
-                          icon: Icons.folder_shared_outlined,
-                          label: '자료공유',
-                          selected: onBoardPage,
-                          isCompact: isCompact,
-                          onTap: () => context.go('/board'),
-                        ),
-                      ],
-                      TheWeGaps.verticalSm,
-                      if (currentUser?.canAccessSalesLedger == true)
-                        SideBarMenuItem(
-                          icon: Icons.receipt_long_outlined,
-                          label: '매출관리대장',
-                          selected: onSalesLedgerPage,
-                          isCompact: isCompact,
-                          onTap: () => navigateNamed(AppRouteName.salesLedger),
-                        ),
                       if (state?.isAdminMode == true && attendanceEnabled) ...[
-                        TheWeGaps.verticalXxl,
                         SideBarCategorySection(
                           title: '근태관리',
                           icon: Icons.schedule_outlined,
                           isCompact: isCompact,
-                          initiallyExpanded: onAttendancePage,
+                          initiallyExpanded:
+                              onAttendancePage && attendanceManagement,
                           children: [
                             SideBarMenuSection(
                               title: '근태',
@@ -327,48 +295,66 @@ class SideBar extends ConsumerWidget {
                                   label: '내 근태현황',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection == 'my-status',
                                   isCompact: isCompact,
-                                  onTap: () => openAttendance('my-status'),
+                                  onTap: () => openAttendance(
+                                    'my-status',
+                                    management: true,
+                                  ),
                                 ),
                                 SideBarMenuItem(
                                   icon: Icons.groups_outlined,
                                   label: '전사 근태현황',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection == 'company-status',
                                   isCompact: isCompact,
-                                  onTap: () => openAttendance('company-status'),
+                                  onTap: () => openAttendance(
+                                    'company-status',
+                                    management: true,
+                                  ),
                                 ),
                                 SideBarMenuItem(
                                   icon: Icons.work_outline_rounded,
                                   label: '근무그룹 관리',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection == 'work-group',
                                   isCompact: isCompact,
-                                  onTap: () => openAttendance('work-group'),
+                                  onTap: () => openAttendance(
+                                    'work-group',
+                                    management: true,
+                                  ),
                                 ),
                                 SideBarMenuItem(
                                   icon: Icons.history_toggle_off_outlined,
                                   label: '보상휴가 관리',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection == 'compensatory-leave',
                                   isCompact: isCompact,
-                                  onTap: () =>
-                                      openAttendance('compensatory-leave'),
+                                  onTap: () => openAttendance(
+                                    'compensatory-leave',
+                                    management: true,
+                                  ),
                                 ),
                                 SideBarMenuItem(
                                   icon: Icons.event_repeat_outlined,
                                   label: '휴일대체 관리',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection ==
                                           'holiday-replacement',
                                   isCompact: isCompact,
-                                  onTap: () =>
-                                      openAttendance('holiday-replacement'),
+                                  onTap: () => openAttendance(
+                                    'holiday-replacement',
+                                    management: true,
+                                  ),
                                 ),
                               ],
                             ),
@@ -382,34 +368,85 @@ class SideBar extends ConsumerWidget {
                                   label: '연차정책 관리',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection == 'leave-policy',
                                   isCompact: isCompact,
-                                  onTap: () => openAttendance('leave-policy'),
+                                  onTap: () => openAttendance(
+                                    'leave-policy',
+                                    management: true,
+                                  ),
                                 ),
                                 SideBarMenuItem(
                                   icon: Icons.campaign_outlined,
                                   label: '연차촉진 현황',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection == 'leave-promotion',
                                   isCompact: isCompact,
-                                  onTap: () =>
-                                      openAttendance('leave-promotion'),
+                                  onTap: () => openAttendance(
+                                    'leave-promotion',
+                                    management: true,
+                                  ),
                                 ),
                                 SideBarMenuItem(
                                   icon: Icons.person_off_outlined,
                                   label: '퇴사자 연차관리',
                                   selected:
                                       onAttendancePage &&
+                                      attendanceManagement &&
                                       attendanceSection == 'retired-leave',
                                   isCompact: isCompact,
-                                  onTap: () => openAttendance('retired-leave'),
+                                  onTap: () => openAttendance(
+                                    'retired-leave',
+                                    management: true,
+                                  ),
                                 ),
                               ],
                             ),
                           ],
                         ),
+                        TheWeGaps.verticalLg,
                       ],
+                      if (attendanceEnabled) ...[
+                        SideBarMenuItem(
+                          icon: Icons.schedule_outlined,
+                          label: '근태 현황',
+                          selected:
+                              onAttendancePage &&
+                              !attendanceManagement &&
+                              attendanceSection == 'my-status',
+                          isCompact: isCompact,
+                          onTap: () => openAttendance('my-status'),
+                        ),
+                        TheWeGaps.verticalLg,
+                      ],
+                      if (leaveEnabled) ...[
+                        SideBarMenuItem(
+                          icon: Icons.beach_access_outlined,
+                          label: '휴가 현황/신청',
+                          selected: onLeavePage,
+                          isCompact: isCompact,
+                          onTap: () => navigateNamed(AppRouteName.leave),
+                        ),
+                        TheWeGaps.verticalLg,
+                        SideBarMenuItem(
+                          icon: Icons.folder_shared_outlined,
+                          label: '자료공유',
+                          selected: onBoardPage,
+                          isCompact: isCompact,
+                          onTap: () => context.go('/board'),
+                        ),
+                      ],
+                      TheWeGaps.verticalLg,
+                      if (currentUser?.canAccessSalesLedger == true)
+                        SideBarMenuItem(
+                          icon: Icons.receipt_long_outlined,
+                          label: '매출관리대장',
+                          selected: onSalesLedgerPage,
+                          isCompact: isCompact,
+                          onTap: () => navigateNamed(AppRouteName.salesLedger),
+                        ),
                     ],
                   ),
                 ),

@@ -190,6 +190,10 @@ class ApprovalAbsencePage extends ConsumerWidget {
       AppRouteName.absence,
       queryParameters: {
         'section': section.key,
+        if (section != AttendanceSection.myStatus ||
+            GoRouterState.of(context).uri.queryParameters['menu'] ==
+                'management')
+          'menu': 'management',
         if (section == AttendanceSection.myStatus) 'view': currentView.key,
       },
     );
