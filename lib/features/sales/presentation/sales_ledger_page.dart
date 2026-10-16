@@ -20,6 +20,7 @@ import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/sales/data/sales_api_service.dart';
 import 'package:the_we_system/features/sales/domain/sales_ledger_entry.dart';
+import 'package:the_we_system/features/sales/domain/sales_ledger_card_metrics.dart';
 
 class SalesLedgerPage extends ConsumerStatefulWidget {
   const SalesLedgerPage({super.key});
@@ -277,7 +278,7 @@ class _LedgerContent extends StatelessWidget {
         style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
       ),
       const SizedBox(height: 22),
-      _SummaryCards(summary: summary),
+      _SummaryCards(summary: summary, items: items, month: month),
       const SizedBox(height: 20),
       if (compact) ...[
         _searchField(fullWidth: true),
@@ -386,18 +387,30 @@ class _LedgerContent extends StatelessWidget {
 }
 
 class _SummaryCards extends StatelessWidget {
-  const _SummaryCards({required this.summary});
+  const _SummaryCards({
+    required this.summary,
+    required this.items,
+    required this.month,
+  });
   final SalesLedgerSummary summary;
+  final List<SalesLedgerEntry> items;
+  final DateTime month;
   @override
   Widget build(BuildContext context) => LayoutBuilder(
     builder: (context, constraints) {
+      final metrics = SalesLedgerCardMetrics.fromEntries(items, month);
       final cards = [
         ('공급가 합계', _money(summary.supplyAmount), 'VAT 별도', TheWeColor.black900),
-        ('청구 건수', '${summary.billCount}건', '현장 기준', TheWeColor.black900),
+        (
+          '청구 건수',
+          '${summary.billCount}건',
+          '현장 ${metrics.billedSiteCount}곳',
+          TheWeColor.black900,
+        ),
         (
           '미청구',
           '${summary.unbilledCount}건',
-          '청구일 미입력',
+          '예상 ${_money(metrics.estimatedUnbilledAmount)}',
           const Color(0xFFE06A00),
         ),
         (
@@ -409,7 +422,7 @@ class _SummaryCards extends StatelessWidget {
         (
           '미입금 (VAT 포함)',
           _money((summary.unpaidAmount * 1.1).round()),
-          '입금일 미입력',
+          '현장 ${metrics.unpaidSiteCount}곳',
           TheWeColor.danger,
         ),
       ];
