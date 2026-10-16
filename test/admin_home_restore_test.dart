@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
+import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_page.dart';
 import 'package:the_we_system/features/approval/presentation/pages/home/approval_home_page.dart';
 
 class _RestoreTestController extends ApprovalDashboardController {
@@ -18,7 +19,7 @@ class _RestoreTestController extends ApprovalDashboardController {
 }
 
 void main() {
-  testWidgets('관리자 홈 새로고침 후 OTP 또는 일반 화면 선택을 표시한다', (tester) async {
+  testWidgets('관리자 홈 새로고침 후 기존 관리자 인증 화면을 표시한다', (tester) async {
     SharedPreferences.setMockInitialValues({
       'admin_mode_restore_user_id': 'admin',
     });
@@ -45,6 +46,11 @@ void main() {
           path: AppRoutePath.home,
           builder: (context, _) => const ApprovalHomePage(),
         ),
+        GoRoute(
+          name: AppRouteName.admin,
+          path: AppRoutePath.admin,
+          builder: (context, _) => const ApprovalAdminPage(),
+        ),
       ],
     );
     addTearDown(router.dispose);
@@ -61,12 +67,13 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('관리자 모드를 다시 시작할까요?'), findsOneWidget);
-    expect(find.text('OTP 입력'), findsOneWidget);
-    await tester.tap(find.text('일반 계정 화면'));
+    expect(find.text('관리자 인증이 필요합니다'), findsOneWidget);
+    expect(find.text('OTP 인증'), findsOneWidget);
+    expect(find.text('일반 화면으로 돌아가기'), findsOneWidget);
+    await tester.tap(find.text('일반 화면으로 돌아가기'));
     await tester.pumpAndSettle();
 
-    expect(find.text('관리자 모드를 다시 시작할까요?'), findsNothing);
+    expect(find.text('관리자 인증이 필요합니다'), findsNothing);
     final preferences = await SharedPreferences.getInstance();
     expect(preferences.getString('admin_mode_restore_user_id'), isNull);
   });
