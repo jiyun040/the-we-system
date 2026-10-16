@@ -159,8 +159,7 @@ class SideBarBrand extends ConsumerWidget {
                           approvalDashboardControllerProvider.notifier,
                         );
                         if (state?.isAdminMode == true) {
-                          notifier.leaveAdminMode();
-                          context.goNamed(AppRouteName.home);
+                          context.goNamed(AppRouteName.admin);
                           return;
                         }
                         final otp = await _showAdminOtpDialog(context);
@@ -177,14 +176,12 @@ class SideBarBrand extends ConsumerWidget {
                           type: TheWeSnackBarType.error,
                         );
                       },
-                      icon: Icon(
-                        state?.isAdminMode == true
-                            ? Icons.person_outline
-                            : Icons.admin_panel_settings_outlined,
+                      icon: const Icon(
+                        Icons.admin_panel_settings_outlined,
                         size: 18,
                       ),
                       label: Text(
-                        state?.isAdminMode == true ? '일반 계정 화면' : '관리자 계정 전환',
+                        state?.isAdminMode == true ? '관리자 관리 화면' : '관리자 계정 전환',
                       ),
                     ),
                   ),

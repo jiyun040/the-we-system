@@ -60,6 +60,7 @@ void main() {
 
     expect(find.text('근태 관리'), findsOneWidget);
     expect(find.text('공지 관리'), findsOneWidget);
+    expect(find.byKey(const ValueKey('admin-home-menu-item')), findsOneWidget);
     await tester.tap(find.text('공지 관리'));
     await tester.pumpAndSettle();
     expect(

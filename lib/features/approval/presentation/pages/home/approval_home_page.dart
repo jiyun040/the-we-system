@@ -94,8 +94,10 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
                           showAdminAction:
                               isPhone &&
                               approvalState.currentUser?.canAccessAdminMode ==
-                                  true &&
-                              !approvalState.isAdminMode,
+                                  true,
+                          adminActionLabel: approvalState.isAdminMode
+                              ? '관리자 관리 화면'
+                              : '관리자 계정 전환',
                           onAdminPressed: () =>
                               context.goNamed(AppRouteName.admin),
                           onChanged: ref
@@ -195,6 +197,7 @@ class _Header extends StatelessWidget {
     required this.controller,
     required this.onChanged,
     required this.showAdminAction,
+    required this.adminActionLabel,
     required this.onAdminPressed,
   });
 
@@ -202,6 +205,7 @@ class _Header extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final bool showAdminAction;
+  final String adminActionLabel;
   final VoidCallback onAdminPressed;
 
   @override
@@ -241,7 +245,7 @@ class _Header extends StatelessWidget {
                     const Spacer(),
                     IconButton(
                       onPressed: onAdminPressed,
-                      tooltip: '관리자 계정 전환',
+                      tooltip: adminActionLabel,
                       icon: const Icon(Icons.admin_panel_settings_outlined),
                     ),
                   ],
