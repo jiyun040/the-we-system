@@ -9,6 +9,7 @@ import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/admin_mode_restore_intent.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'approval_admin_apps_forms.dart';
 import 'approval_admin_comprehensive_management.dart';
@@ -189,9 +190,11 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
     super.dispose();
   }
 
-  void _leaveAdmin() {
-    ref.read(approvalDashboardControllerProvider.notifier).leaveAdminMode();
-    context.goNamed(AppRouteName.home);
+  void _leaveAdmin() async {
+    await ref
+        .read(approvalDashboardControllerProvider.notifier)
+        .leaveAdminMode();
+    if (mounted) context.goNamed(AppRouteName.home);
   }
 
   Future<void> _logout() async {
@@ -272,7 +275,10 @@ class _AdminAccessGate extends ConsumerWidget {
                 child: const Text('OTP 인증'),
               ),
               TextButton(
-                onPressed: () => context.goNamed(AppRouteName.home),
+                onPressed: () async {
+                  await clearAdminModeRefreshIntent();
+                  if (context.mounted) context.goNamed(AppRouteName.home);
+                },
                 child: const Text('일반 화면으로 돌아가기'),
               ),
             ],

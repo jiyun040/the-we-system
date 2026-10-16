@@ -1,4 +1,5 @@
 import 'package:the_we_system/core/network/api_exception.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/admin_mode_restore_intent.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
@@ -60,6 +61,7 @@ extension ApprovalDashboardAuthActions on ApprovalDashboardController {
   }
 
   Future<void> logout() async {
+    await clearAdminModeRefreshIntent();
     if (kIsWeb ||
         defaultTargetPlatform == TargetPlatform.android ||
         defaultTargetPlatform == TargetPlatform.iOS) {

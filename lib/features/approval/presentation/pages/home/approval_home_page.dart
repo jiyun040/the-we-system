@@ -4,14 +4,18 @@ import 'package:go_router/go_router.dart';
 import 'package:the_we_system/common/components/mobile_navigation.dart';
 import 'package:the_we_system/common/components/side_bar.dart';
 import 'package:the_we_system/common/components/text_form_field.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
+import 'package:the_we_system/common/components/the_we_snack_bar.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/router/app_router.dart';
 import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/admin_mode_restore_intent.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'approval_home_overview.dart';
 import 'approval_home_processing.dart';
+import '../admin/approval_admin_direct_leave.dart';
 
 class ApprovalHomePage extends ConsumerStatefulWidget {
   const ApprovalHomePage({super.key});
@@ -23,6 +27,51 @@ class ApprovalHomePage extends ConsumerStatefulWidget {
 class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
   final TextEditingController searchController = TextEditingController();
   final ScrollController waitingScrollController = ScrollController();
+  bool _checkedAdminRestore = false;
+
+  Future<void> _offerAdminModeAfterRefresh(String userId) async {
+    final shouldOffer = await shouldOfferAdminModeAfterRefresh(userId);
+    if (!mounted || !shouldOffer) return;
+    while (mounted) {
+      final current = ref
+          .read(approvalDashboardControllerProvider)
+          .asData
+          ?.value;
+      if (current?.currentUser?.id != userId || current?.isAdminMode == true) {
+        return;
+      }
+      final retryAdmin = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => TheWeConfirmDialog(
+          title: '관리자 모드를 다시 시작할까요?',
+          message: '새로고침 후 관리자 모드를 사용하려면 OTP 인증이 필요합니다.',
+          primaryLabel: 'OTP 입력',
+          secondaryLabel: '일반 계정 화면',
+          onPrimaryPressed: () => Navigator.pop(dialogContext, true),
+          onSecondaryPressed: () => Navigator.pop(dialogContext, false),
+        ),
+      );
+      if (!mounted) return;
+      if (retryAdmin != true) {
+        await clearAdminModeRefreshIntent();
+        return;
+      }
+      final otp = await requestAdminOtp(context);
+      if (!mounted) return;
+      if (otp == null) continue;
+      final entered = await ref
+          .read(approvalDashboardControllerProvider.notifier)
+          .enterAdminMode(otp);
+      if (!mounted) return;
+      if (entered) return;
+      showTheWeSnackBar(
+        context,
+        message: 'OTP 번호가 올바르지 않습니다.',
+        type: TheWeSnackBarType.error,
+      );
+    }
+  }
 
   @override
   void dispose() {
@@ -62,6 +111,16 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
           : null,
       body: state.when(
         data: (approvalState) {
+          if (!_checkedAdminRestore &&
+              approvalState.currentUser?.canAccessAdminMode == true) {
+            _checkedAdminRestore = true;
+            if (!approvalState.isAdminMode) {
+              final userId = approvalState.currentUser!.id;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _offerAdminModeAfterRefresh(userId);
+              });
+            }
+          }
           final dashboard = approvalState.dashboard;
           final keyword = approvalState.keyword.trim();
           final waitingDocuments = _filterDocuments(

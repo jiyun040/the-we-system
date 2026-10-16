@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:the_we_system/core/network/api_exception.dart';
+import 'package:the_we_system/features/approval/presentation/controllers/admin_mode_restore_intent.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_controller_models.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_provider_helpers.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
@@ -26,6 +27,11 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         return false;
       }
       await reloadRemoteState(adminMode: true);
+      try {
+        await rememberAdminModeForRefresh(current.currentUser!.id);
+      } catch (error) {
+        debugPrint('관리자 모드 새로고침 상태 저장 실패: $error');
+      }
       return true;
     } catch (error) {
       reportOperationError(error, fallback: '관리자 인증을 완료하지 못했습니다.');
@@ -33,7 +39,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     }
   }
 
-  void leaveAdminMode() {
+  Future<void> leaveAdminMode() async {
+    await clearAdminModeRefreshIntent();
     setApprovalDashboardState(
       this,
       (value) => value.copyWith(adminMode: false),
