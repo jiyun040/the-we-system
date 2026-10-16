@@ -70,6 +70,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('admin-notice-create-button')));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('admin-notice-editor')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('admin-notice-drop-target')),
+      findsOneWidget,
+    );
+    expect(find.text('파일을 이 영역으로 드래그해도 됩니다.'), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('admin-notice-save-button')));
     await tester.pump();
     expect(find.text('공지 제목과 내용을 모두 입력해 주세요.'), findsOneWidget);
@@ -106,6 +111,71 @@ void main() {
       find.byKey(const ValueKey('admin-notice-create-button')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('임시저장본은 관리자 목록에 만료 안내와 삭제 버튼을 표시하고 홈에는 숨긴다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1440, 1100);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.view.resetPhysicalSize);
+    final manager = _adminAccount(
+      id: designatedAdminAccountId,
+      canChangeAdminOtp: true,
+    );
+    const draft = PortalNotice(
+      id: 'draft-1',
+      title: '작성 중',
+      content: '초안 내용',
+      authorName: '테스트 관리자',
+      createdAt: '2026-10-16T10:00:00+09:00',
+      updatedAt: '2026-10-16T10:00:00+09:00',
+      isDraft: true,
+      draftExpiresAt: '2026-10-23T10:00:00+09:00',
+    );
+    final state = signedOutApprovalState.copyWith(
+      currentUser: manager,
+      accounts: [manager],
+      notices: const [draft],
+      adminMode: true,
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          approvalDashboardControllerProvider.overrideWith(
+            () => _NoticeTestController(state),
+          ),
+        ],
+        child: const MaterialApp(home: ApprovalAdminPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('공지 관리'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('2026-10-23 자동 폐기'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('admin-notice-delete-draft-1')),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(const ValueKey('admin-notice-edit-draft-1')));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('admin-notice-save-draft-button')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('admin-notice-add-attachment')),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('취소'));
+    await tester.pumpAndSettle();
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: ApprovalHomeNoticePanel(notices: [draft])),
+      ),
+    );
+    expect(find.text('등록된 공지사항이 없습니다.'), findsOneWidget);
+    expect(find.text('작성 중'), findsNothing);
   });
 
   testWidgets('등록된 공지사항을 일반 홈 화면에 표시한다', (tester) async {

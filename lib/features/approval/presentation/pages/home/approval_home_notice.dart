@@ -13,13 +13,14 @@ class ApprovalHomeNoticePanel extends StatelessWidget {
       children: [
         Text('공지사항', style: TheWeTextStyle.title),
         const SizedBox(height: 18),
-        if (notices.isEmpty)
+        if (notices.where((notice) => !notice.isDraft).isEmpty)
           Text(
             '등록된 공지사항이 없습니다.',
             style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
           )
         else
           ...notices
+              .where((notice) => !notice.isDraft)
               .take(5)
               .map(
                 (notice) => Padding(

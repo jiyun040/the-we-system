@@ -152,10 +152,18 @@ class TheWeApiService {
     required String title,
     required String content,
     required bool isPinned,
+    required bool isDraft,
+    required List<PortalNoticeAttachment> attachments,
   }) => _guard(() async {
     final response = await _dio.post<Map<String, dynamic>>(
       '/notices',
-      data: {'title': title, 'content': content, 'isPinned': isPinned},
+      data: {
+        'title': title,
+        'content': content,
+        'isPinned': isPinned,
+        'isDraft': isDraft,
+        'attachments': attachments.map((item) => item.toRequestJson()).toList(),
+      },
     );
     return _notice(response.data ?? <String, dynamic>{});
   });
@@ -165,16 +173,35 @@ class TheWeApiService {
     required String title,
     required String content,
     required bool isPinned,
+    required bool isDraft,
+    required List<PortalNoticeAttachment> attachments,
   }) => _guard(() async {
     final response = await _dio.patch<Map<String, dynamic>>(
       '/notices/$id',
-      data: {'title': title, 'content': content, 'isPinned': isPinned},
+      data: {
+        'title': title,
+        'content': content,
+        'isPinned': isPinned,
+        'isDraft': isDraft,
+        'attachments': attachments.map((item) => item.toRequestJson()).toList(),
+      },
     );
     return _notice(response.data ?? <String, dynamic>{});
   });
 
   Future<void> deleteNotice(String id) => _guard(() async {
     await _dio.delete<void>('/notices/$id');
+  });
+
+  Future<Uint8List> downloadNoticeAttachment(
+    String noticeId,
+    String attachmentId,
+  ) => _guard(() async {
+    final response = await _dio.get<List<int>>(
+      '/notices/$noticeId/attachments/$attachmentId',
+      options: Options(responseType: ResponseType.bytes),
+    );
+    return Uint8List.fromList(response.data ?? const []);
   });
 
   Future<RemoteBootstrapData> fetchBootstrap() => _guard(() async {
@@ -614,6 +641,17 @@ PortalNotice _notice(Map<String, dynamic> data) => PortalNotice(
   createdAt: data['createdAt']?.toString() ?? '',
   updatedAt: data['updatedAt']?.toString() ?? '',
   isPinned: data['isPinned'] == true,
+  isDraft: data['isDraft'] == true,
+  draftExpiresAt: data['draftExpiresAt']?.toString(),
+  attachments: _list(data['attachments']).map((item) {
+    final entry = _map(item);
+    return PortalNoticeAttachment(
+      id: entry['id']?.toString(),
+      name: entry['name']?.toString() ?? '',
+      mimeType: entry['mimeType']?.toString() ?? 'application/octet-stream',
+      size: (entry['size'] as num?)?.toInt() ?? 0,
+    );
+  }).toList(),
 );
 
 String _erpPortalName(String? value) {

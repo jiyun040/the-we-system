@@ -68,6 +68,8 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     required String title,
     required String content,
     required bool isPinned,
+    required bool isDraft,
+    required List<PortalNoticeAttachment> attachments,
   }) async {
     final current = currentDashboardState;
     if (current?.canManageNotices != true) {
@@ -75,7 +77,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     }
     final normalizedTitle = title.trim();
     final normalizedContent = content.trim();
-    if (normalizedTitle.isEmpty || normalizedContent.isEmpty) {
+    if (!isDraft && (normalizedTitle.isEmpty || normalizedContent.isEmpty)) {
       return '공지 제목과 내용을 모두 입력해 주세요.';
     }
     if (normalizedTitle.length > 200) {
@@ -87,12 +89,16 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
               title: normalizedTitle,
               content: normalizedContent,
               isPinned: isPinned,
+              isDraft: isDraft,
+              attachments: attachments,
             )
           : await api.updateNotice(
               noticeId,
               title: normalizedTitle,
               content: normalizedContent,
               isPinned: isPinned,
+              isDraft: isDraft,
+              attachments: attachments,
             );
       setApprovalDashboardState(this, (value) {
         final notices = noticeId == null
@@ -1052,6 +1058,7 @@ List<String> _replaceUserId(List<String> values, String oldId, String newId) =>
     values.map((value) => value == oldId ? newId : value).toList();
 
 int _compareNotices(PortalNotice left, PortalNotice right) {
+  if (left.isDraft != right.isDraft) return left.isDraft ? -1 : 1;
   if (left.isPinned != right.isPinned) return left.isPinned ? -1 : 1;
   return right.createdAt.compareTo(left.createdAt);
 }

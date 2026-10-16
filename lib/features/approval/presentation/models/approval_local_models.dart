@@ -16,6 +16,9 @@ class PortalNotice {
     required this.createdAt,
     required this.updatedAt,
     this.isPinned = false,
+    this.isDraft = false,
+    this.draftExpiresAt,
+    this.attachments = const [],
   });
 
   final String id;
@@ -25,6 +28,29 @@ class PortalNotice {
   final String createdAt;
   final String updatedAt;
   final bool isPinned;
+  final bool isDraft;
+  final String? draftExpiresAt;
+  final List<PortalNoticeAttachment> attachments;
+}
+
+class PortalNoticeAttachment {
+  const PortalNoticeAttachment({
+    required this.name,
+    required this.mimeType,
+    required this.size,
+    this.id,
+    this.base64Data,
+  });
+
+  final String? id;
+  final String name;
+  final String mimeType;
+  final int size;
+  final String? base64Data;
+
+  Map<String, dynamic> toRequestJson() => id != null
+      ? {'id': id}
+      : {'name': name, 'mimeType': mimeType, 'base64Data': base64Data};
 }
 
 class EmployeeAccount {

@@ -227,6 +227,7 @@ class ApprovalDashboardController
       emitDashboardState(
         current.copyWith(
           documents: documents,
+          notices: remote.notices,
           restrictedDocumentIds: remote.restrictedDocumentIds,
           leaveRequests: remote.leaveRequests,
           acknowledgedLeaveRequestIds: remote.acknowledgedLeaveRequestIds,
