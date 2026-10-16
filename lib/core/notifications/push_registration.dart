@@ -25,6 +25,7 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
   StreamSubscription<RemoteMessage>? messageSubscription;
   String? registeredUserId;
   bool registering = false;
+  Timer? registrationRetry;
 
   bool get supported =>
       kIsWeb ||
@@ -35,21 +36,21 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
       !kIsWeb ||
       (webVapidKey.isNotEmpty &&
           const String.fromEnvironment(
-                'FIREBASE_WEB_API_KEY',
-                defaultValue: 'AIzaSyDi5zfl_Bt3r-2aDYYnVROuDkecLoVxuho',
-              ).isNotEmpty &&
+            'FIREBASE_WEB_API_KEY',
+            defaultValue: 'AIzaSyDi5zfl_Bt3r-2aDYYnVROuDkecLoVxuho',
+          ).isNotEmpty &&
           const String.fromEnvironment(
-                'FIREBASE_WEB_APP_ID',
-                defaultValue: '1:627473935635:web:c3e2c4f465bed0fd5e3ee6',
-              ).isNotEmpty &&
+            'FIREBASE_WEB_APP_ID',
+            defaultValue: '1:627473935635:web:c3e2c4f465bed0fd5e3ee6',
+          ).isNotEmpty &&
           const String.fromEnvironment(
-                'FIREBASE_WEB_PROJECT_ID',
-                defaultValue: 'the-we-system',
-              ).isNotEmpty &&
+            'FIREBASE_WEB_PROJECT_ID',
+            defaultValue: 'the-we-system',
+          ).isNotEmpty &&
           const String.fromEnvironment(
-                'FIREBASE_WEB_MESSAGING_SENDER_ID',
-                defaultValue: '627473935635',
-              ).isNotEmpty);
+            'FIREBASE_WEB_MESSAGING_SENDER_ID',
+            defaultValue: '627473935635',
+          ).isNotEmpty);
 
   @override
   void initState() {
@@ -93,7 +94,7 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
     );
   }
 
-  Future<void> _sendToken(String token) async {
+  Future<bool> _sendToken(String token) async {
     try {
       await ref
           .read(dioProvider)
@@ -108,8 +109,9 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
                   : 'android',
             },
           );
+      return true;
     } on DioException {
-      // A later login or token refresh retries registration.
+      return false;
     }
   }
 
@@ -129,12 +131,30 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
         vapidKey: kIsWeb ? webVapidKey : null,
       );
       if (token == null || !mounted) return;
-      await _sendToken(token);
+      if (!await _sendToken(token)) return;
+      if (!mounted) return;
       registeredUserId = userId;
+      registrationRetry?.cancel();
+      registrationRetry = null;
     } catch (_) {
       // The app remains usable if notification services are unavailable.
     } finally {
       registering = false;
+      if (mounted && registeredUserId != userId) {
+        registrationRetry ??= Timer(const Duration(seconds: 30), () {
+          registrationRetry = null;
+          if (mounted &&
+              ref
+                      .read(approvalDashboardControllerProvider)
+                      .asData
+                      ?.value
+                      .currentUser
+                      ?.id ==
+                  userId) {
+            _register(userId);
+          }
+        });
+      }
     }
   }
 
@@ -153,7 +173,11 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
         if (mounted) _register(userId);
       });
     }
-    if (userId == null) registeredUserId = null;
+    if (userId == null) {
+      registeredUserId = null;
+      registrationRetry?.cancel();
+      registrationRetry = null;
+    }
     return widget.child;
   }
 
@@ -162,11 +186,13 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
     tokenSubscription?.cancel();
     openedSubscription?.cancel();
     messageSubscription?.cancel();
+    registrationRetry?.cancel();
     super.dispose();
   }
 }
 
 const webVapidKey = String.fromEnvironment(
   'FIREBASE_WEB_VAPID_KEY',
-  defaultValue: 'BIZV7S_cMyHwDO_k-QB1UUAfms290qDhAyq1fSYcvxqVXGKkQ_fyFzWr5ZEcmZu52f-w59bkNCi9OIiLC2H0KQY',
+  defaultValue:
+      'BIZV7S_cMyHwDO_k-QB1UUAfms290qDhAyq1fSYcvxqVXGKkQ_fyFzWr5ZEcmZu52f-w59bkNCi9OIiLC2H0KQY',
 );
