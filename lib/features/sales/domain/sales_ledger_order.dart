@@ -22,6 +22,10 @@ List<SalesLedgerEntry> classifyAndSortLedger(
 }
 
 int compareSalesLedgerEntries(SalesLedgerEntry a, SalesLedgerEntry b) {
+  final category = (a.category == '가맹' ? 1 : 0).compareTo(
+    b.category == '가맹' ? 1 : 0,
+  );
+  if (category != 0) return category;
   int rank(String status) => switch (status) {
     '진행' => 0,
     '신규' => 1,
