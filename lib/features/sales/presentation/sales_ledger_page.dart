@@ -20,6 +20,7 @@ import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/sales/data/sales_api_service.dart';
 import 'package:the_we_system/features/sales/domain/sales_ledger_entry.dart';
+import 'package:the_we_system/features/sales/domain/sales_ledger_order.dart';
 import 'package:the_we_system/features/sales/domain/sales_ledger_card_metrics.dart';
 
 class SalesLedgerPage extends ConsumerStatefulWidget {
@@ -64,22 +65,16 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       _error = null;
     });
     try {
-      final result = await _api.fetchLedger(
-        month: _month,
-        query: _search.text,
-        status: _status,
+      final result = await _api.fetchLedger(month: _month, query: _search.text);
+      final previous = await _api.fetchLedger(
+        month: DateTime(_month.year, _month.month - 1),
       );
+      final sorted = classifyAndSortLedger(result.items, previous.items);
       if (!mounted) return;
       setState(() {
-        _items = result.items
-          ..sort((a, b) {
-            final category = (a.category == '가맹' ? 1 : 0).compareTo(
-              b.category == '가맹' ? 1 : 0,
-            );
-            return category != 0
-                ? category
-                : a.projectName.compareTo(b.projectName);
-          });
+        _items = _status.isEmpty
+            ? sorted
+            : sorted.where((item) => item.status == _status).toList();
         _summary = result.summary;
         _loading = false;
       });
@@ -1095,7 +1090,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
             ),
             const SizedBox(height: 8),
             Text(
-              '회차 1회는 신규, 2회 이상은 진행으로 자동 정리됩니다. 종료는 PDAM 종료 상태 또는 작업 완료 시 사용합니다.',
+              '전월 사용내역이 있는 현장은 진행, 이번 달 처음 들어온 현장은 신규로 표시됩니다. 종료는 PDAM 종료 상태 또는 작업 완료 시 사용합니다.',
               style: TheWeTextStyle.hintText.copyWith(
                 color: TheWeColor.black500,
               ),

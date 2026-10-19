@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:xml/xml.dart';
 import '../domain/sales_ledger_entry.dart';
+import '../domain/sales_ledger_order.dart';
 
 const salesExcelMime =
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -328,6 +329,7 @@ Uint8List buildLedgerTemplate(
   List<SalesLedgerEntry> items,
   DateTime month,
 ) {
+  items = [...items]..sort(compareSalesLedgerEntries);
   final book = SalesTemplateWorkbook(template);
   book.useLedgerTypography();
   book.widenLedgerDates();

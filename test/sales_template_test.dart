@@ -166,25 +166,25 @@ void main() {
       return fonts[id].findAllElements('color').single.getAttribute('rgb')!;
     }
 
-    expect(fill('C2'), 'FFCADFF7');
-    expect(fill('B2'), 'FFFFFFFF');
-    expect(fill('N2'), 'FFFFFFFF');
-    expect(fill('B3'), 'FFF4B544');
-    expect(fill('N3'), 'FFF4B544');
-    expect(fill('D2'), 'FFFFFFFF');
-    expect(fill('C3'), 'FFFFFFFF');
-    expect(fill('D3'), 'FFDEF0E4');
-    expect(fill('G2'), 'FFF9E7AD');
-    expect(fill('G3'), 'FFFFFFFF');
-    expect(fill('L2'), 'FFBBD6F6');
-    expect(fill('L3'), 'FFA8DBB9');
+    expect(fill('C2'), 'FFFFFFFF');
+    expect(fill('B2'), 'FFF4B544');
+    expect(fill('N2'), 'FFF4B544');
+    expect(fill('B3'), 'FFFFFFFF');
+    expect(fill('N3'), 'FFFFFFFF');
+    expect(fill('D2'), 'FFDEF0E4');
+    expect(fill('C3'), 'FFCADFF7');
+    expect(fill('D3'), 'FFFFFFFF');
+    expect(fill('G2'), 'FFFFFFFF');
+    expect(fill('G3'), 'FFF9E7AD');
+    expect(fill('L2'), 'FFA8DBB9');
+    expect(fill('L3'), 'FFBBD6F6');
     expect(fill('L4'), 'FFF3BABA');
     for (final address in ['D5', 'G5', 'L5']) {
       expect(fill(address), 'FFFFFFFF');
     }
-    expect(font('D3'), 'FF245B39');
-    expect(font('B3'), 'FF5C3A00');
-    expect(font('G2'), 'FF6D5010');
+    expect(font('D2'), 'FF245B39');
+    expect(font('B2'), 'FF5C3A00');
+    expect(font('G3'), 'FF6D5010');
     expect(cells['P6']!.innerText, '9월 협력사별 집계표');
     expect(cells['P11']!.innerText, '9월 본부, 가맹점 집계표');
     expect(cells['P17']!.innerText, '9월 본부 진행상황');
