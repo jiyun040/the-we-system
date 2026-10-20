@@ -833,7 +833,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
             Text('정산일  말일', style: TheWeTextStyle.caption),
             const SizedBox(height: 5),
             Text(
-              '계약기간  ${_date(item.startDate)} ~ ${item.endDate == null ? '사용중' : _date(item.endDate)}',
+              '계약기간  ${_date(item.contractStartDate ?? item.startDate)} ~ ${(item.contractEndDate ?? item.endDate) == null ? '사용중' : _date(item.contractEndDate ?? item.endDate)}',
               style: TheWeTextStyle.caption,
             ),
             const SizedBox(height: 25),

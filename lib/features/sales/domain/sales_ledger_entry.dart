@@ -18,6 +18,9 @@ class SalesLedgerEntry {
     this.invoiceIssuer = '협력사',
     this.adjustmentAmount = 0,
     this.adjustmentReason = '',
+    this.month,
+    this.contractStartDate,
+    this.contractEndDate,
   });
 
   final String id;
@@ -27,6 +30,9 @@ class SalesLedgerEntry {
   final String elevator;
   final DateTime? startDate;
   final DateTime? endDate;
+  final String? month;
+  final DateTime? contractStartDate;
+  final DateTime? contractEndDate;
   final String category;
   final DateTime? billingDate;
   final DateTime? invoiceDate;
@@ -73,6 +79,9 @@ class SalesLedgerEntry {
           '',
       startDate: nullableDate(json['startDate']),
       endDate: nullableDate(json['endDate']),
+      month: json['month']?.toString(),
+      contractStartDate: nullableDate(json['contractStartDate']),
+      contractEndDate: nullableDate(json['contractEndDate']),
       category: (() {
         final value = json['category']?.toString() ?? '';
         final status = json['status']?.toString() ?? '신규';
@@ -95,6 +104,7 @@ class SalesLedgerEntry {
   }
 
   Map<String, dynamic> toEditableJson() => {
+    if (month?.isNotEmpty ?? false) 'month': month,
     'startDate': startDate?.toIso8601String().substring(0, 10),
     'endDate': endDate?.toIso8601String().substring(0, 10),
     'category': category,
@@ -137,6 +147,9 @@ class SalesLedgerEntry {
     elevator: elevator,
     startDate: clearStartDate ? null : startDate ?? this.startDate,
     endDate: clearEndDate ? null : endDate ?? this.endDate,
+    month: month,
+    contractStartDate: contractStartDate,
+    contractEndDate: contractEndDate,
     category: category ?? this.category,
     billingDate: clearBillingDate ? null : billingDate ?? this.billingDate,
     invoiceDate: clearInvoiceDate ? null : invoiceDate ?? this.invoiceDate,

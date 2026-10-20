@@ -45,8 +45,8 @@ int compareSalesLedgerEntries(SalesLedgerEntry a, SalesLedgerEntry b) {
   int rank(String status) => status == '신규' ? 1 : 0;
   final status = rank(a.status).compareTo(rank(b.status));
   if (status != 0) return status;
-  final date = (a.startDate ?? DateTime(9999)).compareTo(
-    b.startDate ?? DateTime(9999),
+  final date = (a.contractStartDate ?? a.startDate ?? DateTime(9999)).compareTo(
+    b.contractStartDate ?? b.startDate ?? DateTime(9999),
   );
   if (date != 0) return date;
   return a.elevator.compareTo(b.elevator);

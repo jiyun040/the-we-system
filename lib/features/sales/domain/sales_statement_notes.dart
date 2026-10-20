@@ -18,6 +18,18 @@ int? statementUsageDays(SalesLedgerEntry item) {
 }
 
 String statementItemNote(SalesLedgerEntry item) {
+  // A complete calendar month is not a short rental, including February.
+  final start = item.startDate;
+  final end = item.endDate;
+  if ((item.month?.isNotEmpty ?? false) &&
+      start != null &&
+      end != null &&
+      start.day == 1 &&
+      start.year == end.year &&
+      start.month == end.month &&
+      end.day == DateTime(end.year, end.month + 1, 0).day) {
+    return '';
+  }
   final days = statementUsageDays(item);
   return days != null && days < 30 ? '$days일' : '';
 }
