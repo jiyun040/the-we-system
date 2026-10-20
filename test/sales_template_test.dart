@@ -133,6 +133,74 @@ void main() {
     },
   );
 
+  test(
+    'statement shows short usage and standard notices without private notes',
+    () {
+      final source = File('assets/templates/statement.xlsx').readAsBytesSync();
+      final short = items(1).single.copyWith(
+        endDate: DateTime(2026, 9, 28),
+        note: '서비스에서만 보이는 메모',
+        adjustmentAmount: 100000,
+      );
+      final bytes = buildStatementTemplate(
+        source,
+        SalesStatement(projectName: '테스트 현장', items: [short]),
+        DateTime(2026, 10, 13),
+      );
+      File('/tmp/short-statement.xlsx').writeAsBytesSync(bytes);
+      final sheet = XmlDocument.parse(
+        utf8.decode(unzip(bytes)['xl/worksheets/sheet1.xml']!),
+      );
+      final cells = {
+        for (final cell in sheet.findAllElements('c'))
+          cell.getAttribute('r'): cell,
+      };
+      expect(cells['H12']!.innerText, '28일');
+      expect(cells['C30']!.innerText, contains('1일 임대로 16만원'));
+      expect(cells['C30']!.innerText, contains('1개월분으로 계산하였습니다'));
+      expect(cells['C30']!.innerText, contains('네고된 사항입니다'));
+      expect(sheet.toXmlString(), isNot(contains('서비스에서만 보이는 메모')));
+    },
+  );
+
+  test('ledger export keeps existing and new equipment together by site', () {
+    final source = File('assets/templates/ledger.xlsx').readAsBytesSync();
+    SalesLedgerEntry entry(
+      String site,
+      String device,
+      String status,
+      String category,
+    ) => SalesLedgerEntry.fromJson({
+      'id': '$site-$device',
+      'projectName': site,
+      'elevator': device,
+      'startDate': '2026-10-01',
+      'status': status,
+      'category': category,
+    });
+    final bytes = buildLedgerTemplate(source, [
+      entry('가 현장', '2호기', '신규', '본사'),
+      entry('나 현장', '1호기', '진행', '본사'),
+      entry('가 현장', '1호기', '종료', '본사'),
+      entry('가 현장', '3호기', '진행', '가맹'),
+    ], DateTime(2026, 10));
+    final sheet = XmlDocument.parse(
+      utf8.decode(unzip(bytes)['xl/worksheets/sheet1.xml']!),
+    );
+    final cells = {
+      for (final cell in sheet.findAllElements('c'))
+        cell.getAttribute('r'): cell,
+    };
+    expect(
+      [for (var row = 2; row <= 5; row++) cells['E$row']!.innerText],
+      ['1호기', '2호기', '1호기', '3호기'],
+    );
+    expect(
+      [for (var row = 2; row <= 5; row++) cells['L$row']!.innerText],
+      ['종료', '신규', '진행', '진행'],
+    );
+  });
+
   test('ledger colors only the issuer, billed date, and status cells', () {
     final source = File('assets/templates/ledger.xlsx').readAsBytesSync();
     final entries = items(3);
@@ -175,17 +243,18 @@ void main() {
     expect(fill('C3'), 'FFCADFF7');
     expect(fill('D3'), 'FFFFFFFF');
     expect(fill('D4'), 'FFDEF0E4');
-    expect(fill('G2'), 'FFF9E7AD');
-    expect(fill('G3'), 'FFFFFFFF');
-    expect(fill('L2'), 'FFBBD6F6');
-    expect(fill('L3'), 'FFF3BABA');
+    expect(fill('G2'), 'FFFFFFFF');
+    expect(fill('G3'), 'FFF9E7AD');
+    expect(fill('G4'), 'FFFFFFFF');
+    expect(fill('L2'), 'FFF3BABA');
+    expect(fill('L3'), 'FFBBD6F6');
     expect(fill('L4'), 'FFA8DBB9');
     for (final address in ['D5', 'G5', 'L5']) {
       expect(fill(address), 'FFFFFFFF');
     }
     expect(font('D4'), 'FF245B39');
     expect(font('B4'), 'FF5C3A00');
-    expect(font('G2'), 'FF6D5010');
+    expect(font('G3'), 'FF6D5010');
     expect(cells['P6']!.innerText, '9월 협력사별 집계표');
     expect(cells['P11']!.innerText, '9월 본부, 가맹점 집계표');
     expect(cells['P17']!.innerText, '9월 본부 진행상황');

@@ -8,6 +8,43 @@ import 'package:the_we_system/features/sales/domain/sales_ledger_entry.dart';
 import 'package:the_we_system/features/sales/presentation/sales_statement_preview.dart';
 
 void main() {
+  test(
+    'PDF and preview text use calculated notes, not the service memo',
+    () async {
+      final item = SalesLedgerEntry.fromJson({
+        'startDate': '2024-02-01',
+        'endDate': '2024-02-28',
+        'note': '서비스 전용 비고',
+        'adjustmentAmount': 100000,
+      });
+      final text = statementPageText(
+        SalesStatement(projectName: '현장', items: [item]),
+        0,
+        DateTime(2026, 10, 19),
+      ).map((value) => value.text).toList();
+      expect(text, contains('28일'));
+      expect(text.join(' '), contains('1개월분으로 계산하였습니다'));
+      expect(text.join(' '), contains('네고된 사항입니다'));
+      expect(text.join(' '), isNot(contains('서비스 전용 비고')));
+      final fullMonth = item.copyWith(
+        endDate: DateTime(2024, 3, 1),
+        adjustmentAmount: 0,
+      );
+      final fullMonthText = statementPageText(
+        SalesStatement(projectName: '현장', items: [fullMonth]),
+        0,
+        DateTime(2026, 10, 19),
+      ).map((value) => value.text).join(' ');
+      expect(fullMonthText, isNot(contains('1개월 미만')));
+      expect(fullMonthText, isNot(contains('네고된 사항')));
+      File('/tmp/short-statement-preview.pdf').writeAsBytesSync(
+        await statementTemplatePdf(
+          SalesStatement(projectName: '현장', items: [item]),
+        ),
+      );
+    },
+  );
+
   testWidgets('mobile statement fits one page and supports pinch zoom', (
     tester,
   ) async {

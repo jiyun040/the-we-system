@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../domain/sales_ledger_entry.dart';
+import '../domain/sales_statement_notes.dart';
 import '../export/sales_template_workbook.dart';
 
 // A4 coordinates calibrated from the supplied worksheet's printed cell bounds.
@@ -99,7 +100,7 @@ List<StatementText> statementPageText(
       money.format(item.supplyAmount),
       money.format(vat),
       money.format(item.supplyAmount + vat),
-      salesNote(item),
+      statementItemNote(item),
     ];
     for (var c = 0; c < 8; c++) {
       output.add(
@@ -134,6 +135,25 @@ List<StatementText> statementPageText(
         size: 8.6,
       ),
     );
+  }
+  final footerNotes = statementFooterNotes(
+    statement.items.skip(page * 17).take(17),
+  );
+  if (footerNotes.isNotEmpty) {
+    final lines = [...footerNotes, statementBankNote];
+    for (var i = 0; i < lines.length; i++) {
+      output.add(
+        StatementText(
+          lines[i],
+          121.4,
+          646.5 + i * 8.1,
+          429,
+          8.1,
+          size: 6.2,
+          bold: false,
+        ),
+      );
+    }
   }
   return output;
 }
@@ -221,6 +241,16 @@ class SalesStatementPreview extends StatelessWidget {
           bottom: 0,
           child: ColoredBox(color: Colors.white),
         ),
+        if (statementFooterNotes(
+          statement.items.skip(page * 17).take(17),
+        ).isNotEmpty)
+          const Positioned(
+            left: 121,
+            top: 645,
+            width: 431,
+            height: 35,
+            child: ColoredBox(color: Color(0xFFEAF0DF)),
+          ),
         for (final t in statementPageText(
           statement,
           page,
@@ -299,6 +329,18 @@ Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
               bottom: 0,
               child: pw.Container(color: PdfColors.white),
             ),
+            if (statementFooterNotes(
+              statement.items.skip(page * 17).take(17),
+            ).isNotEmpty)
+              pw.Positioned(
+                left: 121,
+                top: 645,
+                child: pw.Container(
+                  width: 431,
+                  height: 35,
+                  color: PdfColor.fromInt(0xFFEAF0DF),
+                ),
+              ),
             for (final t in statementPageText(
               statement,
               page,

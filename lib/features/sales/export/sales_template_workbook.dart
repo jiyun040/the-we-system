@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:xml/xml.dart';
 import '../domain/sales_ledger_entry.dart';
 import '../domain/sales_ledger_order.dart';
+import '../domain/sales_statement_notes.dart';
 
 const salesExcelMime =
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
@@ -165,6 +166,40 @@ class SalesTemplateWorkbook {
       's',
       '${fillStyle(int.parse(c.getAttribute('s') ?? '0'), value, textColor: textColor)}',
     );
+  }
+
+  void compactWrappedText(String address) {
+    final c = cell(address);
+    final xfs = styles.findAllElements('cellXfs').single;
+    final style = xfs.childElements
+        .elementAt(int.parse(c.getAttribute('s') ?? '0'))
+        .copy();
+    final fonts = styles.findAllElements('fonts').single;
+    final font = fonts.childElements
+        .elementAt(int.parse(style.getAttribute('fontId') ?? '0'))
+        .copy();
+    font.findElements('sz').first.setAttribute('val', '7');
+    final fontId = fonts.childElements.length;
+    fonts.children.add(font);
+    fonts.setAttribute('count', '${fontId + 1}');
+    style.setAttribute('fontId', '$fontId');
+    style.setAttribute('applyFont', '1');
+    style.setAttribute('applyAlignment', '1');
+    final alignment = style.findElements('alignment').firstOrNull;
+    if (alignment == null) {
+      style.children.add(
+        XmlElement(XmlName.parts('alignment'), [
+          XmlAttribute(XmlName.parts('wrapText'), '1'),
+          XmlAttribute(XmlName.parts('vertical'), 'center'),
+        ]),
+      );
+    } else {
+      alignment.setAttribute('wrapText', '1');
+    }
+    final styleId = xfs.childElements.length;
+    xfs.children.add(style);
+    xfs.setAttribute('count', '${styleId + 1}');
+    c.setAttribute('s', '$styleId');
   }
 
   void useLedgerTypography() {
@@ -726,7 +761,7 @@ Uint8List buildStatementTemplate(
         item.supplyAmount,
         vat,
         item.supplyAmount + vat,
-        salesNote(item),
+        statementItemNote(item),
       ];
       for (var c = 0; c < 8; c++) {
         book.set(
@@ -747,6 +782,13 @@ Uint8List buildStatementTemplate(
       'G': supply + tax,
     }.entries) {
       book.set('${e.key}29', e.value, formula: 'SUM(${e.key}12:${e.key}28)');
+    }
+    final pageItems = statement.items.skip(page * 17).take(17);
+    final footerNotes = statementFooterNotes(pageItems);
+    if (footerNotes.isNotEmpty) {
+      book.set('C30', [...footerNotes, statementBankNote].join('\n'));
+      book.compactWrappedText('C30');
+      book.row(30).setAttribute('ht', '48');
     }
     pages.add(book.sheet);
   }
