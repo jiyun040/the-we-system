@@ -168,7 +168,7 @@ class SalesTemplateWorkbook {
     );
   }
 
-  void compactWrappedText(String address) {
+  void wrapText(String address, {double fontSize = 9}) {
     final c = cell(address);
     final xfs = styles.findAllElements('cellXfs').single;
     final style = xfs.childElements
@@ -178,7 +178,7 @@ class SalesTemplateWorkbook {
     final font = fonts.childElements
         .elementAt(int.parse(style.getAttribute('fontId') ?? '0'))
         .copy();
-    font.findElements('sz').first.setAttribute('val', '7');
+    font.findElements('sz').first.setAttribute('val', '$fontSize');
     final fontId = fonts.childElements.length;
     fonts.children.add(font);
     fonts.setAttribute('count', '${fontId + 1}');
@@ -200,6 +200,17 @@ class SalesTemplateWorkbook {
     xfs.children.add(style);
     xfs.setAttribute('count', '${styleId + 1}');
     c.setAttribute('s', '$styleId');
+  }
+
+  void enlargeStatementFonts() {
+    final fonts = styles.findAllElements('fonts').single;
+    for (final font in fonts.childElements) {
+      final size = font.findElements('sz').firstOrNull;
+      final value = double.tryParse(size?.getAttribute('val') ?? '');
+      if (size != null && value != null && value <= 8) {
+        size.setAttribute('val', '${value + 0.5}');
+      }
+    }
   }
 
   void useLedgerTypography() {
@@ -705,6 +716,7 @@ Uint8List buildStatementTemplate(
   DateTime issued,
 ) {
   final book = SalesTemplateWorkbook(template);
+  book.enlargeStatementFonts();
   final original = book.sheet.copy();
   final pages = <XmlDocument>[];
   final pageCount = statement.items.isEmpty
@@ -786,9 +798,13 @@ Uint8List buildStatementTemplate(
     final pageItems = statement.items.skip(page * 17).take(17);
     final footerNotes = statementFooterNotes(pageItems);
     if (footerNotes.isNotEmpty) {
-      book.set('C30', [...footerNotes, statementBankNote].join('\n'));
-      book.compactWrappedText('C30');
-      book.row(30).setAttribute('ht', '48');
+      book.set('A31', footerNotes.join('\n'));
+      for (final column in const ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {
+        book.color('${column}31', 'FFEAF0DF');
+      }
+      book.wrapText('A31');
+      book.row(31).setAttribute('ht', '42');
+      book.row(31).setAttribute('customHeight', '1');
     }
     pages.add(book.sheet);
   }

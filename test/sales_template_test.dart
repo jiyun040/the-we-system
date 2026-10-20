@@ -91,7 +91,7 @@ void main() {
       File('/tmp/sales-statement-verified.xlsx').writeAsBytesSync(bytes);
       final out = unzip(bytes);
       final original = unzip(source);
-      expect(out['xl/styles.xml'], original['xl/styles.xml']);
+      expect(out['xl/styles.xml'], isNot(original['xl/styles.xml']));
       for (final key in original.keys.where((k) => k.startsWith('xl/media/'))) {
         expect(out[key], original[key]);
       }
@@ -156,9 +156,10 @@ void main() {
           cell.getAttribute('r'): cell,
       };
       expect(cells['H12']!.innerText, '28일');
-      expect(cells['C30']!.innerText, contains('1일 임대로 16만원'));
-      expect(cells['C30']!.innerText, contains('1개월분으로 계산하였습니다'));
-      expect(cells['C30']!.innerText, contains('네고된 사항입니다'));
+      expect(cells['C30']!.innerText, contains('입금 계좌번호'));
+      expect(cells['A31']!.innerText, contains('1일 임대로 16만원'));
+      expect(cells['A31']!.innerText, contains('1개월분으로 계산하였습니다'));
+      expect(cells['A31']!.innerText, contains('네고된 사항입니다'));
       expect(sheet.toXmlString(), isNot(contains('서비스에서만 보이는 메모')));
     },
   );

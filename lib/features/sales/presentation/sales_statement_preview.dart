@@ -16,7 +16,7 @@ class StatementText {
     this.y,
     this.width,
     this.height, {
-    this.size = 6.88,
+    this.size = 7.55,
     this.right = false,
     this.center = false,
     this.bold = true,
@@ -50,16 +50,16 @@ List<StatementText> statementPageText(
       138.5,
       139.1,
       25.8,
-      size: 8.6,
+      size: 9.2,
     ),
-    StatementText(statement.projectName, 121.4, 190.1, 139.1, 25.8, size: 7.74),
+    StatementText(statement.projectName, 121.4, 190.1, 139.1, 25.8, size: 8.4),
     StatementText(
       DateFormat('yyyy-MM-dd').format(issued),
       317.3,
       245.97,
       59.17,
       20,
-      size: 7.8,
+      size: 8.4,
       center: true,
     ),
     StatementText(
@@ -68,7 +68,7 @@ List<StatementText> statementPageText(
       265.96,
       116,
       20,
-      size: 10,
+      size: 10.5,
       right: true,
     ),
   ]);
@@ -132,7 +132,7 @@ List<StatementText> statementPageText(
         xs[c + 1] - xs[c] - 2,
         21.44,
         right: true,
-        size: 8.6,
+        size: 9.2,
       ),
     );
   }
@@ -140,16 +140,15 @@ List<StatementText> statementPageText(
     statement.items.skip(page * 17).take(17),
   );
   if (footerNotes.isNotEmpty) {
-    final lines = [...footerNotes, statementBankNote];
-    for (var i = 0; i < lines.length; i++) {
+    for (var i = 0; i < footerNotes.length; i++) {
       output.add(
         StatementText(
-          lines[i],
-          121.4,
-          646.5 + i * 8.1,
-          429,
-          8.1,
-          size: 6.2,
+          footerNotes[i],
+          65,
+          682 + i * 11.5,
+          485,
+          11.5,
+          size: 8,
           bold: false,
         ),
       );
@@ -245,10 +244,10 @@ class SalesStatementPreview extends StatelessWidget {
           statement.items.skip(page * 17).take(17),
         ).isNotEmpty)
           const Positioned(
-            left: 121,
-            top: 645,
-            width: 431,
-            height: 35,
+            left: 36.5,
+            top: 679,
+            width: 516.5,
+            height: 42,
             child: ColoredBox(color: Color(0xFFEAF0DF)),
           ),
         for (final t in statementPageText(
@@ -333,11 +332,11 @@ Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
               statement.items.skip(page * 17).take(17),
             ).isNotEmpty)
               pw.Positioned(
-                left: 121,
-                top: 645,
+                left: 36.5,
+                top: 679,
                 child: pw.Container(
-                  width: 431,
-                  height: 35,
+                  width: 516.5,
+                  height: 42,
                   color: PdfColor.fromInt(0xFFEAF0DF),
                 ),
               ),
