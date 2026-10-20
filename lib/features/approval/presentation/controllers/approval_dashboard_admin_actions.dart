@@ -389,25 +389,30 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     final current = currentDashboardState;
     if (current == null) return '직원 정보를 불러오지 못했습니다.';
     final normalizedId = id.trim();
+    final isIntern = position.trim() == '실습';
     if ([
       normalizedId,
       password.trim(),
       name.trim(),
       department.trim(),
       position.trim(),
-      hireDate.trim(),
+      if (!isIntern) hireDate.trim(),
     ].any((value) => value.isEmpty)) {
       return '모든 항목을 입력해 주세요.';
     }
     if (current.accounts.any((account) => account.id == normalizedId)) {
       return '이미 사용 중인 아이디입니다.';
     }
-    if (DateTime.tryParse(hireDate.trim()) == null) {
+    if (!isIntern && DateTime.tryParse(hireDate.trim()) == null) {
       return '입사일을 YYYY-MM-DD 형식으로 입력해 주세요.';
     }
-    final annualDays = double.tryParse(annualLeaveDays.trim());
-    final monthlyDays = double.tryParse(monthlyLeaveDays.trim());
-    final remainingDays = double.tryParse(remainingLeaveDays.trim());
+    final annualDays = isIntern ? 0.0 : double.tryParse(annualLeaveDays.trim());
+    final monthlyDays = isIntern
+        ? 0.0
+        : double.tryParse(monthlyLeaveDays.trim());
+    final remainingDays = isIntern
+        ? 0.0
+        : double.tryParse(remainingLeaveDays.trim());
     if (!_validLeaveDays(annualDays) ||
         !_validLeaveDays(monthlyDays) ||
         !_validLeaveDays(remainingDays)) {
@@ -419,7 +424,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
       name: name.trim(),
       department: department.trim(),
       position: position.trim(),
-      hireDate: hireDate.trim(),
+      hireDate: isIntern ? '' : hireDate.trim(),
       isAdmin: false,
       annualLeaveDays: annualDays,
       monthlyLeaveDays: monthlyDays,
@@ -437,7 +442,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         'name': name.trim(),
         'department': department.trim(),
         'position': position.trim(),
-        'hireDate': hireDate.trim(),
+        'hireDate': isIntern ? '' : hireDate.trim(),
         'annualLeaveDays': annualDays,
         'monthlyLeaveDays': monthlyDays,
         'leaveBalanceAdjustment': adjustment,

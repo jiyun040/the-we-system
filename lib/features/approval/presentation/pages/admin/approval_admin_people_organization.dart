@@ -112,48 +112,54 @@ class AdminEmployeeManagement extends ConsumerWidget {
                   const SizedBox(height: 10),
                   TextField(
                     controller: position,
+                    onChanged: (_) => setDialogState(() {}),
                     decoration: const InputDecoration(labelText: '직위'),
                   ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    key: const ValueKey('employee-hire-date-field'),
-                    controller: hireDate,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: const [_HireDateInputFormatter()],
-                    onChanged: (_) {
-                      _applyAutomaticLeaveForHireDate(
-                        state: state,
-                        hireDate: hireDate.text,
-                        annualLeave: annualLeave,
-                        monthlyLeave: monthlyLeave,
-                        remainingLeave: remainingLeave,
-                      );
-                      setDialogState(() {});
-                    },
-                    decoration: InputDecoration(
-                      labelText: '입사일',
-                      hintText: 'YYYY-MM-DD',
-                      helperText: _automaticLeaveSummary(state, hireDate.text),
+                  if (position.text.trim() != '실습') ...[
+                    const SizedBox(height: 10),
+                    TextField(
+                      key: const ValueKey('employee-hire-date-field'),
+                      controller: hireDate,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: const [_HireDateInputFormatter()],
+                      onChanged: (_) {
+                        _applyAutomaticLeaveForHireDate(
+                          state: state,
+                          hireDate: hireDate.text,
+                          annualLeave: annualLeave,
+                          monthlyLeave: monthlyLeave,
+                          remainingLeave: remainingLeave,
+                        );
+                        setDialogState(() {});
+                      },
+                      decoration: InputDecoration(
+                        labelText: '입사일',
+                        hintText: 'YYYY-MM-DD',
+                        helperText: _automaticLeaveSummary(
+                          state,
+                          hireDate.text,
+                        ),
+                      ),
                     ),
-                  ),
-                  if (_showsAnnualLeave(state, hireDate.text)) ...[
+                    if (_showsAnnualLeave(state, hireDate.text)) ...[
+                      const SizedBox(height: 10),
+                      _leaveDaysField(
+                        annualLeave,
+                        '연차 개수',
+                        readOnly: true,
+                        helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                    _leaveDaysField(monthlyLeave, '월차 개수'),
                     const SizedBox(height: 10),
                     _leaveDaysField(
-                      annualLeave,
-                      '연차 개수',
+                      remainingLeave,
+                      '잔여 개수',
                       readOnly: true,
-                      helperText: '입사일과 근속연수별 연차 설정에 따라 자동 입력됩니다.',
+                      helperText: '자동 연차에서 사용·승인대기 수량을 차감해 계산됩니다.',
                     ),
                   ],
-                  const SizedBox(height: 10),
-                  _leaveDaysField(monthlyLeave, '월차 개수'),
-                  const SizedBox(height: 10),
-                  _leaveDaysField(
-                    remainingLeave,
-                    '잔여 개수',
-                    readOnly: true,
-                    helperText: '자동 연차에서 사용·승인대기 수량을 차감해 계산됩니다.',
-                  ),
                   if (error.isNotEmpty)
                     Align(
                       alignment: Alignment.centerLeft,
@@ -183,11 +189,19 @@ class AdminEmployeeManagement extends ConsumerWidget {
                       name: name.text,
                       department: department.text,
                       position: position.text,
-                      hireDate: hireDate.text,
+                      hireDate: position.text.trim() == '실습'
+                          ? ''
+                          : hireDate.text,
                       isAdmin: false,
-                      annualLeaveDays: annualLeave.text,
-                      monthlyLeaveDays: monthlyLeave.text,
-                      remainingLeaveDays: remainingLeave.text,
+                      annualLeaveDays: position.text.trim() == '실습'
+                          ? '0'
+                          : annualLeave.text,
+                      monthlyLeaveDays: position.text.trim() == '실습'
+                          ? '0'
+                          : monthlyLeave.text,
+                      remainingLeaveDays: position.text.trim() == '실습'
+                          ? '0'
+                          : remainingLeave.text,
                     );
                 if (message != null) {
                   setDialogState(() => error = message);
@@ -584,15 +598,27 @@ class _EmployeeManagementDirectoryState
     ),
     Text(account.department),
     Text(account.position),
-    Text(account.hireDate),
-    Text(widget.state.servicePeriodLabelFor(account)),
+    Text(account.hireDate.isEmpty ? '-' : account.hireDate),
     Text(
-      widget.state.isUnderOneYear(account)
+      account.position.trim() == '실습'
+          ? '-'
+          : widget.state.servicePeriodLabelFor(account),
+    ),
+    Text(
+      account.position.trim() == '실습' || widget.state.isUnderOneYear(account)
           ? '-'
           : adminLeaveDays(widget.state.annualLeaveDaysFor(account)),
     ),
-    Text(adminLeaveDays(widget.state.monthlyLeaveDaysFor(account))),
-    Text(adminLeaveDays(widget.state.remainingAnnualLeaveFor(account))),
+    Text(
+      account.position.trim() == '실습'
+          ? '-'
+          : adminLeaveDays(widget.state.monthlyLeaveDaysFor(account)),
+    ),
+    Text(
+      account.position.trim() == '실습'
+          ? '-'
+          : adminLeaveDays(widget.state.remainingAnnualLeaveFor(account)),
+    ),
     Align(
       alignment: Alignment.center,
       child: Chip(
@@ -690,12 +716,17 @@ class _EmployeeCard extends StatelessWidget {
               child: _EmployeeInfo(label: '직위', value: account.position),
             ),
             Expanded(
-              child: _EmployeeInfo(label: '입사일', value: account.hireDate),
+              child: _EmployeeInfo(
+                label: '입사일',
+                value: account.hireDate.isEmpty ? '-' : account.hireDate,
+              ),
             ),
             Expanded(
               child: _EmployeeInfo(
                 label: '근속',
-                value: state.servicePeriodLabelFor(account),
+                value: account.position.trim() == '실습'
+                    ? '-'
+                    : state.servicePeriodLabelFor(account),
               ),
             ),
           ],
@@ -703,25 +734,28 @@ class _EmployeeCard extends StatelessWidget {
         const SizedBox(height: 10),
         Row(
           children: [
-            if (!state.isUnderOneYear(account))
+            if (account.position.trim() != '실습' &&
+                !state.isUnderOneYear(account))
               Expanded(
                 child: _EmployeeInfo(
                   label: '연차',
                   value: adminLeaveDays(state.annualLeaveDaysFor(account)),
                 ),
               ),
-            Expanded(
-              child: _EmployeeInfo(
-                label: '월차',
-                value: adminLeaveDays(state.monthlyLeaveDaysFor(account)),
+            if (account.position.trim() != '실습')
+              Expanded(
+                child: _EmployeeInfo(
+                  label: '월차',
+                  value: adminLeaveDays(state.monthlyLeaveDaysFor(account)),
+                ),
               ),
-            ),
-            Expanded(
-              child: _EmployeeInfo(
-                label: '잔여',
-                value: adminLeaveDays(state.remainingAnnualLeaveFor(account)),
+            if (account.position.trim() != '실습')
+              Expanded(
+                child: _EmployeeInfo(
+                  label: '잔여',
+                  value: adminLeaveDays(state.remainingAnnualLeaveFor(account)),
+                ),
               ),
-            ),
           ],
         ),
       ],
