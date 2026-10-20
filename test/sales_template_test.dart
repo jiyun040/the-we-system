@@ -160,6 +160,22 @@ void main() {
       expect(cells['A31']!.innerText, contains('1일 임대로 16만원'));
       expect(cells['A31']!.innerText, contains('1개월분으로 계산하였습니다'));
       expect(cells['A31']!.innerText, contains('네고된 사항입니다'));
+      final styles = XmlDocument.parse(
+        utf8.decode(unzip(bytes)['xl/styles.xml']!),
+      );
+      final xfs = styles.findAllElements('cellXfs').single.childElements;
+      final fonts = styles.findAllElements('fonts').single.childElements;
+      final noteStyle = xfs.elementAt(
+        int.parse(cells['A31']!.getAttribute('s')!),
+      );
+      final noteFont = fonts.elementAt(
+        int.parse(noteStyle.getAttribute('fontId')!),
+      );
+      expect(
+        noteFont.findElements('color').single.getAttribute('rgb'),
+        'FFCC0000',
+      );
+      expect(noteFont.findElements('sz').single.getAttribute('val'), '10.0');
       expect(sheet.toXmlString(), isNot(contains('서비스에서만 보이는 메모')));
     },
   );

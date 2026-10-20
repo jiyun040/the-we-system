@@ -26,6 +26,17 @@ void main() {
       expect(text.join(' '), contains('1개월분으로 계산하였습니다'));
       expect(text.join(' '), contains('네고된 사항입니다'));
       expect(text.join(' '), isNot(contains('서비스 전용 비고')));
+      final rendered = statementPageText(
+        SalesStatement(projectName: '현장', items: [item]),
+        0,
+        DateTime(2026, 10, 19),
+      );
+      expect(
+        rendered.where((value) => value.text.startsWith('※')),
+        everyElement(
+          isA<StatementText>().having((value) => value.red, 'red', true),
+        ),
+      );
       final fullMonth = item.copyWith(
         endDate: DateTime(2024, 3, 1),
         adjustmentAmount: 0,

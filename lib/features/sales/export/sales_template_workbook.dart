@@ -168,7 +168,7 @@ class SalesTemplateWorkbook {
     );
   }
 
-  void wrapText(String address, {double fontSize = 9}) {
+  void wrapText(String address, {double fontSize = 9, String? textColor}) {
     final c = cell(address);
     final xfs = styles.findAllElements('cellXfs').single;
     final style = xfs.childElements
@@ -179,6 +179,16 @@ class SalesTemplateWorkbook {
         .elementAt(int.parse(style.getAttribute('fontId') ?? '0'))
         .copy();
     font.findElements('sz').first.setAttribute('val', '$fontSize');
+    if (textColor != null) {
+      font.children.removeWhere(
+        (child) => child is XmlElement && child.name.local == 'color',
+      );
+      font.children.add(
+        XmlElement(XmlName.parts('color'), [
+          XmlAttribute(XmlName.parts('rgb'), textColor),
+        ]),
+      );
+    }
     final fontId = fonts.childElements.length;
     fonts.children.add(font);
     fonts.setAttribute('count', '${fontId + 1}');
@@ -208,7 +218,7 @@ class SalesTemplateWorkbook {
       final size = font.findElements('sz').firstOrNull;
       final value = double.tryParse(size?.getAttribute('val') ?? '');
       if (size != null && value != null && value <= 8) {
-        size.setAttribute('val', '${value + 0.5}');
+        size.setAttribute('val', '${value + 1}');
       }
     }
   }
@@ -802,8 +812,8 @@ Uint8List buildStatementTemplate(
       for (final column in const ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {
         book.color('${column}31', 'FFEAF0DF');
       }
-      book.wrapText('A31');
-      book.row(31).setAttribute('ht', '42');
+      book.wrapText('A31', fontSize: 10, textColor: 'FFCC0000');
+      book.row(31).setAttribute('ht', '48');
       book.row(31).setAttribute('customHeight', '1');
     }
     pages.add(book.sheet);

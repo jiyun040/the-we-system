@@ -16,7 +16,7 @@ class StatementText {
     this.y,
     this.width,
     this.height, {
-    this.size = 7.55,
+    this.size = 8.5,
     this.right = false,
     this.center = false,
     this.bold = true,
@@ -50,16 +50,16 @@ List<StatementText> statementPageText(
       138.5,
       139.1,
       25.8,
-      size: 9.2,
+      size: 10,
     ),
-    StatementText(statement.projectName, 121.4, 190.1, 139.1, 25.8, size: 8.4),
+    StatementText(statement.projectName, 121.4, 190.1, 139.1, 25.8, size: 9.2),
     StatementText(
       DateFormat('yyyy-MM-dd').format(issued),
       317.3,
       245.97,
       59.17,
       20,
-      size: 8.4,
+      size: 9.2,
       center: true,
     ),
     StatementText(
@@ -68,7 +68,7 @@ List<StatementText> statementPageText(
       265.96,
       116,
       20,
-      size: 10.5,
+      size: 11.2,
       right: true,
     ),
   ]);
@@ -132,7 +132,7 @@ List<StatementText> statementPageText(
         xs[c + 1] - xs[c] - 2,
         21.44,
         right: true,
-        size: 9.2,
+        size: 10,
       ),
     );
   }
@@ -145,11 +145,12 @@ List<StatementText> statementPageText(
         StatementText(
           footerNotes[i],
           65,
-          682 + i * 11.5,
+          682 + i * 12.5,
           485,
-          11.5,
-          size: 8,
+          12.5,
+          size: 8.8,
           bold: false,
+          red: true,
         ),
       );
     }
@@ -247,7 +248,7 @@ class SalesStatementPreview extends StatelessWidget {
             left: 36.5,
             top: 679,
             width: 516.5,
-            height: 42,
+            height: 48,
             child: ColoredBox(color: Color(0xFFEAF0DF)),
           ),
         for (final t in statementPageText(
@@ -336,7 +337,7 @@ Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
                 top: 679,
                 child: pw.Container(
                   width: 516.5,
-                  height: 42,
+                  height: 48,
                   color: PdfColor.fromInt(0xFFEAF0DF),
                 ),
               ),
