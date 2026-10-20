@@ -75,7 +75,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         _items = _status.isEmpty
             ? sorted
             : sorted.where((item) => item.status == _status).toList();
-        _summary = result.summary;
+        _summary = SalesLedgerSummary.fromEntries(_items);
         _loading = false;
       });
     } catch (_) {

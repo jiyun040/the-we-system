@@ -166,6 +166,31 @@ class SalesLedgerSummary {
   final int unissuedInvoiceCount;
   final int unpaidAmount;
 
+  factory SalesLedgerSummary.fromEntries(Iterable<SalesLedgerEntry> entries) {
+    var supplyAmount = 0;
+    var billCount = 0;
+    var unbilledCount = 0;
+    var unissuedInvoiceCount = 0;
+    var unpaidAmount = 0;
+    for (final entry in entries) {
+      supplyAmount += entry.supplyAmount;
+      if (entry.billingDate == null) {
+        unbilledCount++;
+      } else {
+        billCount++;
+        if (entry.invoiceDate == null) unissuedInvoiceCount++;
+        if (entry.depositDate == null) unpaidAmount += entry.supplyAmount;
+      }
+    }
+    return SalesLedgerSummary(
+      supplyAmount: supplyAmount,
+      billCount: billCount,
+      unbilledCount: unbilledCount,
+      unissuedInvoiceCount: unissuedInvoiceCount,
+      unpaidAmount: unpaidAmount,
+    );
+  }
+
   factory SalesLedgerSummary.fromJson(Map<String, dynamic> json) {
     int value(String key) => int.tryParse(json[key]?.toString() ?? '') ?? 0;
     return SalesLedgerSummary(

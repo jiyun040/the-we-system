@@ -11,16 +11,12 @@ class SalesLedgerResponse {
 class SalesApiService {
   const SalesApiService(this._dio);
   final Dio _dio;
-  static final Map<String, SalesLedgerResponse> _ledgerCache = {};
 
   Future<SalesLedgerResponse> fetchLedger({
     required DateTime month,
     String query = '',
     String status = '',
   }) async {
-    final cacheKey = '${month.year}-${month.month}|${query.trim()}|$status';
-    final cached = _ledgerCache[cacheKey];
-    if (cached != null) return cached;
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/sales/ledger',
@@ -49,7 +45,6 @@ class SalesApiService {
           Map<String, dynamic>.from(data['summary'] as Map? ?? const {}),
         ),
       );
-      _ledgerCache[cacheKey] = result;
       return result;
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
@@ -62,7 +57,6 @@ class SalesApiService {
         '/sales/ledger/${entry.id}',
         data: entry.toEditableJson(),
       );
-      _ledgerCache.clear();
       final saved = SalesLedgerEntry.fromJson(response.data ?? const {});
       if (response.data?['invoiceIssuer']?.toString().trim() !=
           entry.toEditableJson()['invoiceIssuer']) {
