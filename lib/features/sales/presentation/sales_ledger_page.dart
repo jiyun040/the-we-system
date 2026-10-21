@@ -222,23 +222,30 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   Future<void> _pickMonth() async {
     final month = await showDialog<int>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('조회할 월 선택'),
-        content: SizedBox(
-          width: 320,
-          child: GridView.count(
-            crossAxisCount: 3,
-            shrinkWrap: true,
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            children: [
-              for (var value = 1; value <= 12; value++)
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context, value),
-                  child: Text('$value월'),
-                ),
-            ],
-          ),
+      builder: (dialogContext) => TheWeModalSurface(
+        width: 380,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TheWeModalHeader(
+              title: '조회할 월 선택',
+              onClose: () => Navigator.pop(dialogContext),
+            ),
+            const SizedBox(height: 18),
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              children: [
+                for (var value = 1; value <= 12; value++)
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(dialogContext, value),
+                    child: Text('$value월'),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );
