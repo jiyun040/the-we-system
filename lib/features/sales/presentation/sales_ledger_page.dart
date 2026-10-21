@@ -214,16 +214,30 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   }
 
   Future<void> _pickMonth() async {
-    final today = DateTime.now();
-    final selected = await showTheWeDatePicker(
-      context,
-      initialDate: _month,
-      firstDate: DateTime(today.year, 1),
-      lastDate: today,
-      title: '조회할 연월 선택',
+    final month = await showDialog<int>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('조회할 월 선택'),
+        content: SizedBox(
+          width: 320,
+          child: GridView.count(
+            crossAxisCount: 3,
+            shrinkWrap: true,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            children: [
+              for (var value = 1; value <= 12; value++)
+                OutlinedButton(
+                  onPressed: () => Navigator.pop(context, value),
+                  child: Text('$value월'),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
-    if (selected == null) return;
-    setState(() => _month = DateTime(selected.year, selected.month));
+    if (month == null) return;
+    setState(() => _month = DateTime(DateTime.now().year, month));
     await _load();
   }
 
@@ -377,7 +391,7 @@ class _LedgerContent extends StatelessWidget {
         onSelected: (_) => onStatus(status),
       ),
     ChoiceChip(
-      label: const Text('계산서 발행 후 60일 초과 미입금'),
+      label: const Text('60일 초과 미입금 현장'),
       selected: overdueOnly,
       onSelected: onOverdueChanged,
     ),
@@ -613,7 +627,8 @@ class _LedgerTable extends StatelessWidget {
       for (final item in items)
         [
           for (var col = 0; col < 15; col++)
-            (col == 2 || col == 3) && _issuerType(item).isNotEmpty
+            ((col == 2 && _issuerType(item) == '시공사') ||
+                    (col == 3 && _issuerType(item) == '협력사'))
                 ? _issuerColor(item)
                 : (col == 7 && item.billingDate == null) ||
                         (col == 9 && _isOverdueUnpaid(item))

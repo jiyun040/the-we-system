@@ -479,9 +479,11 @@ Uint8List buildLedgerTemplate(
       book.color('B$r', 'FFF4B544', textColor: 'FF5C3A00');
       book.color('N$r', 'FFF4B544', textColor: 'FF5C3A00');
     }
-    // 계산서 발행처는 시공사/협력사 모두 같은 초록색으로 표시한다.
-    for (final column in ['C', 'D']) {
-      book.color('${column}$r', 'FFDEF0E4', textColor: 'FF245B39');
+    // 계산서 발행처에 해당하는 시공사 또는 협력사 칸만 같은 초록색으로 표시한다.
+    final issuerColumn = item.invoiceIssuerType == '시공사' ? 'C' :
+        (item.invoiceIssuerType == '협력사' ? 'D' : null);
+    if (issuerColumn != null) {
+      book.color('${issuerColumn}$r', 'FFDEF0E4', textColor: 'FF245B39');
     }
     if (item.billingDate != null) {
       book.color('G$r', 'FFF9E7AD', textColor: 'FF6D5010');
