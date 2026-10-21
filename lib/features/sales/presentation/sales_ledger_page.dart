@@ -178,11 +178,17 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       overdueOnly: _overdueOnly,
       onSearch: _load,
       onStatus: (value) {
-        setState(() => _status = value);
+        setState(() {
+          _status = value;
+          _overdueOnly = false;
+        });
         _load();
       },
       onOverdueChanged: (value) {
-        setState(() => _overdueOnly = value);
+        setState(() {
+          _overdueOnly = value;
+          if (value) _status = '';
+        });
         _load();
       },
       onPrevious: () => _changeMonth(-1),
