@@ -389,6 +389,10 @@ Future<Uint8List> annualLedgerTemplateXlsx(
       .buffer
       .asUint8List();
   final base = SalesTemplateWorkbook(template);
+  // Annual sheets must use exactly the same typography and date widths as the
+  // regular monthly download.
+  base.useLedgerTypography();
+  base.widenLedgerDates();
   final sheets = <XmlDocument>[];
   final combined = <SalesLedgerEntry>[
     for (var month = 1; month <= 12; month++)
