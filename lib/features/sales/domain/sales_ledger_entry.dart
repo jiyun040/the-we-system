@@ -84,8 +84,8 @@ class SalesLedgerEntry {
       contractEndDate: nullableDate(json['contractEndDate']),
       category: (() {
         final value = json['category']?.toString() ?? '';
-        final status = json['status']?.toString() ?? '신규';
-        return status == '종료' && value != '가맹' && value != '본사' ? '' : value;
+        // 종료 상태로 바뀌어도 기존에 저장된 분류(본사/가맹)를 유지한다.
+        return value;
       })(),
       billingDate: nullableDate(json['billingDate']),
       invoiceDate: nullableDate(json['invoiceDate']),

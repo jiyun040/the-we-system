@@ -34,6 +34,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   final _search = TextEditingController();
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   String _status = '';
+  bool _overdueOnly = false;
   bool _loading = true;
   String? _error;
   List<SalesLedgerEntry> _items = const [];
@@ -72,9 +73,12 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       final sorted = classifyAndSortLedger(result.items, previous.items);
       if (!mounted) return;
       setState(() {
-        _items = _status.isEmpty
+        final statusItems = _status.isEmpty
             ? sorted
             : sorted.where((item) => item.status == _status).toList();
+        _items = _overdueOnly
+            ? statusItems.where((item) => _isOverdueUnpaid(item)).toList()
+            : statusItems;
         _summary = SalesLedgerSummary.fromEntries(_items);
         _loading = false;
       });
@@ -89,7 +93,10 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   }
 
   Future<void> _changeMonth(int delta) async {
-    setState(() => _month = DateTime(_month.year, _month.month + delta));
+    final next = DateTime(_month.year, _month.month + delta);
+    final thisYear = DateTime.now().year;
+    if (next.year != thisYear) return;
+    setState(() => _month = next);
     await _load();
   }
 
@@ -168,15 +175,21 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       summary: _summary,
       search: _search,
       selectedStatus: _status,
+      overdueOnly: _overdueOnly,
       onSearch: _load,
       onStatus: (value) {
         setState(() => _status = value);
+        _load();
+      },
+      onOverdueChanged: (value) {
+        setState(() => _overdueOnly = value);
         _load();
       },
       onPrevious: () => _changeMonth(-1),
       onNext: () => _changeMonth(1),
       onPickMonth: _pickMonth,
       onExport: _exportExcel,
+      onExportYear: _exportYearlyArchive,
       onEdit: _edit,
       onStatement: _showStatement,
     );
@@ -205,13 +218,28 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     final selected = await showTheWeDatePicker(
       context,
       initialDate: _month,
-      firstDate: DateTime(today.year - 5),
+      firstDate: DateTime(today.year, 1),
       lastDate: today,
       title: '조회할 연월 선택',
     );
     if (selected == null) return;
     setState(() => _month = DateTime(selected.year, selected.month));
     await _load();
+  }
+
+  Future<void> _exportYearlyArchive() async {
+    final year = DateTime.now().year;
+    final all = <SalesLedgerEntry>[];
+    for (var month = 1; month <= 12; month++) {
+      final response = await _api.fetchLedger(month: DateTime(year, month));
+      all.addAll(response.items);
+    }
+    await FileSaver.instance.saveFile(
+      name: '매출관리대장_${year}년_연간보관',
+      bytes: await ledgerTemplateXlsx(all, DateTime(year, 12)),
+      fileExtension: 'xlsx',
+      mimeType: MimeType.microsoftExcel,
+    );
   }
 
   Future<void> _exportExcel() async {
@@ -235,10 +263,12 @@ class _LedgerContent extends StatelessWidget {
     required this.selectedStatus,
     required this.onSearch,
     required this.onStatus,
+    required this.onOverdueChanged,
     required this.onPrevious,
     required this.onNext,
     required this.onPickMonth,
     required this.onExport,
+    required this.onExportYear,
     required this.onEdit,
     required this.onStatement,
   });
@@ -249,12 +279,15 @@ class _LedgerContent extends StatelessWidget {
   final SalesLedgerSummary summary;
   final TextEditingController search;
   final String selectedStatus;
+  final bool overdueOnly;
   final VoidCallback onSearch;
   final ValueChanged<String> onStatus;
+  final ValueChanged<bool> onOverdueChanged;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onPickMonth;
   final VoidCallback onExport;
+  final VoidCallback onExportYear;
   final ValueChanged<SalesLedgerEntry> onEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
@@ -342,6 +375,11 @@ class _LedgerContent extends StatelessWidget {
         selected: selectedStatus == status,
         onSelected: (_) => onStatus(status),
       ),
+    ChoiceChip(
+      label: const Text('계산서 발행 후 60일 초과 미입금'),
+      selected: overdueOnly,
+      onSelected: onOverdueChanged,
+    ),
   ];
 
   List<Widget> _navigationControls() => [
@@ -349,6 +387,11 @@ class _LedgerContent extends StatelessWidget {
       onPressed: onExport,
       icon: const Icon(Icons.download_outlined, size: 18),
       label: const Text('엑셀 내보내기'),
+    ),
+    OutlinedButton.icon(
+      onPressed: onExportYear,
+      icon: const Icon(Icons.archive_outlined, size: 18),
+      label: const Text('올해 연간 보관'),
     ),
     IconButton(
       onPressed: onPrevious,
@@ -569,10 +612,12 @@ class _LedgerTable extends StatelessWidget {
       for (final item in items)
         [
           for (var col = 0; col < 15; col++)
-            (col == 2 && _issuerType(item) == '시공사') ||
-                    (col == 3 && _issuerType(item) == '협력사')
+            (col == 2 || col == 3) && _issuerType(item).isNotEmpty
                 ? _issuerColor(item)
-                : null,
+                : (col == 7 && item.billingDate == null) ||
+                        (col == 9 && _isOverdueUnpaid(item))
+                    ? TheWeColor.danger.withValues(alpha: .12)
+                    : null,
         ],
     ],
     onRowTaps: [for (final item in items) () => onEdit(item)],
@@ -1155,11 +1200,16 @@ String _mergeNote(String note, String reason) {
   return '$n / $r';
 }
 
+bool _isOverdueUnpaid(SalesLedgerEntry item) {
+  final invoice = item.invoiceDate;
+  if (invoice == null || item.depositDate != null) return false;
+  final today = DateTime.now();
+  return today.difference(invoice).inDays >= 60;
+}
+
 String _issuerType(SalesLedgerEntry item) => item.invoiceIssuerType;
 
-Color _issuerColor(SalesLedgerEntry item) => (_issuerType(item) == '시공사'
-    ? const Color(0xFFE7EFFF)
-    : (_issuerType(item) == '협력사' ? const Color(0xFFE8F5E9) : Colors.white));
+Color _issuerColor(SalesLedgerEntry item) => const Color(0xFFE8F5E9);
 Widget _editAmountRow(String label, String value, {bool bold = false}) =>
     Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
