@@ -261,6 +261,7 @@ class _LedgerContent extends StatelessWidget {
     required this.summary,
     required this.search,
     required this.selectedStatus,
+    required this.overdueOnly,
     required this.onSearch,
     required this.onStatus,
     required this.onOverdueChanged,
