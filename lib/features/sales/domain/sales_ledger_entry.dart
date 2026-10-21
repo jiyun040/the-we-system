@@ -21,6 +21,7 @@ class SalesLedgerEntry {
     this.month,
     this.contractStartDate,
     this.contractEndDate,
+    this.recordDate,
   });
 
   final String id;
@@ -33,6 +34,8 @@ class SalesLedgerEntry {
   final String? month;
   final DateTime? contractStartDate;
   final DateTime? contractEndDate;
+  /// First date on which the PDAM work record exists for this site/equipment.
+  final DateTime? recordDate;
   final String category;
   final DateTime? billingDate;
   final DateTime? invoiceDate;
@@ -82,6 +85,12 @@ class SalesLedgerEntry {
       month: json['month']?.toString(),
       contractStartDate: nullableDate(json['contractStartDate']),
       contractEndDate: nullableDate(json['contractEndDate']),
+      recordDate: nullableDate(
+        json['recordDate'] ??
+            json['firstRecordDate'] ??
+            json['recordedAt'] ??
+            json['workRecordDate'],
+      ),
       category: (() {
         final value = json['category']?.toString() ?? '';
         // 종료 상태로 바뀌어도 기존에 저장된 분류(본사/가맹)를 유지한다.
@@ -150,6 +159,7 @@ class SalesLedgerEntry {
     month: month,
     contractStartDate: contractStartDate,
     contractEndDate: contractEndDate,
+    recordDate: recordDate,
     category: category ?? this.category,
     billingDate: clearBillingDate ? null : billingDate ?? this.billingDate,
     invoiceDate: clearInvoiceDate ? null : invoiceDate ?? this.invoiceDate,

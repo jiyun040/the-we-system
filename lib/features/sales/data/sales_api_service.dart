@@ -22,6 +22,7 @@ class SalesApiService {
         '/sales/ledger',
         queryParameters: {
           'month': '${month.year}-${month.month.toString().padLeft(2, '0')}',
+          'monthBasis': 'recordDate',
           if (query.trim().isNotEmpty) 'q': query.trim(),
           if (status.isNotEmpty) 'status': status,
         },
