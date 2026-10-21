@@ -54,7 +54,8 @@ class ApprovalCalendarDayCard extends StatelessWidget {
         }
 
         return Container(
-          padding: const EdgeInsets.all(6),
+          clipBehavior: Clip.hardEdge,
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: TheWeColor.white,
             borderRadius: BorderRadius.circular(16),
@@ -70,8 +71,8 @@ class ApprovalCalendarDayCard extends StatelessWidget {
               Align(
                 alignment: Alignment.topCenter,
                 child: Container(
-                  width: 26,
-                  height: 26,
+                  width: 22,
+                  height: 22,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: isSelected
@@ -84,7 +85,7 @@ class ApprovalCalendarDayCard extends StatelessWidget {
                   child: dayText,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 3),
               if (events.isEmpty)
                 const Spacer()
               else if (veryCompact)
@@ -112,8 +113,8 @@ class ApprovalCalendarDayCard extends StatelessWidget {
                     children: events
                         .take(2)
                         .map(
-                          (event) => Padding(
-                            padding: const EdgeInsets.only(bottom: 3),
+                          (event) => SizedBox(
+                            height: 17,
                             child: InkWell(
                               onTap: () => onEventTap(event),
                               borderRadius: BorderRadius.circular(6),
@@ -122,7 +123,7 @@ class ApprovalCalendarDayCard extends StatelessWidget {
                                 children: [
                                   Container(
                                     width: 4,
-                                    height: 18,
+                                    height: 15,
                                     decoration: BoxDecoration(
                                       color: event.color,
                                       borderRadius: BorderRadius.circular(999),
