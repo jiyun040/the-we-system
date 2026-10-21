@@ -249,14 +249,19 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
 
   Future<void> _exportYearlyArchive() async {
     final year = DateTime.now().year;
-    final all = <SalesLedgerEntry>[];
+    final monthly = <int, List<SalesLedgerEntry>>{};
     for (var month = 1; month <= 12; month++) {
       final response = await _api.fetchLedger(month: DateTime(year, month));
-      all.addAll(response.items);
+      monthly[month] = classifyAndSortLedger(
+        response.items,
+        month == 1
+            ? const []
+            : (monthly[month - 1] ?? const <SalesLedgerEntry>[]),
+      );
     }
     await FileSaver.instance.saveFile(
       name: '매출관리대장_${year}년_연간보관',
-      bytes: await ledgerTemplateXlsx(all, DateTime(year, 12)),
+      bytes: await annualLedgerTemplateXlsx(monthly, year),
       fileExtension: 'xlsx',
       mimeType: MimeType.microsoftExcel,
     );

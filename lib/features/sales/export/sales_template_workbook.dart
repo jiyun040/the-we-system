@@ -380,6 +380,42 @@ Future<Uint8List> ledgerTemplateXlsx(
   return buildLedgerTemplate(bytes.buffer.asUint8List(), items, month);
 }
 
+/// Creates one workbook with a separate worksheet for each month.
+Future<Uint8List> annualLedgerTemplateXlsx(
+  Map<int, List<SalesLedgerEntry>> monthlyItems,
+  int year,
+) async {
+  final template = (await rootBundle.load('assets/templates/ledger.xlsx'))
+      .buffer
+      .asUint8List();
+  final base = SalesTemplateWorkbook(template);
+  final sheets = <XmlDocument>[];
+  final combined = <SalesLedgerEntry>[
+    for (var month = 1; month <= 12; month++)
+      ...(monthlyItems[month] ?? const <SalesLedgerEntry>[]),
+  ];
+  final combinedBytes = buildLedgerTemplate(template, combined, DateTime(year, 12));
+  final combinedArchive = ZipDecoder().decodeBytes(combinedBytes);
+  sheets.add(XmlDocument.parse(utf8.decode(
+    combinedArchive.findFile('xl/worksheets/sheet1.xml')!.content,
+  )));
+  for (var month = 1; month <= 12; month++) {
+    final bytes = buildLedgerTemplate(
+      template,
+      monthlyItems[month] ?? const [],
+      DateTime(year, month),
+    );
+    final archive = ZipDecoder().decodeBytes(bytes);
+    final sheet = archive.findFile('xl/worksheets/sheet1.xml');
+    sheets.add(XmlDocument.parse(utf8.decode(sheet!.content)));
+  }
+  return base.export(
+    sheets: sheets,
+    names: ['통합', for (var month = 1; month <= 12; month++) '$month월'],
+    areas: List.filled(13, '\$A\$1:\$V\$2000'),
+  );
+}
+
 Uint8List buildLedgerTemplate(
   Uint8List template,
   List<SalesLedgerEntry> items,
