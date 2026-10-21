@@ -393,7 +393,7 @@ class _LedgerContent extends StatelessWidget {
     for (final status in const ['', '신규', '진행', '종료'])
       ChoiceChip(
         label: Text(status.isEmpty ? '전체' : status),
-        selected: selectedStatus == status,
+        selected: !overdueOnly && selectedStatus == status,
         onSelected: (_) => onStatus(status),
       ),
     ChoiceChip(
