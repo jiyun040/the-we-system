@@ -220,30 +220,65 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   }
 
   Future<void> _pickMonth() async {
+    final currentSelectedMonth = _month.month;
     final month = await showDialog<int>(
       context: context,
       builder: (dialogContext) => TheWeModalSurface(
-        width: 380,
+        width: 360,
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TheWeModalHeader(
               title: '조회할 월 선택',
               onClose: () => Navigator.pop(dialogContext),
             ),
-            const SizedBox(height: 18),
-            GridView.count(
-              crossAxisCount: 3,
+            const SizedBox(height: 20),
+            GridView.builder(
               shrinkWrap: true,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              children: [
-                for (var value = 1; value <= 12; value++)
-                  OutlinedButton(
-                    onPressed: () => Navigator.pop(dialogContext, value),
-                    child: Text('$value월'),
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                mainAxisSpacing: 10,
+                crossAxisSpacing: 10,
+                childAspectRatio: 1.4,
+              ),
+              itemCount: 12,
+              itemBuilder: (context, index) {
+                final m = index + 1;
+                final isSelected = m == currentSelectedMonth;
+                return InkWell(
+                  onTap: () => Navigator.pop(dialogContext, m),
+                  borderRadius: BorderRadius.circular(10),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? TheWeColor.blue300
+                          : TheWeColor.blue100.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isSelected
+                            ? TheWeColor.blue300
+                            : Colors.transparent,
+                      ),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      '$m월',
+                      style: TheWeTextStyle.subtitle.copyWith(
+                        color: isSelected
+                            ? TheWeColor.white
+                            : TheWeColor.black900,
+                        fontWeight: isSelected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                      ),
+                    ),
                   ),
-              ],
+                );
+              },
             ),
           ],
         ),
