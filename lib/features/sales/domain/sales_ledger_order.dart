@@ -37,9 +37,50 @@ List<SalesLedgerEntry> classifyAndSortLedger(
           : '신규',
     );
   }).toList();
-  entries.sort(compareSalesLedgerEntries);
+  sortLedgerEntries(entries);
   return entries;
 }
+
+void sortLedgerEntries(List<SalesLedgerEntry> entries) {
+  final originalIndex = {
+    for (var i = 0; i < entries.length; i++) entries[i].id: i,
+  };
+  final hasProgressSite = entries
+      .where((entry) => entry.status == '진행')
+      .map((entry) => _siteKey(entry))
+      .toSet();
+  entries.sort((a, b) {
+    // A completed row keeps its incoming position; only its status changes.
+    if (a.status == '종료' || b.status == '종료') {
+      return (originalIndex[a.id] ?? 0).compareTo(originalIndex[b.id] ?? 0);
+    }
+    final aFranchise = a.category == '가맹';
+    final bFranchise = b.category == '가맹';
+    if (aFranchise != bFranchise) return aFranchise ? 1 : -1;
+    final aGrouped = hasProgressSite.contains(_siteKey(a));
+    final bGrouped = hasProgressSite.contains(_siteKey(b));
+    if (aGrouped != bGrouped) return aGrouped ? -1 : 1;
+    if (aGrouped && _siteKey(a) != _siteKey(b)) {
+      final site = _siteKey(a).compareTo(_siteKey(b));
+      if (site != 0) return site;
+    }
+    final status = _statusRank(a.status).compareTo(_statusRank(b.status));
+    if (status != 0) return status;
+    if (a.status == '신규' && b.status == '신규') {
+      final date = (a.recordDate ?? a.contractStartDate ?? a.startDate ?? DateTime(9999))
+          .compareTo(b.recordDate ?? b.contractStartDate ?? b.startDate ?? DateTime(9999));
+      if (date != 0) return date;
+    }
+    return compareSalesLedgerEntries(a, b);
+  });
+}
+
+int _statusRank(String status) => switch (status) {
+  '진행' => 0,
+  '신규' => 1,
+  '종료' => 2,
+  _ => 3,
+};
 
 int compareSalesLedgerEntries(SalesLedgerEntry a, SalesLedgerEntry b) {
   final category = (a.category == '가맹' ? 1 : 0).compareTo(

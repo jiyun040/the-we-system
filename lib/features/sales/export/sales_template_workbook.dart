@@ -425,7 +425,8 @@ Uint8List buildLedgerTemplate(
   List<SalesLedgerEntry> items,
   DateTime month,
 ) {
-  items = [...items]..sort(compareSalesLedgerEntries);
+  items = [...items];
+  sortLedgerEntries(items);
   final book = SalesTemplateWorkbook(template);
   book.useLedgerTypography();
   book.widenLedgerDates();
