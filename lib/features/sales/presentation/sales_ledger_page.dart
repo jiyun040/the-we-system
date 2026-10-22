@@ -45,6 +45,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     unissuedInvoiceCount: 0,
     unpaidAmount: 0,
   );
+  List<SalesLedgerArchive> _archives = const [];
 
   SalesApiService get _api => SalesApiService(ref.read(dioProvider));
 
@@ -52,6 +53,14 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   void initState() {
     super.initState();
     _load();
+    _loadArchives();
+  }
+
+  Future<void> _loadArchives() async {
+    try {
+      final archives = await _api.fetchArchives();
+      if (mounted) setState(() => _archives = archives);
+    } catch (_) {}
   }
 
   @override
@@ -200,6 +209,11 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       onPickMonth: _pickMonth,
       onExport: _exportExcel,
       onExportYear: _exportYearlyArchive,
+      archives: _archives,
+      onDownloadArchive: (archive) async {
+        final bytes = await _api.downloadArchive(archive.year);
+        await FileSaver.instance.saveFile(name: '매출관리대장_${archive.year}년_연간보관', bytes: bytes, fileExtension: 'xlsx', mimeType: MimeType.microsoftExcel);
+      },
       onEdit: _edit,
       onStatement: _showStatement,
     );
@@ -306,9 +320,12 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         month: DateTime(year, month),
       );
     }
+    final bytes = await annualLedgerTemplateXlsx(monthly, year);
+    await _api.uploadArchive(year: year, bytes: bytes, filename: '매출관리대장_${year}년_연간보관.xlsx');
+    await _loadArchives();
     await FileSaver.instance.saveFile(
       name: '매출관리대장_${year}년_연간보관',
-      bytes: await annualLedgerTemplateXlsx(monthly, year),
+      bytes: bytes,
       fileExtension: 'xlsx',
       mimeType: MimeType.microsoftExcel,
     );
@@ -342,6 +359,8 @@ class _LedgerContent extends StatelessWidget {
     required this.onPickMonth,
     required this.onExport,
     required this.onExportYear,
+    required this.archives,
+    required this.onDownloadArchive,
     required this.onEdit,
     required this.onStatement,
   });
@@ -361,6 +380,8 @@ class _LedgerContent extends StatelessWidget {
   final VoidCallback onPickMonth;
   final VoidCallback onExport;
   final VoidCallback onExportYear;
+  final List<SalesLedgerArchive> archives;
+  final Future<void> Function(SalesLedgerArchive) onDownloadArchive;
   final ValueChanged<SalesLedgerEntry> onEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
@@ -379,6 +400,12 @@ class _LedgerContent extends StatelessWidget {
         style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
       ),
       const SizedBox(height: 22),
+      if (archives.isNotEmpty) ...[
+        Text('서버 보관 연간 파일', style: TheWeTextStyle.subtitle.copyWith(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 6),
+        Wrap(spacing: 8, children: archives.map((archive) => ActionChip(label: Text('${archive.year}년'), onPressed: () => onDownloadArchive(archive))).toList()),
+        const SizedBox(height: 16),
+      ],
       _SummaryCards(summary: summary, items: items, month: month),
       const SizedBox(height: 20),
       if (compact) ...[

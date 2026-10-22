@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:the_we_system/core/network/api_exception.dart';
 import 'package:the_we_system/features/sales/domain/sales_ledger_entry.dart';
@@ -8,9 +9,53 @@ class SalesLedgerResponse {
   final SalesLedgerSummary summary;
 }
 
+class SalesLedgerArchive {
+  const SalesLedgerArchive({required this.year, required this.name, required this.updatedAt});
+  final int year;
+  final String name;
+  final DateTime updatedAt;
+  factory SalesLedgerArchive.fromJson(Map<String, dynamic> json) => SalesLedgerArchive(
+    year: int.tryParse(json['year'].toString()) ?? 0,
+    name: json['name']?.toString() ?? '',
+    updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+  );
+}
+
 class SalesApiService {
   const SalesApiService(this._dio);
   final Dio _dio;
+
+  Future<List<SalesLedgerArchive>> fetchArchives() async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/sales/ledger/archives');
+      return (response.data?['items'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((item) => SalesLedgerArchive.fromJson(Map<String, dynamic>.from(item)))
+          .toList();
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  Future<void> uploadArchive({required int year, required Uint8List bytes, required String filename}) async {
+    try {
+      await _dio.post<void>('/sales/ledger/archives', data: FormData.fromMap({
+        'year': year.toString(),
+        'file': MultipartFile.fromBytes(bytes, filename: filename),
+      }));
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  Future<Uint8List> downloadArchive(int year) async {
+    try {
+      final response = await _dio.get<List<int>>('/sales/ledger/archives/$year', options: Options(responseType: ResponseType.bytes));
+      return Uint8List.fromList(response.data ?? const []);
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
 
   Future<SalesLedgerResponse> fetchLedger({
     required DateTime month,
