@@ -102,8 +102,8 @@ List<StatementText> statementPageText(
       '1',
       money.format(amount),
       money.format(vat),
-      money.format(item.supplyAmount + vat),
-      statementItemNote(item),
+      money.format(amount + vat),
+      row.$2 ? '' : statementItemNote(item),
     ];
     for (var c = 0; c < 8; c++) {
       output.add(
