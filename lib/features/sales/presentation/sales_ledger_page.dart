@@ -70,7 +70,11 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       final previous = await _api.fetchLedger(
         month: DateTime(_month.year, _month.month - 1),
       );
-      final sorted = classifyAndSortLedger(result.items, previous.items);
+      final sorted = classifyAndSortLedger(
+        result.items,
+        previous.items,
+        month: _month,
+      );
       if (!mounted) return;
       setState(() {
         final statusItems = _status.isEmpty
@@ -299,6 +303,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         month == 1
             ? const []
             : (monthly[month - 1] ?? const <SalesLedgerEntry>[]),
+        month: DateTime(year, month),
       );
     }
     await FileSaver.instance.saveFile(

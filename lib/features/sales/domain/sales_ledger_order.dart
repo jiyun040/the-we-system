@@ -8,6 +8,7 @@ String _deviceKey(SalesLedgerEntry entry) =>
 List<SalesLedgerEntry> classifyAndSortLedger(
   List<SalesLedgerEntry> current,
   List<SalesLedgerEntry> previous,
+  {DateTime? month}
 ) {
   final previousDevices = previous
       .where(
@@ -22,6 +23,11 @@ List<SalesLedgerEntry> classifyAndSortLedger(
       .toSet();
   final entries = current.map((entry) {
     if (entry.status == '종료') return entry;
+    if (month != null && entry.recordDate != null) {
+      final recordedInMonth = entry.recordDate!.year == month.year &&
+          entry.recordDate!.month == month.month;
+      return entry.copyWith(status: recordedInMonth ? '신규' : '진행');
+    }
     return entry.copyWith(
       status:
           (entry.id.isNotEmpty && previousIds.contains(entry.id)) ||
