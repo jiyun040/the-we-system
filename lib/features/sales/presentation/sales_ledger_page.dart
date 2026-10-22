@@ -359,10 +359,11 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
   }
   Future<void> _rename(SalesLedgerArchive item) async {
     final controller = TextEditingController(text: item.name.replaceAll(RegExp(r'\.xlsx$'), ''));
-    final name = await showDialog<String>(context: context, builder: (context) => AlertDialog(
-      title: const Text('파일 이름 수정'), content: TextField(controller: controller, autofocus: true),
-      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')), ElevatedButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('저장'))],
-    ));
+    final name = await showDialog<String>(context: context, builder: (context) => TheWeModalSurface(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TheWeModalHeader(title: '파일 이름 수정', onClose: () => Navigator.pop(context)),
+      const SizedBox(height: 18), TextField(controller: controller, autofocus: true),
+      const SizedBox(height: 18), Row(mainAxisAlignment: MainAxisAlignment.end, children: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')), const SizedBox(width: 8), FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('저장'))]),
+    ])));
     controller.dispose();
     if (name == null || name.trim().isEmpty) return;
     await widget.api.renameArchive(item.year, name.trim());
@@ -373,6 +374,12 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
     await FileSaver.instance.saveFile(name: item.name.replaceAll(RegExp(r'\.xlsx$'), ''), bytes: bytes, fileExtension: 'xlsx', mimeType: MimeType.microsoftExcel);
   }
   Future<void> _delete(SalesLedgerArchive item) async {
+    final confirmed = await showDialog<bool>(context: context, builder: (context) => TheWeModalSurface(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TheWeModalHeader(title: '보관 파일 삭제', onClose: () => Navigator.pop(context, false)),
+      const SizedBox(height: 14), Text('${item.year}년 매출관리대장을 삭제하시겠습니까?'), const SizedBox(height: 18),
+      Row(mainAxisAlignment: MainAxisAlignment.end, children: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')), const SizedBox(width: 8), FilledButton(style: FilledButton.styleFrom(backgroundColor: TheWeColor.danger), onPressed: () => Navigator.pop(context, true), child: const Text('삭제'))]),
+    ])));
+    if (confirmed != true) return;
     await widget.api.deleteArchive(item.year);
     await _load();
   }
@@ -380,9 +387,11 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: TheWeColor.background,
     appBar: AppBar(backgroundColor: TheWeColor.white, elevation: 0, title: Text('연간 매출관리대장', style: TheWeTextStyle.title.copyWith(fontWeight: FontWeight.w800))),
-    body: ListView.separated(padding: const EdgeInsets.all(24), itemCount: _items.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, index) {
+    body: ListView.separated(padding: const EdgeInsets.all(24), itemCount: _items.length + 1, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, index) {
+      if (index == 0) return Text('해당 리스트 클릭 시 파일이 다운로드되며, 파일명 수정이 가능합니다.', style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500));
+      index -= 1;
       final item = _items[index];
-      return Card(color: TheWeColor.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6), leading: const Icon(Icons.description_outlined, color: TheWeColor.green), title: Text('${item.year}년 매출관리대장', style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700)), subtitle: Text(item.name, style: TheWeTextStyle.caption), onTap: () => _download(item), trailing: Wrap(children: [IconButton(tooltip: '파일 이름 수정', icon: const Icon(Icons.edit_outlined), onPressed: () => _rename(item)), IconButton(tooltip: '삭제', icon: const Icon(Icons.delete_outline), onPressed: () => _delete(item))])));
+      return Card(color: TheWeColor.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6), leading: const Icon(Icons.description_outlined, color: TheWeColor.green), title: Text('${item.year}년 매출관리대장', style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700)), subtitle: Text(item.name, style: TheWeTextStyle.caption), onTap: () => _download(item), trailing: Wrap(children: [IconButton(tooltip: '파일 이름 수정', icon: const Icon(Icons.edit_outlined), onPressed: () => _rename(item)), IconButton(tooltip: '삭제', color: TheWeColor.danger, icon: const Icon(Icons.delete_outline), onPressed: () => _delete(item))])));
     }),
   );
 }
