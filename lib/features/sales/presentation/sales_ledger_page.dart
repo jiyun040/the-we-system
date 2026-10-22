@@ -378,10 +378,11 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
   }
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('보관된 연간 매출관리대장')),
-    body: ListView.separated(padding: const EdgeInsets.all(24), itemCount: _items.length, separatorBuilder: (_, __) => const Divider(), itemBuilder: (_, index) {
+    backgroundColor: TheWeColor.background,
+    appBar: AppBar(backgroundColor: TheWeColor.white, elevation: 0, title: Text('연간 매출관리대장', style: TheWeTextStyle.title.copyWith(fontWeight: FontWeight.w800))),
+    body: ListView.separated(padding: const EdgeInsets.all(24), itemCount: _items.length, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, index) {
       final item = _items[index];
-      return ListTile(title: Text('${item.year}년 매출관리대장'), subtitle: Text(item.name), onTap: () => _download(item), trailing: Wrap(children: [IconButton(icon: const Icon(Icons.edit), onPressed: () => _rename(item)), IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _delete(item))]));
+      return Card(color: TheWeColor.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6), leading: const Icon(Icons.description_outlined, color: TheWeColor.green), title: Text('${item.year}년 매출관리대장', style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700)), subtitle: Text(item.name, style: TheWeTextStyle.caption), onTap: () => _download(item), trailing: Wrap(children: [IconButton(tooltip: '파일 이름 수정', icon: const Icon(Icons.edit_outlined), onPressed: () => _rename(item)), IconButton(tooltip: '삭제', icon: const Icon(Icons.delete_outline), onPressed: () => _delete(item))])));
     }),
   );
 }
@@ -448,8 +449,6 @@ class _LedgerContent extends StatelessWidget {
       ),
       const SizedBox(height: 22),
       ...[
-        Text('서버 보관 연간 파일', style: TheWeTextStyle.subtitle.copyWith(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 6),
         OutlinedButton.icon(onPressed: onOpenArchives, icon: const Icon(Icons.folder_open), label: const Text('보관된 연간 매출관리대장 열기')),
         const SizedBox(height: 16),
       ],
