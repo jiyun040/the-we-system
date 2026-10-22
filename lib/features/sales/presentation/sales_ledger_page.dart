@@ -214,6 +214,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         final bytes = await _api.downloadArchive(archive.year);
         await FileSaver.instance.saveFile(name: '매출관리대장_${archive.year}년_연간보관', bytes: bytes, fileExtension: 'xlsx', mimeType: MimeType.microsoftExcel);
       },
+      onOpenArchives: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _SalesLedgerArchivesPage(api: _api))),
       onEdit: _edit,
       onStatement: _showStatement,
     );
@@ -341,6 +342,50 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   }
 }
 
+class _SalesLedgerArchivesPage extends StatefulWidget {
+  const _SalesLedgerArchivesPage({required this.api});
+  final SalesApiService api;
+  @override
+  State<_SalesLedgerArchivesPage> createState() => _SalesLedgerArchivesPageState();
+}
+
+class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
+  List<SalesLedgerArchive> _items = const [];
+  @override
+  void initState() { super.initState(); _load(); }
+  Future<void> _load() async {
+    final items = await widget.api.fetchArchives();
+    if (mounted) setState(() => _items = items);
+  }
+  Future<void> _rename(SalesLedgerArchive item) async {
+    final controller = TextEditingController(text: item.name.replaceAll(RegExp(r'\.xlsx$'), ''));
+    final name = await showDialog<String>(context: context, builder: (context) => AlertDialog(
+      title: const Text('파일 이름 수정'), content: TextField(controller: controller, autofocus: true),
+      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('취소')), ElevatedButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('저장'))],
+    ));
+    controller.dispose();
+    if (name == null || name.trim().isEmpty) return;
+    await widget.api.renameArchive(item.year, name.trim());
+    await _load();
+  }
+  Future<void> _download(SalesLedgerArchive item) async {
+    final bytes = await widget.api.downloadArchive(item.year);
+    await FileSaver.instance.saveFile(name: item.name.replaceAll(RegExp(r'\.xlsx$'), ''), bytes: bytes, fileExtension: 'xlsx', mimeType: MimeType.microsoftExcel);
+  }
+  Future<void> _delete(SalesLedgerArchive item) async {
+    await widget.api.deleteArchive(item.year);
+    await _load();
+  }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('보관된 연간 매출관리대장')),
+    body: ListView.separated(padding: const EdgeInsets.all(24), itemCount: _items.length, separatorBuilder: (_, __) => const Divider(), itemBuilder: (_, index) {
+      final item = _items[index];
+      return ListTile(title: Text('${item.year}년 매출관리대장'), subtitle: Text(item.name), onTap: () => _download(item), trailing: Wrap(children: [IconButton(icon: const Icon(Icons.edit), onPressed: () => _rename(item)), IconButton(icon: const Icon(Icons.delete_outline), onPressed: () => _delete(item))]));
+    }),
+  );
+}
+
 class _LedgerContent extends StatelessWidget {
   const _LedgerContent({
     required this.month,
@@ -361,6 +406,7 @@ class _LedgerContent extends StatelessWidget {
     required this.onExportYear,
     required this.archives,
     required this.onDownloadArchive,
+    required this.onOpenArchives,
     required this.onEdit,
     required this.onStatement,
   });
@@ -382,6 +428,7 @@ class _LedgerContent extends StatelessWidget {
   final VoidCallback onExportYear;
   final List<SalesLedgerArchive> archives;
   final Future<void> Function(SalesLedgerArchive) onDownloadArchive;
+  final VoidCallback onOpenArchives;
   final ValueChanged<SalesLedgerEntry> onEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
@@ -400,10 +447,10 @@ class _LedgerContent extends StatelessWidget {
         style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500),
       ),
       const SizedBox(height: 22),
-      if (archives.isNotEmpty) ...[
+      ...[
         Text('서버 보관 연간 파일', style: TheWeTextStyle.subtitle.copyWith(fontWeight: FontWeight.w700)),
         const SizedBox(height: 6),
-        Wrap(spacing: 8, children: archives.map((archive) => ActionChip(label: Text('${archive.year}년'), onPressed: () => onDownloadArchive(archive))).toList()),
+        OutlinedButton.icon(onPressed: onOpenArchives, icon: const Icon(Icons.folder_open), label: const Text('보관된 연간 매출관리대장 열기')),
         const SizedBox(height: 16),
       ],
       _SummaryCards(summary: summary, items: items, month: month),

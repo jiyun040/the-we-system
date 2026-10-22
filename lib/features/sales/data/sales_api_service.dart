@@ -57,6 +57,18 @@ class SalesApiService {
     }
   }
 
+  Future<void> renameArchive(int year, String name) async {
+    try {
+      await _dio.patch<void>('/sales/ledger/archives', queryParameters: {'year': year}, data: {'name': name});
+    } on DioException catch (error) { throw ApiException.fromDio(error); }
+  }
+
+  Future<void> deleteArchive(int year) async {
+    try {
+      await _dio.delete<void>('/sales/ledger/archives', queryParameters: {'year': year});
+    } on DioException catch (error) { throw ApiException.fromDio(error); }
+  }
+
   Future<SalesLedgerResponse> fetchLedger({
     required DateTime month,
     String query = '',
