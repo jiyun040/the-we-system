@@ -770,13 +770,14 @@ Uint8List buildStatementTemplate(
   book.enlargeStatementFonts();
   final original = book.sheet.copy();
   final pages = <XmlDocument>[];
-  final pageCount = statement.items.isEmpty
+  final rows = statementRows(statement.items);
+  final pageCount = rows.isEmpty
       ? 1
-      : (statement.items.length / 17).ceil();
-  final overall = statement.items.fold<int>(
-    0,
-    (s, e) => s + e.supplyAmount + (e.supplyAmount * .1).round(),
-  );
+      : (rows.length / 17).ceil();
+  final overall = rows.fold<int>(0, (s, row) {
+    final amount = row.$2 ? -row.$1.adjustmentAmount : row.$1.supplyAmount;
+    return s + amount + (amount * .1).round();
+  });
   for (var page = 0; page < pageCount; page++) {
     book.sheet = original.copy();
     final first = statement.items.firstOrNull;
@@ -808,23 +809,25 @@ Uint8List buildStatementTemplate(
             .cell('$col$r')
             .setAttribute('s', book.cell('${col}12').getAttribute('s')!);
       }
-      if (index >= statement.items.length) {
+      if (index >= rows.length) {
         continue;
       }
-      final item = statement.items[index];
-      final vat = (item.supplyAmount * .1).round();
-      supply += item.supplyAmount;
+      final row = rows[index];
+      final item = row.$1;
+      final amount = row.$2 ? -item.adjustmentAmount : item.supplyAmount;
+      final vat = (amount * .1).round();
+      supply += amount;
       tax += vat;
       quantity++;
       final values = <Object?>[
-        '${index + 1}. PDAM시스템 공급',
-        '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
-        'SET',
+        row.$2 ? '네고' : '${index + 1}. PDAM시스템 공급',
+        row.$2 ? '' : '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
+        row.$2 ? '식' : 'SET',
         1,
-        item.supplyAmount,
+        amount,
         vat,
-        item.supplyAmount + vat,
-        statementItemNote(item),
+        amount + vat,
+        row.$2 ? '' : statementItemNote(item),
       ];
       for (var c = 0; c < 8; c++) {
         book.set(
@@ -846,7 +849,7 @@ Uint8List buildStatementTemplate(
     }.entries) {
       book.set('${e.key}29', e.value, formula: 'SUM(${e.key}12:${e.key}28)');
     }
-    final pageItems = statement.items.skip(page * 17).take(17);
+    final pageItems = rows.skip(page * 17).take(17).map((row) => row.$1);
     final footerNotes = statementFooterNotes(pageItems);
     if (footerNotes.isNotEmpty) {
       book.set('A31', footerNotes.join('\n'));

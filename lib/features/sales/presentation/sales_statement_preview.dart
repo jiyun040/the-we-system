@@ -35,10 +35,11 @@ List<StatementText> statementPageText(
   final output = <StatementText>[];
   final first = statement.items.firstOrNull;
   final money = NumberFormat('#,##0');
-  final all = statement.items.fold<int>(
-    0,
-    (s, e) => s + e.supplyAmount + (e.supplyAmount * .1).round(),
-  );
+  final rows = statementRows(statement.items);
+  final all = rows.fold<int>(0, (s, row) {
+    final amount = row.$2 ? -row.$1.adjustmentAmount : row.$1.supplyAmount;
+    return s + amount + (amount * .1).round();
+  });
   output.addAll([
     StatementText(
       first == null
@@ -86,18 +87,20 @@ List<StatementText> statementPageText(
   var supply = 0, tax = 0, count = 0;
   for (var i = 0; i < 17; i++) {
     final index = page * 17 + i;
-    if (index >= statement.items.length) break;
-    final item = statement.items[index];
-    final vat = (item.supplyAmount * .1).round();
-    supply += item.supplyAmount;
+    if (index >= rows.length) break;
+    final row = rows[index];
+    final item = row.$1;
+    final amount = row.$2 ? -item.adjustmentAmount : item.supplyAmount;
+    final vat = (amount * .1).round();
+    supply += amount;
     tax += vat;
     count++;
     final values = [
-      '${index + 1}. PDAM시스템 공급',
-      '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
-      'SET',
+      row.$2 ? '네고' : '${index + 1}. PDAM시스템 공급',
+      row.$2 ? '' : '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
+      row.$2 ? '식' : 'SET',
       '1',
-      money.format(item.supplyAmount),
+      money.format(amount),
       money.format(vat),
       money.format(item.supplyAmount + vat),
       statementItemNote(item),
@@ -137,7 +140,7 @@ List<StatementText> statementPageText(
     );
   }
   final footerNotes = statementFooterNotes(
-    statement.items.skip(page * 17).take(17),
+    rows.skip(page * 17).take(17).map((row) => row.$1),
   );
   if (footerNotes.isNotEmpty) {
     for (var i = 0; i < footerNotes.length; i++) {
@@ -168,9 +171,9 @@ class SalesStatementPreview extends StatelessWidget {
   final DateTime issued;
   @override
   Widget build(BuildContext context) {
-    final pages = statement.items.isEmpty
+    final pages = statementRows(statement.items).isEmpty
         ? 1
-        : (statement.items.length / 17).ceil();
+        : (statementRows(statement.items).length / 17).ceil();
     if (MediaQuery.sizeOf(context).width < 520) {
       return LayoutBuilder(
         builder: (context, constraints) {
@@ -242,7 +245,10 @@ class SalesStatementPreview extends StatelessWidget {
           child: ColoredBox(color: Colors.white),
         ),
         if (statementFooterNotes(
-          statement.items.skip(page * 17).take(17),
+          statementRows(statement.items)
+              .skip(page * 17)
+              .take(17)
+              .map((row) => row.$1),
         ).isNotEmpty)
           const Positioned(
             left: 36.5,
@@ -308,9 +314,9 @@ Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
   final doc = pw.Document(
     theme: pw.ThemeData.withFont(base: font, bold: bold),
   );
-  final pages = statement.items.isEmpty
+  final pages = statementRows(statement.items).isEmpty
       ? 1
-      : (statement.items.length / 17).ceil();
+      : (statementRows(statement.items).length / 17).ceil();
   final now = DateTime.now();
   for (var page = 0; page < pages; page++) {
     doc.addPage(
@@ -330,7 +336,10 @@ Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
               child: pw.Container(color: PdfColors.white),
             ),
             if (statementFooterNotes(
-              statement.items.skip(page * 17).take(17),
+              statementRows(statement.items)
+                  .skip(page * 17)
+                  .take(17)
+                  .map((row) => row.$1),
             ).isNotEmpty)
               pw.Positioned(
                 left: 36.5,

@@ -5,6 +5,17 @@ const _dailyRentalNote = '※ 1개월 미만 현장 1일 임대로 16만원+출�
 const _monthlyCapNote = '※ 당 현장은 1개월 미만 현장으로 1개월 임대료 초과되어 1개월분으로 계산하였습니다';
 const _negotiationNote = '※ 현장 여건으로 네고된 사항입니다.';
 
+/// Expands a statement with one negative negotiation line for each negotiated
+/// item. The boolean marks the synthetic negotiation row.
+List<(SalesLedgerEntry, bool)> statementRows(
+  Iterable<SalesLedgerEntry> items,
+) => [
+  for (final item in items) ...[
+    (item, false),
+    if (item.adjustmentAmount > 0) (item, true),
+  ],
+];
+
 int? statementUsageDays(SalesLedgerEntry item) {
   final start = item.startDate;
   final end = item.endDate;
