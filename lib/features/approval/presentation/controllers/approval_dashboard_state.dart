@@ -482,11 +482,14 @@ class ApprovalDashboardState {
               document.id.startsWith('LEAVE-') && document.status == '결재대기',
         )
         .toList();
-    final documentIds = pendingDocuments.map((document) => document.id).toSet();
+    final documentIds = pendingDocuments
+        .map(_leaveRequestIdForDocument)
+        .toSet();
     pending.removeWhere((request) => !documentIds.contains(request.id));
     final knownIds = pending.map((request) => request.id).toSet();
     for (final document in pendingDocuments) {
-      if (!knownIds.add(document.id)) {
+      final leaveRequestId = _leaveRequestIdForDocument(document);
+      if (!knownIds.add(leaveRequestId)) {
         continue;
       }
       pending.add(_leaveRequestFromDocument(document));
@@ -520,7 +523,7 @@ class ApprovalDashboardState {
     ).firstMatch(document.content)?.group(1);
     final calculatedDays = _calculateLeaveDays(startDate, endDate, type);
     return LeaveRequest(
-      id: document.id,
+      id: _leaveRequestIdForDocument(document),
       userId: employee?.id ?? document.drafter,
       type: type,
       startDate: startDate.isEmpty ? document.draftedAt : startDate,
@@ -531,6 +534,13 @@ class ApprovalDashboardState {
       reason: fields['reason'] ?? fields['leaveReason'] ?? document.content,
       status: '결재대기',
     );
+  }
+
+  String _leaveRequestIdForDocument(ApprovalDocument document) {
+    if (document.documentNo.startsWith('LEAVE-')) {
+      return document.documentNo;
+    }
+    return document.id.replaceFirst('LEAVE-DOC-', '');
   }
 
   double _calculateLeaveDays(String start, String end, String type) {

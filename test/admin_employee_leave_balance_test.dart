@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:the_we_system/features/approval/domain/entities/document/approval_document.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 import 'package:the_we_system/features/approval/presentation/pages/admin/approval_admin_people_organization.dart';
@@ -59,6 +60,47 @@ void main() {
 
     expect(state.leaveManagementAccounts, contains(admin));
     expect(state.canActOnLeave(request), isTrue);
+  });
+
+  test('휴가 결재 문서는 실제 휴가 신청 ID로 처리한다', () {
+    const request = LeaveRequest(
+      id: 'LEAVE-261025-ABC123',
+      userId: 'employee-test',
+      type: '휴가',
+      startDate: '2026-10-25',
+      endDate: '2026-10-30',
+      days: 5,
+      reason: '개인 일정',
+      status: '승인대기',
+    );
+    const document = ApprovalDocument(
+      id: 'LEAVE-DOC-LEAVE-261025-ABC123',
+      documentNo: 'LEAVE-261025-ABC123',
+      title: '휴가 신청',
+      drafter: '테스트 직원',
+      department: '테스트부서',
+      form: '휴가 신청서',
+      status: '결재대기',
+      draftedAt: '2026-10-25',
+      dueDate: '2026-10-25',
+      progress: 50,
+    );
+    final state = signedOutApprovalState.copyWith(
+      accounts: const [_account],
+      currentUser: const EmployeeAccount(
+        id: 'admin',
+        password: '',
+        name: '시스템 관리자',
+        department: '시스템관리',
+        position: '관리자',
+        isAdmin: true,
+      ),
+      leaveRequests: const [request],
+      documents: const [document],
+      adminMode: true,
+    );
+
+    expect(state.pendingLeaveRequests.single.id, request.id);
   });
 
   test('1년 미만 직원은 연차 없이 월차만 집계한다', () {

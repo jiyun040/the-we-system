@@ -1015,26 +1015,35 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     );
   }
 
-  bool actOnLeave(
+  Future<String?> actOnLeave(
     String requestId, {
     required bool approve,
     String rejectionReason = '',
-  }) {
+  }) async {
     final current = currentDashboardState;
-    if (current == null || current.currentUser == null) return false;
+    if (current == null || current.currentUser == null) {
+      return '로그인 정보를 불러오지 못했습니다.';
+    }
     final request = current.leaveRequests
         .where((item) => item.id == requestId)
         .firstOrNull;
-    if (request == null || !current.canActOnLeave(request)) return false;
-
-    syncRemote(
-      () => api.actOnLeave(
+    if (request == null) return '휴가 신청을 찾을 수 없습니다.';
+    if (!current.canActOnLeave(request)) {
+      return '휴가를 처리할 권한이 없습니다.';
+    }
+    try {
+      await api.actOnLeave(
         requestId,
         approve: approve,
         rejectionReason: rejectionReason,
-      ),
-    );
-    return true;
+      );
+      await reloadRemoteState(adminMode: current.adminMode);
+      return null;
+    } on ApiException catch (error) {
+      return error.message;
+    } catch (error) {
+      return userFacingErrorMessage(error, fallback: '휴가 처리를 완료하지 못했습니다.');
+    }
   }
 
   void acknowledgeApprovedLeaves([Iterable<String>? requestIds]) {

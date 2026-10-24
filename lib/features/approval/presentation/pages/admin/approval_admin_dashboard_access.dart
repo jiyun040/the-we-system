@@ -9,6 +9,7 @@ Future<void> showLeaveRejectReasonDialog(
 ) async {
   final reason = TextEditingController();
   var error = '';
+  var submitting = false;
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
@@ -42,21 +43,35 @@ Future<void> showLeaveRejectReasonDialog(
             child: const Text('취소'),
           ),
           FilledButton(
-            onPressed: () {
-              final value = reason.text.trim();
-              if (value.isEmpty) {
-                setDialogState(() => error = '반려 사유를 입력해 주세요.');
-                return;
-              }
-              ref
-                  .read(approvalDashboardControllerProvider.notifier)
-                  .actOnLeave(
-                    request.id,
-                    approve: false,
-                    rejectionReason: value,
-                  );
-              Navigator.pop(dialogContext);
-            },
+            onPressed: submitting
+                ? null
+                : () async {
+                    final value = reason.text.trim();
+                    if (value.isEmpty) {
+                      setDialogState(() => error = '반려 사유를 입력해 주세요.');
+                      return;
+                    }
+                    setDialogState(() {
+                      error = '';
+                      submitting = true;
+                    });
+                    final message = await ref
+                        .read(approvalDashboardControllerProvider.notifier)
+                        .actOnLeave(
+                          request.id,
+                          approve: false,
+                          rejectionReason: value,
+                        );
+                    if (!dialogContext.mounted) return;
+                    if (message != null) {
+                      setDialogState(() {
+                        error = message;
+                        submitting = false;
+                      });
+                      return;
+                    }
+                    Navigator.pop(dialogContext);
+                  },
             child: const Text('반려 처리'),
           ),
         ],
