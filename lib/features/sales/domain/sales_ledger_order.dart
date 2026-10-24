@@ -23,10 +23,10 @@ List<SalesLedgerEntry> classifyAndSortLedger(
       .toSet();
   final entries = current.map((entry) {
     if (entry.status == '종료') return entry;
-    if (month != null && entry.recordDate != null) {
-      final recordedInMonth = entry.recordDate!.year == month.year &&
-          entry.recordDate!.month == month.month;
-      return entry.copyWith(status: recordedInMonth ? '신규' : '진행');
+    if (month != null && entry.startDate != null) {
+      final startedInMonth = entry.startDate!.year == month.year &&
+          entry.startDate!.month == month.month;
+      return entry.copyWith(status: startedInMonth ? '신규' : '진행');
     }
     return entry.copyWith(
       status:
@@ -67,8 +67,8 @@ void sortLedgerEntries(List<SalesLedgerEntry> entries) {
     final status = _statusRank(a.status).compareTo(_statusRank(b.status));
     if (status != 0) return status;
     if (a.status == '신규' && b.status == '신규') {
-      final date = (a.recordDate ?? a.contractStartDate ?? a.startDate ?? DateTime(9999))
-          .compareTo(b.recordDate ?? b.contractStartDate ?? b.startDate ?? DateTime(9999));
+      final date = (a.startDate ?? a.contractStartDate ?? DateTime(9999))
+          .compareTo(b.startDate ?? b.contractStartDate ?? DateTime(9999));
       if (date != 0) return date;
     }
     return compareSalesLedgerEntries(a, b);

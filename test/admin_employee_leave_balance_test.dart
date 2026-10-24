@@ -32,6 +32,35 @@ EmployeeAccount _directoryAccount({
 );
 
 void main() {
+  test('시스템 관리자는 휴가 관리 대상과 처리 권한에서 제외되지 않는다', () {
+    const admin = EmployeeAccount(
+      id: 'admin',
+      password: '',
+      name: '시스템 관리자',
+      department: '시스템관리',
+      position: '관리자',
+      hireDate: '2020-01-01',
+      isAdmin: true,
+    );
+    const request = LeaveRequest(
+      id: 'leave-for-admin',
+      userId: 'admin',
+      type: '연차',
+      startDate: '2026-10-01',
+      endDate: '2026-10-01',
+      days: 1,
+      reason: '개인 일정',
+      status: '승인대기',
+    );
+    final state = signedOutApprovalState.copyWith(
+      currentUser: admin,
+      leaveRequests: const [request],
+    );
+
+    expect(state.leaveManagementAccounts, contains(admin));
+    expect(state.canActOnLeave(request), isTrue);
+  });
+
   test('1년 미만 직원은 연차 없이 월차만 집계한다', () {
     final now = DateTime.now();
     final account = EmployeeAccount(

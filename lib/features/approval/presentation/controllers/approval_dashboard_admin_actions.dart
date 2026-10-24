@@ -890,7 +890,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
     if (current == null || !current.isAdminMode) {
       return '관리자 모드에서만 휴가를 직접 등록할 수 있습니다.';
     }
-    final account = current.accounts
+    final account = current.leaveManagementAccounts
         .where((item) => item.id == userId)
         .firstOrNull;
     if (account == null) return '직원 정보를 찾을 수 없습니다.';
@@ -937,7 +937,7 @@ extension ApprovalDashboardAdminActions on ApprovalDashboardController {
         .where((item) => item.id == requestId)
         .firstOrNull;
     if (request == null) return '수정할 휴가 내역을 찾을 수 없습니다.';
-    final account = current.accounts
+    final account = current.leaveManagementAccounts
         .where((item) => item.id == request.userId)
         .firstOrNull;
     if (account == null) return '직원 정보를 찾을 수 없습니다.';

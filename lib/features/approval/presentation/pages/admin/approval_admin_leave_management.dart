@@ -418,12 +418,11 @@ class _EmployeeLeaveDirectoryDialogState
         ? _department
         : departments.firstOrNull;
     final orderedAccounts =
-        widget.state.accounts
+        widget.state.leaveManagementAccounts
             .where(
               (account) =>
-                  !account.isSystemAdministrator &&
-                  (_mode == _EmployeeLeaveDirectoryMode.all ||
-                      account.department.trim() == selectedDepartment),
+                  _mode == _EmployeeLeaveDirectoryMode.all ||
+                  account.department.trim() == selectedDepartment,
             )
             .toList()
           ..sort((left, right) {

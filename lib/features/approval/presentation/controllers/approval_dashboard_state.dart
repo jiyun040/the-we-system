@@ -161,6 +161,17 @@ class ApprovalDashboardState {
 
   bool get isAdmin => currentUser?.canAccessAdminMode ?? false;
 
+  /// The bootstrap response omits the system administrator from the regular
+  /// employee directory. Include the signed-in administrator for permission
+  /// checks and leave management, where the account must remain selectable.
+  List<EmployeeAccount> get leaveManagementAccounts {
+    final user = currentUser;
+    if (user == null || accounts.any((account) => account.id == user.id)) {
+      return accounts;
+    }
+    return [user, ...accounts];
+  }
+
   bool get isAdminMode => isAdmin && adminMode;
 
   bool get hasAdminDocumentAccess => isAdminMode && adminDocumentAccessEnabled;
@@ -451,8 +462,9 @@ class ApprovalDashboardState {
     final userIds = leaveApprovalLines[user.department.trim()] ?? const [];
     return userIds
         .map(
-          (userId) =>
-              accounts.where((account) => account.id == userId).firstOrNull,
+          (userId) => leaveManagementAccounts
+              .where((account) => account.id == userId)
+              .firstOrNull,
         )
         .nonNulls
         .toList();
@@ -691,7 +703,7 @@ class ApprovalDashboardState {
   bool canActOnLeave(LeaveRequest request) {
     final user = currentUser;
     if (user == null || !_isPendingLeaveStatus(request.status)) return false;
-    if (isAdminMode) return true;
+    if (isAdmin) return true;
     if (request.approvalLine.isNotEmpty) {
       return request.approvalLine.any(
         (step) => step.status == '진행중' && step.userId == user.id,

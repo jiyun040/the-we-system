@@ -165,7 +165,7 @@ class AdminDashboard extends ConsumerWidget {
           )
         else if (mobile)
           ...pendingLeaves.map((request) {
-            final employee = state.accounts
+            final employee = state.leaveManagementAccounts
                 .where((item) => item.id == request.userId)
                 .firstOrNull;
             return _PendingLeaveCard(
@@ -186,7 +186,7 @@ class AdminDashboard extends ConsumerWidget {
             columnFlexes: const [1.8, 1.2],
             minWidth: 620,
             rows: pendingLeaves.map((request) {
-              final employee = state.accounts
+              final employee = state.leaveManagementAccounts
                   .where((item) => item.id == request.userId)
                   .firstOrNull;
               return <Widget>[
@@ -204,7 +204,7 @@ class AdminDashboard extends ConsumerWidget {
             columnFlexes: const [1.8, 1.05, 2.2, .7, 1.35],
             minWidth: 980,
             rows: pendingLeaves.map((request) {
-              final employee = state.accounts
+              final employee = state.leaveManagementAccounts
                   .where((item) => item.id == request.userId)
                   .firstOrNull;
               return <Widget>[
@@ -268,7 +268,7 @@ class _LeaveRejectionAlert extends StatelessWidget {
         const SizedBox(height: 8),
         for (final request in requests)
           Text(
-            '${state.accounts.where((account) => account.id == request.userId).firstOrNull?.name ?? request.userId}: ${request.rejectionReason}',
+            '${state.leaveManagementAccounts.where((account) => account.id == request.userId).firstOrNull?.name ?? request.userId}: ${request.rejectionReason}',
             style: TheWeTextStyle.body,
           ),
       ],
