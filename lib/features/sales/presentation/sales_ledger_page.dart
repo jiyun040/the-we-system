@@ -480,10 +480,13 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
                 ],
               ),
               const SizedBox(height: 6),
-              Text(
-                '해당 리스트 클릭 시 파일이 다운로드되며, 파일명 수정이 가능합니다.',
-                style: TheWeTextStyle.caption.copyWith(
-                  color: TheWeColor.black500,
+              Padding(
+                padding: const EdgeInsets.only(left: 56),
+                child: Text(
+                  '해당 리스트 클릭 시 파일이 다운로드되며, 파일명 수정이 가능합니다.',
+                  style: TheWeTextStyle.caption.copyWith(
+                    color: TheWeColor.black500,
+                  ),
                 ),
               ),
               const SizedBox(height: 22),
