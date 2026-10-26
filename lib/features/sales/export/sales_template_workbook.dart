@@ -388,44 +388,49 @@ Future<Uint8List> annualLedgerTemplateXlsx(
   final template = (await rootBundle.load(
     'assets/templates/ledger.xlsx',
   )).buffer.asUint8List();
+  return buildAnnualLedgerTemplate(template, monthlyItems, year);
+}
+
+Uint8List buildAnnualLedgerTemplate(
+  Uint8List template,
+  Map<int, List<SalesLedgerEntry>> monthlyItems,
+  int year,
+) {
   final base = SalesTemplateWorkbook(template);
-  // Annual sheets must use exactly the same typography and date widths as the
-  // regular monthly download.
   base.useLedgerTypography();
-  base.widenLedgerDates();
   final sheets = <XmlDocument>[];
   final combined = <SalesLedgerEntry>[
     for (var month = 1; month <= 12; month++)
       ...(monthlyItems[month] ?? const <SalesLedgerEntry>[]),
   ];
-  final combinedBytes = buildLedgerTemplate(
-    template,
-    combined,
-    DateTime(year, 12),
-  );
-  final combinedArchive = ZipDecoder().decodeBytes(combinedBytes);
-  sheets.add(
-    XmlDocument.parse(
-      utf8.decode(
-        combinedArchive.findFile('xl/worksheets/sheet1.xml')!.content,
-      ),
-    ),
-  );
+  base.sheet = base.read('xl/worksheets/sheet1.xml');
+  sheets.add(_buildLedgerSheet(base, combined, DateTime(year, 12)));
   for (var month = 1; month <= 12; month++) {
-    final bytes = buildLedgerTemplate(
-      template,
-      monthlyItems[month] ?? const [],
-      DateTime(year, month),
+    base.sheet = base.read('xl/worksheets/sheet1.xml');
+    sheets.add(
+      _buildLedgerSheet(
+        base,
+        monthlyItems[month] ?? const [],
+        DateTime(year, month),
+      ),
     );
-    final archive = ZipDecoder().decodeBytes(bytes);
-    final sheet = archive.findFile('xl/worksheets/sheet1.xml');
-    sheets.add(XmlDocument.parse(utf8.decode(sheet!.content)));
   }
   return base.export(
     sheets: sheets,
     names: ['통합', for (var month = 1; month <= 12; month++) '$month월'],
-    areas: List.filled(13, '\$A\$1:\$V\$2000'),
+    areas: [for (final sheet in sheets) _ledgerPrintArea(sheet)],
   );
+}
+
+String _ledgerPrintArea(XmlDocument sheet) {
+  final lastCell = sheet
+      .findAllElements('dimension')
+      .single
+      .getAttribute('ref')!
+      .split(':')
+      .last;
+  final lastRow = lastCell.replaceAll(RegExp('[A-Z]'), '');
+  return '\$A\$1:\$V\$$lastRow';
 }
 
 Uint8List buildLedgerTemplate(
@@ -433,10 +438,23 @@ Uint8List buildLedgerTemplate(
   List<SalesLedgerEntry> items,
   DateTime month,
 ) {
-  items = [...items];
-  sortLedgerEntries(items);
   final book = SalesTemplateWorkbook(template);
   book.useLedgerTypography();
+  final sheet = _buildLedgerSheet(book, items, month);
+  return book.export(
+    sheets: [sheet],
+    names: ['${month.month}월'],
+    areas: [_ledgerPrintArea(sheet)],
+  );
+}
+
+XmlDocument _buildLedgerSheet(
+  SalesTemplateWorkbook book,
+  List<SalesLedgerEntry> items,
+  DateTime month,
+) {
+  items = [...items];
+  sortLedgerEntries(items);
   book.widenLedgerDates();
   final prototype = book.row(2).copy();
   final summary = book.row(3).copy();
@@ -533,7 +551,7 @@ Uint8List buildLedgerTemplate(
         ? 'C'
         : (item.invoiceIssuerType == '협력사' ? 'D' : null);
     if (issuerColumn != null) {
-      book.color('${issuerColumn}$r', 'FFDEF0E4', textColor: 'FF245B39');
+      book.color('$issuerColumn$r', 'FFDEF0E4', textColor: 'FF245B39');
     }
     if (item.billingDate != null) {
       book.color('G$r', 'FFF9E7AD', textColor: 'FF6D5010');
@@ -755,11 +773,7 @@ Uint8List buildLedgerTemplate(
       .single
       .setAttribute('ref', 'A1:V$count');
   book.setAutoFilter('A1:N${items.length + 1}');
-  return book.export(
-    sheets: [book.sheet],
-    names: ['${month.month}월'],
-    areas: ['\$A\$1:\$V\$$count'],
-  );
+  return book.sheet;
 }
 
 Future<Uint8List> statementTemplateXlsx(SalesStatement statement) async {

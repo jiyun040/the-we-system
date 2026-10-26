@@ -290,4 +290,59 @@ void main() {
       expect(fontNode.findElements('name').single.getAttribute('val'), 'Arial');
     }
   });
+
+  test(
+    'annual ledger sheets retain the same cell colors as monthly exports',
+    () {
+      final source = File('assets/templates/ledger.xlsx').readAsBytesSync();
+      final january = [
+        items(1).single.copyWith(billingDate: DateTime(2026, 1, 20)),
+      ];
+      final february = [items(1).single.copyWith(status: '진행', category: '가맹')];
+      final annual = unzip(
+        buildAnnualLedgerTemplate(source, {1: january, 2: february}, 2026),
+      );
+
+      String fill(
+        Map<String, List<int>> archive,
+        String sheetPath,
+        String cell,
+      ) {
+        final sheet = XmlDocument.parse(utf8.decode(archive[sheetPath]!));
+        final styles = XmlDocument.parse(
+          utf8.decode(archive['xl/styles.xml']!),
+        );
+        final target = sheet
+            .findAllElements('c')
+            .firstWhere((node) => node.getAttribute('r') == cell);
+        final xfs = styles.findAllElements('cellXfs').single.childElements;
+        final fills = styles.findAllElements('fills').single.childElements;
+        final style = xfs.elementAt(int.parse(target.getAttribute('s')!));
+        final fill = fills.elementAt(int.parse(style.getAttribute('fillId')!));
+        return fill.findAllElements('fgColor').single.getAttribute('rgb')!;
+      }
+
+      for (final (month, entries) in [(1, january), (2, february)]) {
+        final monthly = unzip(
+          buildLedgerTemplate(source, entries, DateTime(2026, month)),
+        );
+        for (final cell in ['C2', 'D2', 'G2', 'L2']) {
+          expect(
+            fill(annual, 'xl/worksheets/sheet${month + 1}.xml', cell),
+            fill(monthly, 'xl/worksheets/sheet1.xml', cell),
+            reason: '$month월 $cell',
+          );
+        }
+      }
+      expect(fill(annual, 'xl/worksheets/sheet2.xml', 'C2'), 'FFDEF0E4');
+      expect(fill(annual, 'xl/worksheets/sheet2.xml', 'G2'), 'FFF9E7AD');
+      expect(fill(annual, 'xl/worksheets/sheet2.xml', 'L2'), 'FFBBD6F6');
+      expect(fill(annual, 'xl/worksheets/sheet3.xml', 'B2'), 'FFF4B544');
+      expect(fill(annual, 'xl/worksheets/sheet3.xml', 'L2'), 'FFA8DBB9');
+      expect({
+        fill(annual, 'xl/worksheets/sheet1.xml', 'L2'),
+        fill(annual, 'xl/worksheets/sheet1.xml', 'L3'),
+      }, {'FFBBD6F6', 'FFA8DBB9'});
+    },
+  );
 }

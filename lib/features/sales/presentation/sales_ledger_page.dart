@@ -36,7 +36,9 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   String _status = '';
   bool _overdueOnly = false;
   bool _loading = true;
+  int _loadVersion = 0;
   String? _error;
+  List<SalesLedgerEntry> _allItems = const [];
   List<SalesLedgerEntry> _items = const [];
   SalesLedgerSummary _summary = const SalesLedgerSummary(
     supplyAmount: 0,
@@ -69,34 +71,51 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     super.dispose();
   }
 
+  void _applyFilters() {
+    final query = _search.text.trim().toLowerCase();
+    final matching = query.isEmpty
+        ? _allItems
+        : _allItems
+              .where(
+                (item) => [
+                  item.projectName,
+                  item.contractor,
+                  item.partner,
+                  item.note,
+                ].any((value) => value.toLowerCase().contains(query)),
+              )
+              .toList();
+    final statusItems = _status.isEmpty
+        ? matching
+        : matching.where((item) => item.status == _status).toList();
+    _items = _overdueOnly
+        ? statusItems.where(_isOverdueUnpaid).toList()
+        : statusItems;
+    _summary = SalesLedgerSummary.fromEntries(_items);
+  }
+
   Future<void> _load() async {
+    final version = ++_loadVersion;
+    final month = _month;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final result = await _api.fetchLedger(month: _month, query: _search.text);
-      final previous = await _api.fetchLedger(
-        month: DateTime(_month.year, _month.month - 1),
-      );
+      final result = await _api.fetchLedger(month: month);
       final sorted = classifyAndSortLedger(
         result.items,
-        previous.items,
-        month: _month,
+        const [],
+        month: month,
       );
-      if (!mounted) return;
+      if (!mounted || version != _loadVersion) return;
       setState(() {
-        final statusItems = _status.isEmpty
-            ? sorted
-            : sorted.where((item) => item.status == _status).toList();
-        _items = _overdueOnly
-            ? statusItems.where((item) => _isOverdueUnpaid(item)).toList()
-            : statusItems;
-        _summary = SalesLedgerSummary.fromEntries(_items);
+        _allItems = sorted;
+        _applyFilters();
         _loading = false;
       });
     } catch (_) {
-      if (mounted) {
+      if (mounted && version == _loadVersion) {
         setState(() {
           _loading = false;
           _error = '매출관리대장을 불러오지 못했습니다.';
@@ -189,20 +208,20 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       search: _search,
       selectedStatus: _status,
       overdueOnly: _overdueOnly,
-      onSearch: _load,
+      onSearch: () => setState(_applyFilters),
       onStatus: (value) {
         setState(() {
           _status = value;
           _overdueOnly = false;
+          _applyFilters();
         });
-        _load();
       },
       onOverdueChanged: (value) {
         setState(() {
           _overdueOnly = value;
           if (value) _status = '';
+          _applyFilters();
         });
-        _load();
       },
       onPrevious: () => _changeMonth(-1),
       onNext: () => _changeMonth(1),
@@ -691,7 +710,7 @@ class _LedgerContent extends StatelessWidget {
       decoration: const InputDecoration(
         isDense: true,
         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        hintText: '공사명, 시공사, 협력사 검색',
+        hintText: '공사명, 시공사, 협력사, 비고 검색',
         prefixIcon: Icon(Icons.search),
       ),
     ),
