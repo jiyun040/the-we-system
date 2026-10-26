@@ -502,58 +502,47 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
                         itemBuilder: (context, index) {
                           final item = _items[index];
                           return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: Material(
-                              color: Colors.transparent,
-                              borderRadius: BorderRadius.circular(16),
-                              child: Ink(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: TheWeColor.black300.withValues(
-                                      alpha: .22,
-                                    ),
+                            padding: const EdgeInsets.only(bottom: 10),
+                            child: Card(
+                              color: TheWeColor.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 6,
+                                ),
+                                leading: const Icon(
+                                  Icons.description_outlined,
+                                  color: TheWeColor.green,
+                                ),
+                                title: Text(
+                                  '${item.year}년 매출관리대장',
+                                  style: TheWeTextStyle.body.copyWith(
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Color(0x08000000),
-                                      blurRadius: 18,
-                                      offset: Offset(0, 8),
+                                ),
+                                subtitle: Text(
+                                  item.name,
+                                  style: TheWeTextStyle.caption,
+                                ),
+                                onTap: () => _download(item),
+                                trailing: Wrap(
+                                  children: [
+                                    IconButton(
+                                      tooltip: '파일 이름 수정',
+                                      icon: const Icon(Icons.edit_outlined),
+                                      onPressed: () => _rename(item),
+                                    ),
+                                    IconButton(
+                                      tooltip: '삭제',
+                                      color: TheWeColor.danger,
+                                      icon: const Icon(Icons.delete_outline),
+                                      onPressed: () => _delete(item),
                                     ),
                                   ],
-                                ),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(16),
-                                  onTap: () => _download(item),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(20),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            '${item.year}년 매출관리대장',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TheWeTextStyle.subtitle,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          tooltip: '파일 이름 수정',
-                                          onPressed: () => _rename(item),
-                                          icon: const Icon(Icons.edit_outlined),
-                                        ),
-                                        IconButton(
-                                          tooltip: '삭제',
-                                          onPressed: () => _delete(item),
-                                          icon: const Icon(
-                                            Icons.delete_outline,
-                                          ),
-                                          color: TheWeColor.danger,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
                                 ),
                               ),
                             ),
