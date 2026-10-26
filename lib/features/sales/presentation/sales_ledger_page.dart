@@ -511,6 +511,11 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
                               elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: TheWeColor.black300.withValues(
+                                    alpha: 0.35,
+                                  ),
+                                ),
                               ),
                               child: ListTile(
                                 contentPadding: const EdgeInsets.symmetric(
