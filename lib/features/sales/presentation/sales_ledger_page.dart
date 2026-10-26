@@ -953,7 +953,7 @@ class _LedgerTable extends StatelessWidget {
     onRowTaps: [for (final item in items) () => onEdit(item)],
   );
   List<Widget> _row(BuildContext context, int index, SalesLedgerEntry item) => [
-    _cell('${index + 1}'),
+    _cell('${index + 1}', maxLines: 1, fitToWidth: true),
     Align(
       alignment: Alignment.centerLeft,
       child: TextButton(
@@ -975,11 +975,15 @@ class _LedgerTable extends StatelessWidget {
     _cell(
       '${_date(item.startDate)}\n~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
     ),
-    _cell(_duration(item.startDate, item.endDate), maxLines: 2),
+    _cell(
+      _duration(item.startDate, item.endDate),
+      maxLines: 1,
+      fitToWidth: true,
+    ),
     _cell(_shortDate(item.billingDate)),
     _cell(_shortDate(item.invoiceDate)),
     _cell(_shortDate(item.depositDate)),
-    _cell(_money(item.supplyAmount)),
+    _cell(_money(item.supplyAmount), maxLines: 1, fitToWidth: true),
     _cell('${item.installment}회차', maxLines: 1),
     _StatusPill(status: item.status),
     _cell(item.note, left: true),
@@ -1639,17 +1643,32 @@ Future<void> _downloadStatementPdf(
   }
 }
 
-Widget _cell(String value, {bool left = false, int maxLines = 2}) => Align(
+Widget _cell(
+  String value, {
+  bool left = false,
+  int maxLines = 2,
+  bool fitToWidth = false,
+}) => Align(
   alignment: left ? Alignment.centerLeft : Alignment.center,
   child: Padding(
     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-    child: Text(
-      value,
-      textAlign: left ? TextAlign.left : TextAlign.center,
-      maxLines: maxLines,
-      overflow: TextOverflow.ellipsis,
-      style: TheWeTextStyle.caption,
-    ),
+    child: fitToWidth
+        ? FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              softWrap: false,
+              style: TheWeTextStyle.caption,
+            ),
+          )
+        : Text(
+            value,
+            textAlign: left ? TextAlign.left : TextAlign.center,
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: TheWeTextStyle.caption,
+          ),
   ),
 );
 String _date(DateTime? value) =>

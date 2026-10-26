@@ -37,7 +37,9 @@ List<StatementText> statementPageText(
   final money = NumberFormat('#,##0');
   final rows = statementRows(statement.items);
   final all = rows.fold<int>(0, (s, row) {
-    final amount = row.$2 ? -row.$1.adjustmentAmount : row.$1.supplyAmount;
+    final amount = row.$2
+        ? -row.$1.adjustmentAmount
+        : statementSupplyAmount(row.$1);
     return s + amount + (amount * .1).round();
   });
   output.addAll([
@@ -90,14 +92,18 @@ List<StatementText> statementPageText(
     if (index >= rows.length) break;
     final row = rows[index];
     final item = row.$1;
-    final amount = row.$2 ? -item.adjustmentAmount : item.supplyAmount;
+    final amount = row.$2
+        ? -item.adjustmentAmount
+        : statementSupplyAmount(item);
     final vat = (amount * .1).round();
     supply += amount;
     tax += vat;
     count++;
     final values = [
       row.$2 ? '네고' : '${index + 1}. PDAM시스템 공급',
-      row.$2 ? '' : '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
+      row.$2
+          ? ''
+          : '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
       row.$2 ? '식' : 'SET',
       '1',
       money.format(amount),
@@ -245,10 +251,9 @@ class SalesStatementPreview extends StatelessWidget {
           child: ColoredBox(color: Colors.white),
         ),
         if (statementFooterNotes(
-          statementRows(statement.items)
-              .skip(page * 17)
-              .take(17)
-              .map((row) => row.$1),
+          statementRows(
+            statement.items,
+          ).skip(page * 17).take(17).map((row) => row.$1),
         ).isNotEmpty)
           const Positioned(
             left: 36.5,
@@ -336,10 +341,9 @@ Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
               child: pw.Container(color: PdfColors.white),
             ),
             if (statementFooterNotes(
-              statementRows(statement.items)
-                  .skip(page * 17)
-                  .take(17)
-                  .map((row) => row.$1),
+              statementRows(
+                statement.items,
+              ).skip(page * 17).take(17).map((row) => row.$1),
             ).isNotEmpty)
               pw.Positioned(
                 left: 36.5,

@@ -385,9 +385,9 @@ Future<Uint8List> annualLedgerTemplateXlsx(
   Map<int, List<SalesLedgerEntry>> monthlyItems,
   int year,
 ) async {
-  final template = (await rootBundle.load('assets/templates/ledger.xlsx'))
-      .buffer
-      .asUint8List();
+  final template = (await rootBundle.load(
+    'assets/templates/ledger.xlsx',
+  )).buffer.asUint8List();
   final base = SalesTemplateWorkbook(template);
   // Annual sheets must use exactly the same typography and date widths as the
   // regular monthly download.
@@ -398,11 +398,19 @@ Future<Uint8List> annualLedgerTemplateXlsx(
     for (var month = 1; month <= 12; month++)
       ...(monthlyItems[month] ?? const <SalesLedgerEntry>[]),
   ];
-  final combinedBytes = buildLedgerTemplate(template, combined, DateTime(year, 12));
+  final combinedBytes = buildLedgerTemplate(
+    template,
+    combined,
+    DateTime(year, 12),
+  );
   final combinedArchive = ZipDecoder().decodeBytes(combinedBytes);
-  sheets.add(XmlDocument.parse(utf8.decode(
-    combinedArchive.findFile('xl/worksheets/sheet1.xml')!.content,
-  )));
+  sheets.add(
+    XmlDocument.parse(
+      utf8.decode(
+        combinedArchive.findFile('xl/worksheets/sheet1.xml')!.content,
+      ),
+    ),
+  );
   for (var month = 1; month <= 12; month++) {
     final bytes = buildLedgerTemplate(
       template,
@@ -521,8 +529,9 @@ Uint8List buildLedgerTemplate(
       book.color('N$r', 'FFF4B544', textColor: 'FF5C3A00');
     }
     // 계산서 발행처에 해당하는 시공사 또는 협력사 칸만 같은 초록색으로 표시한다.
-    final issuerColumn = item.invoiceIssuerType == '시공사' ? 'C' :
-        (item.invoiceIssuerType == '협력사' ? 'D' : null);
+    final issuerColumn = item.invoiceIssuerType == '시공사'
+        ? 'C'
+        : (item.invoiceIssuerType == '협력사' ? 'D' : null);
     if (issuerColumn != null) {
       book.color('${issuerColumn}$r', 'FFDEF0E4', textColor: 'FF245B39');
     }
@@ -772,11 +781,11 @@ Uint8List buildStatementTemplate(
   final original = book.sheet.copy();
   final pages = <XmlDocument>[];
   final rows = statementRows(statement.items);
-  final pageCount = rows.isEmpty
-      ? 1
-      : (rows.length / 17).ceil();
+  final pageCount = rows.isEmpty ? 1 : (rows.length / 17).ceil();
   final overall = rows.fold<int>(0, (s, row) {
-    final amount = row.$2 ? -row.$1.adjustmentAmount : row.$1.supplyAmount;
+    final amount = row.$2
+        ? -row.$1.adjustmentAmount
+        : statementSupplyAmount(row.$1);
     return s + amount + (amount * .1).round();
   });
   for (var page = 0; page < pageCount; page++) {
@@ -815,14 +824,18 @@ Uint8List buildStatementTemplate(
       }
       final row = rows[index];
       final item = row.$1;
-      final amount = row.$2 ? -item.adjustmentAmount : item.supplyAmount;
+      final amount = row.$2
+          ? -item.adjustmentAmount
+          : statementSupplyAmount(item);
       final vat = (amount * .1).round();
       supply += amount;
       tax += vat;
       quantity++;
       final values = <Object?>[
         row.$2 ? '네고' : '${index + 1}. PDAM시스템 공급',
-        row.$2 ? '' : '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
+        row.$2
+            ? ''
+            : '${item.elevator} ${item.installment}회 : ${salesPeriod(item)}',
         row.$2 ? '식' : 'SET',
         1,
         amount,
