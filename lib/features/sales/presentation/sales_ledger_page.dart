@@ -212,9 +212,16 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       archives: _archives,
       onDownloadArchive: (archive) async {
         final bytes = await _api.downloadArchive(archive.year);
-        await FileSaver.instance.saveFile(name: '매출관리대장_${archive.year}년_연간보관', bytes: bytes, fileExtension: 'xlsx', mimeType: MimeType.microsoftExcel);
+        await FileSaver.instance.saveFile(
+          name: '매출관리대장_${archive.year}년_연간보관',
+          bytes: bytes,
+          fileExtension: 'xlsx',
+          mimeType: MimeType.microsoftExcel,
+        );
       },
-      onOpenArchives: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _SalesLedgerArchivesPage(api: _api))),
+      onOpenArchives: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => _SalesLedgerArchivesPage(api: _api)),
+      ),
       onEdit: _edit,
       onStatement: _showStatement,
     );
@@ -309,27 +316,41 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   }
 
   Future<void> _exportYearlyArchive() async {
-    final year = DateTime.now().year;
-    final monthly = <int, List<SalesLedgerEntry>>{};
-    for (var month = 1; month <= 12; month++) {
-      final response = await _api.fetchLedger(month: DateTime(year, month));
-      monthly[month] = classifyAndSortLedger(
-        response.items,
-        month == 1
-            ? const []
-            : (monthly[month - 1] ?? const <SalesLedgerEntry>[]),
-        month: DateTime(year, month),
+    try {
+      final year = DateTime.now().year;
+      final monthly = <int, List<SalesLedgerEntry>>{};
+      for (var month = 1; month <= 12; month++) {
+        final response = await _api.fetchLedger(month: DateTime(year, month));
+        monthly[month] = classifyAndSortLedger(
+          response.items,
+          month == 1
+              ? const []
+              : (monthly[month - 1] ?? const <SalesLedgerEntry>[]),
+          month: DateTime(year, month),
+        );
+      }
+      final bytes = await annualLedgerTemplateXlsx(monthly, year);
+      await _api.uploadArchive(
+        year: year,
+        bytes: bytes,
+        filename: '매출관리대장_$year년_연간보관.xlsx',
       );
+      await _loadArchives();
+      if (mounted) {
+        showTheWeSnackBar(context, message: '$year년 매출관리대장을 보관했습니다.');
+      }
+    } catch (error) {
+      if (mounted) {
+        showTheWeSnackBar(
+          context,
+          message: userFacingErrorMessage(
+            error,
+            fallback: '연간 매출관리대장을 보관하지 못했습니다.',
+          ),
+          type: TheWeSnackBarType.error,
+        );
+      }
     }
-    final bytes = await annualLedgerTemplateXlsx(monthly, year);
-    await _api.uploadArchive(year: year, bytes: bytes, filename: '매출관리대장_${year}년_연간보관.xlsx');
-    await _loadArchives();
-    await FileSaver.instance.saveFile(
-      name: '매출관리대장_${year}년_연간보관',
-      bytes: bytes,
-      fileExtension: 'xlsx',
-      mimeType: MimeType.microsoftExcel,
-    );
   }
 
   Future<void> _exportExcel() async {
@@ -346,46 +367,206 @@ class _SalesLedgerArchivesPage extends StatefulWidget {
   const _SalesLedgerArchivesPage({required this.api});
   final SalesApiService api;
   @override
-  State<_SalesLedgerArchivesPage> createState() => _SalesLedgerArchivesPageState();
+  State<_SalesLedgerArchivesPage> createState() =>
+      _SalesLedgerArchivesPageState();
 }
 
 class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
   List<SalesLedgerArchive> _items = const [];
   @override
-  void initState() { super.initState(); _load(); }
+  void initState() {
+    super.initState();
+    _load();
+  }
+
   Future<void> _load() async {
     final items = await widget.api.fetchArchives();
     if (mounted) setState(() => _items = items);
   }
+
   Future<void> _rename(SalesLedgerArchive item) async {
-    final controller = TextEditingController(text: item.name.replaceAll(RegExp(r'\.xlsx$'), ''));
-    final name = await showDialog<String>(context: context, builder: (context) => TheWeModalSurface(child: Column(mainAxisSize: MainAxisSize.min, children: [TheWeModalHeader(title: '파일 이름 수정', onClose: () => Navigator.pop(context)), const SizedBox(height: 18), TextField(controller: controller, autofocus: true), const SizedBox(height: 18), TheWeModalActions(primaryLabel: '저장', secondaryLabel: '취소', onPrimaryPressed: () => Navigator.pop(context, controller.text), onSecondaryPressed: () => Navigator.pop(context))])));
+    final controller = TextEditingController(
+      text: item.name.replaceAll(RegExp(r'\.xlsx$'), ''),
+    );
+    final name = await showDialog<String>(
+      context: context,
+      builder: (context) => TheWeModalSurface(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TheWeModalHeader(
+              title: '파일 이름 수정',
+              onClose: () => Navigator.pop(context),
+            ),
+            const SizedBox(height: 18),
+            TextField(controller: controller, autofocus: true),
+            const SizedBox(height: 18),
+            TheWeModalActions(
+              primaryLabel: '저장',
+              secondaryLabel: '취소',
+              onPrimaryPressed: () => Navigator.pop(context, controller.text),
+              onSecondaryPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      ),
+    );
     controller.dispose();
     if (name == null || name.trim().isEmpty) return;
     await widget.api.renameArchive(item.year, name.trim());
     await _load();
   }
+
   Future<void> _download(SalesLedgerArchive item) async {
     final bytes = await widget.api.downloadArchive(item.year);
-    await FileSaver.instance.saveFile(name: item.name.replaceAll(RegExp(r'\.xlsx$'), ''), bytes: bytes, fileExtension: 'xlsx', mimeType: MimeType.microsoftExcel);
+    await FileSaver.instance.saveFile(
+      name: item.name.replaceAll(RegExp(r'\.xlsx$'), ''),
+      bytes: bytes,
+      fileExtension: 'xlsx',
+      mimeType: MimeType.microsoftExcel,
+    );
   }
+
   Future<void> _delete(SalesLedgerArchive item) async {
-    final confirmed = await showDialog<bool>(context: context, builder: (context) => TheWeConfirmDialog(title: '보관 파일을 삭제할까요?', message: '${item.year}년 매출관리대장이 삭제됩니다.', primaryLabel: '삭제', primaryColor: TheWeColor.danger, onPrimaryPressed: () => Navigator.pop(context, true), onSecondaryPressed: () => Navigator.pop(context, false)));
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => TheWeConfirmDialog(
+        title: '보관 파일을 삭제할까요?',
+        message: '${item.year}년 매출관리대장이 삭제됩니다.',
+        primaryLabel: '삭제',
+        primaryColor: TheWeColor.danger,
+        onPrimaryPressed: () => Navigator.pop(context, true),
+        onSecondaryPressed: () => Navigator.pop(context, false),
+      ),
+    );
     if (confirmed != true) return;
     await widget.api.deleteArchive(item.year);
     await _load();
   }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: TheWeColor.background,
-    appBar: AppBar(backgroundColor: TheWeColor.white, elevation: 0, title: Text('연간 매출관리대장', style: TheWeTextStyle.title.copyWith(fontWeight: FontWeight.w800))),
-    body: ListView.separated(padding: const EdgeInsets.all(24), itemCount: _items.length + 1, separatorBuilder: (_, __) => const SizedBox(height: 10), itemBuilder: (_, index) {
-      if (index == 0) return Text('해당 리스트 클릭 시 파일이 다운로드되며, 파일명 수정이 가능합니다.', style: TheWeTextStyle.caption.copyWith(color: TheWeColor.black500));
-      index -= 1;
-      final item = _items[index];
-      return Card(color: TheWeColor.white, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), child: ListTile(contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6), leading: const Icon(Icons.description_outlined, color: TheWeColor.green), title: Text('${item.year}년 매출관리대장', style: TheWeTextStyle.body.copyWith(fontWeight: FontWeight.w700)), subtitle: Text(item.name, style: TheWeTextStyle.caption), onTap: () => _download(item), trailing: Wrap(children: [IconButton(tooltip: '파일 이름 수정', icon: const Icon(Icons.edit_outlined), onPressed: () => _rename(item)), IconButton(tooltip: '삭제', color: TheWeColor.danger, icon: const Icon(Icons.delete_outline), onPressed: () => _delete(item))])));
-    }),
-  );
+  Widget build(BuildContext context) {
+    final isPhone = MediaQuery.sizeOf(context).width < 520;
+    return Scaffold(
+      backgroundColor: TheWeColor.white,
+      body: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.all(isPhone ? 18 : 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  IconButton(
+                    tooltip: '뒤로가기',
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.arrow_back_ios_new,
+                      size: 18,
+                      color: TheWeColor.black900,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '보관된 연간 매출관리대장',
+                      style:
+                          (isPhone
+                                  ? TheWeTextStyle.title
+                                  : TheWeTextStyle.pageTitle)
+                              .copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '해당 리스트 클릭 시 파일이 다운로드되며, 파일명 수정이 가능합니다.',
+                style: TheWeTextStyle.caption.copyWith(
+                  color: TheWeColor.black500,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Expanded(
+                child: _items.isEmpty
+                    ? Center(
+                        child: Text(
+                          '보관된 연간 매출관리대장이 없습니다.',
+                          style: TheWeTextStyle.body.copyWith(
+                            color: TheWeColor.black500,
+                          ),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: _items.length,
+                        itemBuilder: (context, index) {
+                          final item = _items[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Material(
+                              color: Colors.transparent,
+                              borderRadius: BorderRadius.circular(16),
+                              child: Ink(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: TheWeColor.black300.withValues(
+                                      alpha: .22,
+                                    ),
+                                  ),
+                                  boxShadow: const [
+                                    BoxShadow(
+                                      color: Color(0x08000000),
+                                      blurRadius: 18,
+                                      offset: Offset(0, 8),
+                                    ),
+                                  ],
+                                ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(16),
+                                  onTap: () => _download(item),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            '${item.year}년 매출관리대장',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TheWeTextStyle.subtitle,
+                                          ),
+                                        ),
+                                        IconButton(
+                                          tooltip: '파일 이름 수정',
+                                          onPressed: () => _rename(item),
+                                          icon: const Icon(Icons.edit_outlined),
+                                        ),
+                                        IconButton(
+                                          tooltip: '삭제',
+                                          onPressed: () => _delete(item),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                          ),
+                                          color: TheWeColor.danger,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _LedgerContent extends StatelessWidget {
@@ -450,7 +631,11 @@ class _LedgerContent extends StatelessWidget {
       ),
       const SizedBox(height: 22),
       ...[
-        OutlinedButton.icon(onPressed: onOpenArchives, icon: const Icon(Icons.folder_open), label: const Text('보관된 연간 매출관리대장 열기')),
+        OutlinedButton.icon(
+          onPressed: onOpenArchives,
+          icon: const Icon(Icons.folder_open),
+          label: const Text('보관된 연간 매출관리대장 열기'),
+        ),
         const SizedBox(height: 16),
       ],
       _SummaryCards(summary: summary, items: items, month: month),
@@ -763,9 +948,9 @@ class _LedgerTable extends StatelessWidget {
                     (col == 3 && _issuerType(item) == '협력사'))
                 ? _issuerColor(item)
                 : (col == 7 && item.billingDate == null) ||
-                        (col == 9 && _isOverdueUnpaid(item))
-                    ? TheWeColor.danger.withValues(alpha: .12)
-                    : null,
+                      (col == 9 && _isOverdueUnpaid(item))
+                ? TheWeColor.danger.withValues(alpha: .12)
+                : null,
         ],
     ],
     onRowTaps: [for (final item in items) () => onEdit(item)],

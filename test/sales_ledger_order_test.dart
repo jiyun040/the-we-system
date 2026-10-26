@@ -18,6 +18,27 @@ void main() {
     'elevator': elevator,
   });
 
+  test('기록일이 9월이어도 실사용 시작이 10월이면 10월 신규다', () {
+    final october = SalesLedgerEntry.fromJson({
+      'id': 'october-use',
+      'projectName': '10월 사용 현장',
+      'elevator': '1호기',
+      'recordDate': '2026-09-21',
+      'contractStartDate': '2026-10-02',
+      'startDate': '2026-10-02',
+    });
+    final november = SalesLedgerEntry.fromJson({
+      'id': 'october-use',
+      'projectName': '10월 사용 현장',
+      'elevator': '1호기',
+      'recordDate': '2026-09-21',
+      'contractStartDate': '2026-10-02',
+      'startDate': '2026-11-01',
+    });
+    expect(classifyAndSortLedger([october], const [], month: DateTime(2026, 10)).single.status, '신규');
+    expect(classifyAndSortLedger([november], [october], month: DateTime(2026, 11)).single.status, '진행');
+  });
+
   test('전월 사용 현장은 진행, 당월 첫 사용 현장은 신규로 정렬한다', () {
     final result = classifyAndSortLedger(
       [
