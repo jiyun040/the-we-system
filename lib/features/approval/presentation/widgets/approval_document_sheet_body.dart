@@ -66,7 +66,9 @@ class ApprovalPdfDocumentBody extends StatelessWidget {
                               (column) => Expanded(
                                 flex: column.$3,
                                 child: _ReadOnlyTableCell(
-                                  textAlign: approvalLineItemTextAlign(column.$1),
+                                  textAlign: approvalLineItemTextAlign(
+                                    column.$1,
+                                  ),
                                   text: _displayLineItemValue(
                                     column.$1,
                                     item[column.$1] ?? '',

@@ -88,8 +88,7 @@ class EmployeeAccount {
   bool get isDesignatedAdministrator =>
       normalizedId == designatedAdminAccountId;
 
-  bool get canAccessAdminMode =>
-      isAdmin || isDesignatedAdministrator;
+  bool get canAccessAdminMode => isAdmin || isDesignatedAdministrator;
 
   bool get canAccessSalesLedger {
     if (isSystemAdministrator) return true;
@@ -291,9 +290,8 @@ class LeaveDateSelection {
     required this.type,
     required DateTime startDate,
     this.department = '',
-  })
-    : startDate = DateUtils.dateOnly(startDate),
-      endDate = DateUtils.dateOnly(startDate);
+  }) : startDate = DateUtils.dateOnly(startDate),
+       endDate = DateUtils.dateOnly(startDate);
 
   String type;
   final String department;

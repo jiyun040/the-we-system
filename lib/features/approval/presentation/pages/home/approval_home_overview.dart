@@ -99,10 +99,14 @@ class ApprovalHomeOverview extends ConsumerWidget {
               (document) =>
                   (document.status != '반려' ||
                       acknowledgedRejections == null ||
-                      !acknowledgedRejections.contains(rejectedApprovalEventKey(document))) &&
+                      !acknowledgedRejections.contains(
+                        rejectedApprovalEventKey(document),
+                      )) &&
                   (document.status != '완료' ||
                       acknowledgedCompleted == null ||
-                      !acknowledgedCompleted.contains(rejectedApprovalEventKey(document))),
+                      !acknowledgedCompleted.contains(
+                        rejectedApprovalEventKey(document),
+                      )),
             )
             .toList();
         final rightChild = Column(

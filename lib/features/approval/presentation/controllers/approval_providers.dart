@@ -42,9 +42,10 @@ final dismissedRejectedApprovalAlertsProvider =
     >(DismissedRejectedApprovalAlertsController.new);
 
 final acknowledgedCompletedDocumentsProvider =
-    AsyncNotifierProvider<AcknowledgedCompletedDocumentsController, Set<String>>(
-      AcknowledgedCompletedDocumentsController.new,
-    );
+    AsyncNotifierProvider<
+      AcknowledgedCompletedDocumentsController,
+      Set<String>
+    >(AcknowledgedCompletedDocumentsController.new);
 
 abstract class _RejectedApprovalEventController
     extends AsyncNotifier<Set<String>> {

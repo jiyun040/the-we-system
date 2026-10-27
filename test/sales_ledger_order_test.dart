@@ -35,8 +35,22 @@ void main() {
       'contractStartDate': '2026-10-02',
       'startDate': '2026-11-01',
     });
-    expect(classifyAndSortLedger([october], const [], month: DateTime(2026, 10)).single.status, '신규');
-    expect(classifyAndSortLedger([november], [october], month: DateTime(2026, 11)).single.status, '진행');
+    expect(
+      classifyAndSortLedger(
+        [october],
+        const [],
+        month: DateTime(2026, 10),
+      ).single.status,
+      '신규',
+    );
+    expect(
+      classifyAndSortLedger(
+        [november],
+        [october],
+        month: DateTime(2026, 11),
+      ).single.status,
+      '진행',
+    );
   });
 
   test('전월 사용 현장은 진행, 당월 첫 사용 현장은 신규로 정렬한다', () {

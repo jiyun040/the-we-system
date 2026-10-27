@@ -34,6 +34,7 @@ class SalesLedgerEntry {
   final String? month;
   final DateTime? contractStartDate;
   final DateTime? contractEndDate;
+
   /// First date on which the PDAM work record exists for this site/equipment.
   final DateTime? recordDate;
   final String category;

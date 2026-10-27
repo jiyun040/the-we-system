@@ -35,9 +35,8 @@ List<ApprovalStep> buildApprovalStepsFor(
       ? approvalChainFor(drafter, accounts)
       : approverIds
             .map(
-              (id) => accounts
-                  .where((account) => account.id == id)
-                  .firstOrNull ??
+              (id) =>
+                  accounts.where((account) => account.id == id).firstOrNull ??
                   accounts.where((account) => account.name == id).firstOrNull,
             )
             .whereType<EmployeeAccount>()

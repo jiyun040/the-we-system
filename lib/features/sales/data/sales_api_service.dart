@@ -10,15 +10,22 @@ class SalesLedgerResponse {
 }
 
 class SalesLedgerArchive {
-  const SalesLedgerArchive({required this.year, required this.name, required this.updatedAt});
+  const SalesLedgerArchive({
+    required this.year,
+    required this.name,
+    required this.updatedAt,
+  });
   final int year;
   final String name;
   final DateTime updatedAt;
-  factory SalesLedgerArchive.fromJson(Map<String, dynamic> json) => SalesLedgerArchive(
-    year: int.tryParse(json['year'].toString()) ?? 0,
-    name: json['name']?.toString() ?? '',
-    updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
-  );
+  factory SalesLedgerArchive.fromJson(Map<String, dynamic> json) =>
+      SalesLedgerArchive(
+        year: int.tryParse(json['year'].toString()) ?? 0,
+        name: json['name']?.toString() ?? '',
+        updatedAt:
+            DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+            DateTime.now(),
+      );
 }
 
 class SalesApiService {
@@ -27,22 +34,34 @@ class SalesApiService {
 
   Future<List<SalesLedgerArchive>> fetchArchives() async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>('/sales/ledger/archives');
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/sales/ledger/archives',
+      );
       return (response.data?['items'] as List<dynamic>? ?? const [])
           .whereType<Map>()
-          .map((item) => SalesLedgerArchive.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) =>
+                SalesLedgerArchive.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }
   }
 
-  Future<void> uploadArchive({required int year, required Uint8List bytes, required String filename}) async {
+  Future<void> uploadArchive({
+    required int year,
+    required Uint8List bytes,
+    required String filename,
+  }) async {
     try {
-      await _dio.post<void>('/sales/ledger/archives', data: FormData.fromMap({
-        'year': year.toString(),
-        'file': MultipartFile.fromBytes(bytes, filename: filename),
-      }));
+      await _dio.post<void>(
+        '/sales/ledger/archives',
+        data: FormData.fromMap({
+          'year': year.toString(),
+          'file': MultipartFile.fromBytes(bytes, filename: filename),
+        }),
+      );
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
     }
@@ -50,7 +69,10 @@ class SalesApiService {
 
   Future<Uint8List> downloadArchive(int year) async {
     try {
-      final response = await _dio.get<List<int>>('/sales/ledger/archives/$year', options: Options(responseType: ResponseType.bytes));
+      final response = await _dio.get<List<int>>(
+        '/sales/ledger/archives/$year',
+        options: Options(responseType: ResponseType.bytes),
+      );
       return Uint8List.fromList(response.data ?? const []);
     } on DioException catch (error) {
       throw ApiException.fromDio(error);
@@ -59,14 +81,25 @@ class SalesApiService {
 
   Future<void> renameArchive(int year, String name) async {
     try {
-      await _dio.patch<void>('/sales/ledger/archives', queryParameters: {'year': year}, data: {'name': name});
-    } on DioException catch (error) { throw ApiException.fromDio(error); }
+      await _dio.patch<void>(
+        '/sales/ledger/archives',
+        queryParameters: {'year': year},
+        data: {'name': name},
+      );
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
   }
 
   Future<void> deleteArchive(int year) async {
     try {
-      await _dio.delete<void>('/sales/ledger/archives', queryParameters: {'year': year});
-    } on DioException catch (error) { throw ApiException.fromDio(error); }
+      await _dio.delete<void>(
+        '/sales/ledger/archives',
+        queryParameters: {'year': year},
+      );
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
   }
 
   Future<SalesLedgerResponse> fetchLedger({

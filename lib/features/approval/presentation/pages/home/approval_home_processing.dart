@@ -175,10 +175,12 @@ class ApprovalDraftProgressSection extends StatefulWidget {
   final ValueChanged<ApprovalDocument> onAcknowledgeRejected;
 
   @override
-  State<ApprovalDraftProgressSection> createState() => _ApprovalDraftProgressSectionState();
+  State<ApprovalDraftProgressSection> createState() =>
+      _ApprovalDraftProgressSectionState();
 }
 
-class _ApprovalDraftProgressSectionState extends State<ApprovalDraftProgressSection> {
+class _ApprovalDraftProgressSectionState
+    extends State<ApprovalDraftProgressSection> {
   int page = 0;
 
   @override
@@ -227,7 +229,10 @@ class _ApprovalDraftProgressSectionState extends State<ApprovalDraftProgressSect
                 AppRouteName.box,
                 pathParameters: {'kind': 'sent'},
               ),
-                child: Text('더보기 (${widget.totalCount})', style: TheWeTextStyle.subtitle),
+              child: Text(
+                '더보기 (${widget.totalCount})',
+                style: TheWeTextStyle.subtitle,
+              ),
             ),
           ],
         ),
@@ -246,14 +251,15 @@ class _ApprovalDraftProgressSectionState extends State<ApprovalDraftProgressSect
                             AppRouteName.detail,
                             pathParameters: {'id': document.id},
                           ),
-                          actions: document.status == '반려' || document.status == '완료'
+                          actions:
+                              document.status == '반려' || document.status == '완료'
                               ? [
                                   FilledButton.icon(
                                     key: ValueKey(
                                       'acknowledge-rejected-document-${document.id}',
                                     ),
                                     onPressed: () =>
-                          widget.onAcknowledgeRejected(document),
+                                        widget.onAcknowledgeRejected(document),
                                     icon: const Icon(Icons.check, size: 17),
                                     label: const Text('확인'),
                                   ),
