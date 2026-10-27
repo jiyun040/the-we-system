@@ -302,6 +302,25 @@ void main() {
       final annual = unzip(
         buildAnnualLedgerTemplate(source, {1: january, 2: february}, 2026),
       );
+      final annualStyles = XmlDocument.parse(
+        utf8.decode(annual['xl/styles.xml']!),
+      );
+      final styleCount = annualStyles
+          .findAllElements('cellXfs')
+          .single
+          .childElements
+          .length;
+      for (var sheetNumber = 1; sheetNumber <= 13; sheetNumber++) {
+        final sheet = XmlDocument.parse(
+          utf8.decode(annual['xl/worksheets/sheet$sheetNumber.xml']!),
+        );
+        for (final cell in sheet.findAllElements('c')) {
+          expect(
+            int.parse(cell.getAttribute('s') ?? '0'),
+            lessThan(styleCount),
+          );
+        }
+      }
 
       String fill(
         Map<String, List<int>> archive,
@@ -339,10 +358,13 @@ void main() {
       expect(fill(annual, 'xl/worksheets/sheet2.xml', 'L2'), 'FFBBD6F6');
       expect(fill(annual, 'xl/worksheets/sheet3.xml', 'B2'), 'FFF4B544');
       expect(fill(annual, 'xl/worksheets/sheet3.xml', 'L2'), 'FFA8DBB9');
-      expect({
-        fill(annual, 'xl/worksheets/sheet1.xml', 'L2'),
-        fill(annual, 'xl/worksheets/sheet1.xml', 'L3'),
-      }, {'FFBBD6F6', 'FFA8DBB9'});
+      expect(
+        {
+          fill(annual, 'xl/worksheets/sheet1.xml', 'L2'),
+          fill(annual, 'xl/worksheets/sheet1.xml', 'L3'),
+        },
+        {'FFBBD6F6', 'FFA8DBB9'},
+      );
     },
   );
 }
