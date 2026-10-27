@@ -963,8 +963,9 @@ class _LedgerTable extends StatelessWidget {
             ((col == 2 && _issuerType(item) == '시공사') ||
                     (col == 3 && _issuerType(item) == '협력사'))
                 ? _issuerColor(item)
-                : (col == 7 && item.billingDate == null) ||
-                      (col == 9 && _isOverdueUnpaid(item))
+                : ((col == 7 && item.billingDate == null) ||
+                      (col == 8 && item.invoiceDate == null) ||
+                      (col == 9 && item.depositDate == null))
                 ? TheWeColor.danger.withValues(alpha: .12)
                 : null,
         ],
