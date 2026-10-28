@@ -44,9 +44,19 @@ class _ApprovalHomeCalendarPanelState
           final start = DateTime.tryParse(data['date']?.toString() ?? '');
           if (start == null) continue;
           final event = ApprovalCalendarEvent.fromJson(data);
-          final days = event.visibleDates.isNotEmpty
+          var days = event.visibleDates.isNotEmpty
               ? event.visibleDates
               : _calendarDaysBetween(start, event.endDate ?? start);
+          // The API historically calculated leave visibility using the
+          // generic weekday rule, which drops Saturdays. Field teams count
+          // Saturdays as working leave days, so restore those dates here.
+          if (event.kind == 'leave' && _isFieldTeam(event.authorId)) {
+            final range = _calendarDaysBetween(start, event.endDate ?? start);
+            days = {
+              ...days,
+              ...range.where((day) => day.weekday == DateTime.saturday),
+            }.toList();
+          }
           for (final day in days) {
             _events.putIfAbsent(DateUtils.dateOnly(day), () => []).add(event);
           }
@@ -56,6 +66,18 @@ class _ApprovalHomeCalendarPanelState
     } catch (_) {
       if (mounted) setState(() => _loadError = '공유 일정을 불러오지 못했습니다.');
     }
+  }
+
+  bool _isFieldTeam(String userId) {
+    final account = ref
+        .read(approvalDashboardControllerProvider)
+        .asData
+        ?.value
+        .accounts
+        .where((item) => item.id == userId)
+        .firstOrNull;
+    return account?.department.replaceAll(RegExp(r'\s+'), '').contains('현장') ??
+        false;
   }
 
   List<DateTime> _calendarDaysBetween(DateTime start, DateTime end) {
