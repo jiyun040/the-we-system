@@ -47,9 +47,6 @@ class _ApprovalHomeCalendarPanelState
           var days = event.visibleDates.isNotEmpty
               ? event.visibleDates
               : _calendarDaysBetween(start, event.endDate ?? start);
-          // The API historically calculated leave visibility using the
-          // generic weekday rule, which drops Saturdays. Field teams count
-          // Saturdays as working leave days, so restore those dates here.
           if (event.kind == 'leave' && _isFieldTeam(event.authorId)) {
             final range = _calendarDaysBetween(start, event.endDate ?? start);
             days = {
@@ -70,16 +67,18 @@ class _ApprovalHomeCalendarPanelState
   }
 
   bool _isFieldTeam(String userId) {
-    final account = ref
-        .read(approvalDashboardControllerProvider)
-        .asData
-        ?.value
-        .accounts
-        .where((item) => item.id == userId)
-        .firstOrNull;
+    final account = _accountFor(userId);
     return account?.department.replaceAll(RegExp(r'\s+'), '').contains('현장') ??
         false;
   }
+
+  EmployeeAccount? _accountFor(String userId) => ref
+      .read(approvalDashboardControllerProvider)
+      .asData
+      ?.value
+      .accounts
+      .where((item) => item.id == userId)
+      .firstOrNull;
 
   void _appendFieldTeamLeaveRequests() {
     final state = ref.read(approvalDashboardControllerProvider).asData?.value;
@@ -100,9 +99,7 @@ class _ApprovalHomeCalendarPanelState
       final dates = _calendarDaysBetween(start, end)
           .where((day) => day.weekday != DateTime.sunday)
           .toList();
-      final account = state.accounts
-          .where((item) => item.id == request.userId)
-          .firstOrNull;
+      final account = _accountFor(request.userId);
       final event = ApprovalCalendarEvent(
         id: 'leave-${request.id}',
         authorId: request.userId,

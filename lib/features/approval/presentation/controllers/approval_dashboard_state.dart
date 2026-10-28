@@ -161,16 +161,10 @@ class ApprovalDashboardState {
 
   bool get isAdmin => currentUser?.canAccessAdminMode ?? false;
 
-  /// The bootstrap response omits the system administrator from the regular
-  /// employee directory. Include the signed-in administrator for permission
-  /// checks and leave management, where the account must remain selectable.
-  List<EmployeeAccount> get leaveManagementAccounts {
-    final user = currentUser;
-    if (user == null || accounts.any((account) => account.id == user.id)) {
-      return accounts;
-    }
-    return [user, ...accounts];
-  }
+  /// System administrators are permission principals, not employees.
+  List<EmployeeAccount> get leaveManagementAccounts => accounts
+      .where((account) => !account.isSystemAdministrator)
+      .toList();
 
   bool get isAdminMode => isAdmin && adminMode;
 
