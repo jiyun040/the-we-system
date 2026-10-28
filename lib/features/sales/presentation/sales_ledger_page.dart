@@ -72,7 +72,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   }
 
   void _applyFilters() {
-    final query = _search.text.trim().toLowerCase();
+    final query = _normalizeSearchText(_search.text);
     final matching = query.isEmpty
         ? _allItems
         : _allItems
@@ -82,7 +82,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
                   item.contractor,
                   item.partner,
                   item.note,
-                ].any((value) => value.toLowerCase().contains(query)),
+                ].any((value) => _normalizeSearchText(value).contains(query)),
               )
               .toList();
     final statusItems = _status.isEmpty
@@ -93,6 +93,9 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         : statusItems;
     _summary = SalesLedgerSummary.fromEntries(_items);
   }
+
+  String _normalizeSearchText(String value) =>
+      value.toLowerCase().replaceAll(RegExp(r'\s+'), '');
 
   Future<void> _load() async {
     final version = ++_loadVersion;
