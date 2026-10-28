@@ -566,7 +566,7 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
                                       '보관일 ${_formatArchiveDate(item.updatedAt)}',
                                       style: TheWeTextStyle.caption.copyWith(
                                         fontSize: 11,
-                                        color: TheWeColor.black400,
+                                        color: TheWeColor.black500,
                                       ),
                                     ),
                                   ],
