@@ -554,9 +554,22 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                subtitle: Text(
-                                  item.name,
-                                  style: TheWeTextStyle.caption,
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.name,
+                                      style: TheWeTextStyle.caption,
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '보관일 ${_formatArchiveDate(item.updatedAt)}',
+                                      style: TheWeTextStyle.caption.copyWith(
+                                        fontSize: 11,
+                                        color: TheWeColor.black400,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 onTap: () => _download(item),
                                 trailing: Wrap(
@@ -586,6 +599,13 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
       ),
     );
   }
+}
+
+String _formatArchiveDate(DateTime value) {
+  final local = value.toLocal();
+  String twoDigits(int number) => number.toString().padLeft(2, '0');
+  return '${local.year}.${twoDigits(local.month)}.${twoDigits(local.day)} '
+      '${twoDigits(local.hour)}:${twoDigits(local.minute)}';
 }
 
 class _LedgerContent extends StatelessWidget {
