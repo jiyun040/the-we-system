@@ -61,6 +61,7 @@ class _ApprovalHomeCalendarPanelState
             _events.putIfAbsent(DateUtils.dateOnly(day), () => []).add(event);
           }
         }
+        _appendFieldTeamLeaveRequests();
         _loadError = null;
       });
     } catch (_) {
@@ -78,6 +79,46 @@ class _ApprovalHomeCalendarPanelState
         .firstOrNull;
     return account?.department.replaceAll(RegExp(r'\s+'), '').contains('현장') ??
         false;
+  }
+
+  void _appendFieldTeamLeaveRequests() {
+    final state = ref.read(approvalDashboardControllerProvider).asData?.value;
+    if (state == null) return;
+    final existingIds = _events.values
+        .expand((events) => events)
+        .map((event) => event.id)
+        .toSet();
+    for (final request in state.leaveRequests) {
+      if (request.status != '승인완료' ||
+          !_isFieldTeam(request.userId) ||
+          existingIds.contains('leave-${request.id}')) {
+        continue;
+      }
+      final start = DateTime.tryParse(request.startDate);
+      if (start == null) continue;
+      final end = DateTime.tryParse(request.endDate) ?? start;
+      final dates = _calendarDaysBetween(start, end)
+          .where((day) => day.weekday != DateTime.sunday)
+          .toList();
+      final account = state.accounts
+          .where((item) => item.id == request.userId)
+          .firstOrNull;
+      final event = ApprovalCalendarEvent(
+        id: 'leave-${request.id}',
+        authorId: request.userId,
+        authorName: account?.name ?? '',
+        kind: 'leave',
+        endDate: end,
+        visibleDates: dates,
+        title: '${account?.name ?? '직원'} ${request.type}',
+        time: '',
+        place: '',
+        colorKey: 'pink',
+      );
+      for (final day in dates) {
+        _events.putIfAbsent(DateUtils.dateOnly(day), () => []).add(event);
+      }
+    }
   }
 
   List<DateTime> _calendarDaysBetween(DateTime start, DateTime end) {
