@@ -1254,6 +1254,14 @@ class _DepartmentNameDialogState extends State<_DepartmentNameDialog> {
           key: const ValueKey('department-name-field'),
           controller: _controller,
           autofocus: true,
+          onSubmitted: (_) {
+            final message = widget.onSave(_controller.text);
+            if (message != null) {
+              setState(() => _error = message);
+              return;
+            }
+            Navigator.pop(context);
+          },
           decoration: InputDecoration(
             labelText: '부서명',
             errorText: _error.isEmpty ? null : _error,

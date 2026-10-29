@@ -238,7 +238,13 @@ class _ChangeAdminOtpDialogState extends ConsumerState<_ChangeAdminOtpDialog> {
           const SizedBox(height: 10),
           _otpField(controller: nextController, label: '새 OTP'),
           const SizedBox(height: 10),
-          _otpField(controller: confirmController, label: '새 OTP 확인'),
+          _otpField(
+            controller: confirmController,
+            label: '새 OTP 확인',
+            onSubmitted: (_) {
+              if (!saving) _submit();
+            },
+          ),
           if (error.isNotEmpty) ...[
             const SizedBox(height: 8),
             Align(
@@ -270,6 +276,7 @@ class _ChangeAdminOtpDialogState extends ConsumerState<_ChangeAdminOtpDialog> {
   Widget _otpField({
     required TextEditingController controller,
     required String label,
+    ValueChanged<String>? onSubmitted,
   }) => TextField(
     controller: controller,
     obscureText: true,
@@ -277,6 +284,7 @@ class _ChangeAdminOtpDialogState extends ConsumerState<_ChangeAdminOtpDialog> {
     maxLength: 6,
     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
     decoration: InputDecoration(labelText: label, counterText: ''),
+    onSubmitted: onSubmitted,
   );
 
   Future<void> _submit() async {
@@ -511,9 +519,10 @@ class _BrandingSettingsCardState extends ConsumerState<_BrandingSettingsCard> {
             ),
           const SizedBox(height: 18),
           TextField(
-            key: const ValueKey('portal-name-field'),
-            controller: portalNameController,
-            decoration: const InputDecoration(labelText: '임직원 포털 명'),
+          key: const ValueKey('portal-name-field'),
+          controller: portalNameController,
+          onSubmitted: (_) => _savePortalName(),
+          decoration: const InputDecoration(labelText: '임직원 포털 명'),
           ),
           const SizedBox(height: 10),
           Align(
