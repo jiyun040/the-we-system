@@ -715,8 +715,21 @@ class _LedgerContent extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: _navigationControls(),
         ),
-      ] else
-        Row(children: _toolbarChildren()),
+      ] else ...[
+        Row(
+          children: [
+            _searchField(fullWidth: false),
+            const Spacer(),
+            ..._navigationControls(),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [..._statusChips(), ..._accountingChips()],
+        ),
+      ],
       const SizedBox(height: 16),
     ];
     Widget table() => loading
