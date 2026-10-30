@@ -34,6 +34,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   final _search = TextEditingController();
   DateTime _month = DateTime(DateTime.now().year, DateTime.now().month);
   String _status = '';
+  String _accountingFilter = '';
   bool _overdueOnly = false;
   bool _loading = true;
   int _loadVersion = 0;
@@ -90,6 +91,14 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         : matching.where((item) => item.status == _status).toList();
     _items = _overdueOnly
         ? statusItems.where(_isOverdueUnpaid).toList()
+        : _accountingFilter == 'unbilled'
+        ? statusItems.where((item) => item.billingDate == null).toList()
+        : _accountingFilter == 'unissued'
+        ? statusItems
+              .where(
+                (item) => item.billingDate != null && item.invoiceDate == null,
+              )
+              .toList()
         : statusItems;
     _summary = SalesLedgerSummary.fromEntries(_items);
   }
@@ -210,12 +219,14 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       summary: _summary,
       search: _search,
       selectedStatus: _status,
+      accountingFilter: _accountingFilter,
       overdueOnly: _overdueOnly,
       onSearch: () => setState(_applyFilters),
       onStatus: (value) {
         setState(() {
           _status = value;
           _overdueOnly = false;
+          _accountingFilter = '';
           _applyFilters();
         });
       },
@@ -223,6 +234,14 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         setState(() {
           _overdueOnly = value;
           if (value) _status = '';
+          if (value) _accountingFilter = '';
+          _applyFilters();
+        });
+      },
+      onAccountingFilter: (value) {
+        setState(() {
+          _accountingFilter = value;
+          _overdueOnly = false;
           _applyFilters();
         });
       },
@@ -617,10 +636,12 @@ class _LedgerContent extends StatelessWidget {
     required this.summary,
     required this.search,
     required this.selectedStatus,
+    required this.accountingFilter,
     required this.overdueOnly,
     required this.onSearch,
     required this.onStatus,
     required this.onOverdueChanged,
+    required this.onAccountingFilter,
     required this.onPrevious,
     required this.onNext,
     required this.onPickMonth,
@@ -639,10 +660,12 @@ class _LedgerContent extends StatelessWidget {
   final SalesLedgerSummary summary;
   final TextEditingController search;
   final String selectedStatus;
+  final String accountingFilter;
   final bool overdueOnly;
   final VoidCallback onSearch;
   final ValueChanged<String> onStatus;
   final ValueChanged<bool> onOverdueChanged;
+  final ValueChanged<String> onAccountingFilter;
   final VoidCallback onPrevious;
   final VoidCallback onNext;
   final VoidCallback onPickMonth;
@@ -683,6 +706,8 @@ class _LedgerContent extends StatelessWidget {
         _searchField(fullWidth: true),
         const SizedBox(height: 8),
         Wrap(spacing: 8, runSpacing: 8, children: _statusChips()),
+        const SizedBox(height: 8),
+        Wrap(spacing: 8, runSpacing: 8, children: _accountingChips()),
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
@@ -753,6 +778,21 @@ class _LedgerContent extends StatelessWidget {
     ),
   ];
 
+  List<Widget> _accountingChips() => [
+    ChoiceChip(
+      label: const Text('청구 미완료'),
+      selected: accountingFilter == 'unbilled',
+      onSelected: (_) =>
+          onAccountingFilter(accountingFilter == 'unbilled' ? '' : 'unbilled'),
+    ),
+    ChoiceChip(
+      label: const Text('계산서 미발급'),
+      selected: accountingFilter == 'unissued',
+      onSelected: (_) =>
+          onAccountingFilter(accountingFilter == 'unissued' ? '' : 'unissued'),
+    ),
+  ];
+
   List<Widget> _navigationControls() => [
     OutlinedButton.icon(
       onPressed: onExport,
@@ -786,7 +826,13 @@ class _LedgerContent extends StatelessWidget {
   List<Widget> _toolbarChildren() => [
     _searchField(fullWidth: false),
     const SizedBox(width: 8),
-    for (final chip in _statusChips()) ...[chip, const SizedBox(width: 8)],
+    Flexible(
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [..._statusChips(), ..._accountingChips()],
+      ),
+    ),
     const Spacer(),
     for (final control in _navigationControls()) ...[
       control,
