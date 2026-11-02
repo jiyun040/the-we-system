@@ -26,6 +26,7 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
   String? registeredUserId;
   bool registering = false;
   Timer? registrationRetry;
+  final Set<String> handledMessageIds = <String>{};
 
   bool get supported =>
       kIsWeb ||
@@ -86,6 +87,11 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
 
   void _showForegroundMessage(RemoteMessage message) {
     if (!kIsWeb) return;
+    final id = message.messageId;
+    if (id != null && !handledMessageIds.add(id)) return;
+    if (handledMessageIds.length > 100) {
+      handledMessageIds.remove(handledMessageIds.first);
+    }
     final notification = message.notification;
     if (notification == null) return;
     showBrowserNotification(
@@ -96,19 +102,24 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
 
   Future<bool> _sendToken(String token) async {
     try {
-      await ref
-          .read(dioProvider)
-          .post<void>(
-            '/notifications/devices',
-            data: {
-              'token': token,
-              'platform': kIsWeb
-                  ? 'web'
-                  : defaultTargetPlatform == TargetPlatform.iOS
-                  ? 'ios'
-                  : 'android',
-            },
-          );
+      final dio = ref.read(dioProvider);
+      try {
+        await dio.delete<void>(
+          '/notifications/devices',
+          data: {'token': token},
+        );
+      } on DioException {}
+      await dio.post<void>(
+        '/notifications/devices',
+        data: {
+          'token': token,
+          'platform': kIsWeb
+              ? 'web'
+              : defaultTargetPlatform == TargetPlatform.iOS
+              ? 'ios'
+              : 'android',
+        },
+      );
       return true;
     } on DioException {
       return false;
