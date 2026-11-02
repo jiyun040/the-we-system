@@ -22,6 +22,7 @@ import 'package:the_we_system/features/sales/data/sales_api_service.dart';
 import 'package:the_we_system/features/sales/domain/sales_ledger_entry.dart';
 import 'package:the_we_system/features/sales/domain/sales_ledger_order.dart';
 import 'package:the_we_system/features/sales/domain/sales_ledger_card_metrics.dart';
+import 'package:the_we_system/features/sales/domain/sales_statement_notes.dart';
 
 class SalesLedgerPage extends ConsumerStatefulWidget {
   const SalesLedgerPage({super.key});
@@ -51,6 +52,12 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   List<SalesLedgerArchive> _archives = const [];
 
   SalesApiService get _api => SalesApiService(ref.read(dioProvider));
+
+  bool get _hasActiveLedgerFilter =>
+      _search.text.trim().isNotEmpty ||
+      _status.isNotEmpty ||
+      _accountingFilter.isNotEmpty ||
+      _overdueOnly;
 
   @override
   void initState() {
@@ -179,10 +186,18 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     try {
       final statement = await _api.fetchStatement(entry.projectName, _month);
       if (!mounted) return;
-      final noteOptions = await showDialog<Set<String>>(
-        context: context,
-        builder: (_) => const _StatementNoteOptionsDialog(),
-      );
+      final shortSite = statement.items.any((item) {
+        final days = statementUsageDays(item);
+        return days != null && days < 30;
+      });
+      final noteOptions = shortSite
+          ? await showDialog<Set<String>>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => const _StatementNoteOptionsDialog(),
+            )
+          : const <String>{'negotiation'};
+      if (shortSite && noteOptions == null) return;
       final selected = SalesStatement(
         projectName: statement.projectName,
         items: statement.items,
@@ -275,23 +290,36 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       onEdit: _edit,
       onStatement: _showStatement,
     );
-    return Scaffold(
-      backgroundColor: TheWeColor.white,
-      appBar: MediaQuery.sizeOf(context).width < 520
-          ? const MobileNavigationAppBar()
-          : null,
-      drawer: MediaQuery.sizeOf(context).width < 520
-          ? const MobileNavigationDrawer()
-          : null,
-      body: MediaQuery.sizeOf(context).width < 520 || sideBar == null
-          ? page
-          : Row(
-              children: [
-                sideBar,
-                const SideBarDivider(),
-                Expanded(child: page),
-              ],
-            ),
+    return PopScope<void>(
+      canPop: !_hasActiveLedgerFilter,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || !_hasActiveLedgerFilter) return;
+        setState(() {
+          _search.clear();
+          _status = '';
+          _accountingFilter = '';
+          _overdueOnly = false;
+          _applyFilters();
+        });
+      },
+      child: Scaffold(
+        backgroundColor: TheWeColor.white,
+        appBar: MediaQuery.sizeOf(context).width < 520
+            ? const MobileNavigationAppBar()
+            : null,
+        drawer: MediaQuery.sizeOf(context).width < 520
+            ? const MobileNavigationDrawer()
+            : null,
+        body: MediaQuery.sizeOf(context).width < 520 || sideBar == null
+            ? page
+            : Row(
+                children: [
+                  sideBar,
+                  const SideBarDivider(),
+                  Expanded(child: page),
+                ],
+              ),
+      ),
     );
   }
 
@@ -424,37 +452,46 @@ class _StatementNoteOptionsDialogState
     extends State<_StatementNoteOptionsDialog> {
   final selected = <String>{'note', 'days', 'negotiation'};
   @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('내역서 비고 선택'),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final option in const [
-          ('note', '매출관리대장 비고'),
-          ('days', '사용 일수'),
-          ('negotiation', '네고 안내 문구'),
-        ])
-          CheckboxListTile(
-            value: selected.contains(option.$1),
-            title: Text(option.$2),
-            onChanged: (value) => setState(
-              () => value == true
-                  ? selected.add(option.$1)
-                  : selected.remove(option.$1),
+  Widget build(BuildContext context) => PopScope(
+    canPop: false,
+    child: TheWeModalSurface(
+      width: 520,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          TheWeModalHeader(
+            title: '내역서 비고 선택',
+            onClose: () => Navigator.pop(context),
+          ),
+          const SizedBox(height: 12),
+          for (final option in const [
+            ('shortRental', statementShortRentalNote),
+            ('shortMonth', statementShortMonthNote),
+            ('negotiation', '※ 현장 여건으로 네고된 사항입니다.'),
+          ])
+            CheckboxListTile(
+              value: selected.contains(option.$1),
+              title: Text(option.$2),
+              controlAffinity: ListTileControlAffinity.leading,
+              onChanged: (value) => setState(
+                () => value == true
+                    ? selected.add(option.$1)
+                    : selected.remove(option.$1),
+              ),
+            ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context, selected),
+              child: const Text('확인'),
             ),
           ),
-      ],
+        ],
+      ),
     ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context),
-        child: const Text('취소'),
-      ),
-      FilledButton(
-        onPressed: () => Navigator.pop(context, selected),
-        child: const Text('확인'),
-      ),
-    ],
   );
 }
 

@@ -2,6 +2,9 @@ import 'sales_ledger_entry.dart';
 
 const statementBankNote = '*입금 계좌번호 : 기업은행 447-069557-04-028 우리기술주식회사';
 const _negotiationNote = '※ 현장 여건으로 네고된 사항입니다.';
+const statementShortRentalNote = '※ 1개월 미만 현장 1일 임대로 16만원+출장교육비 1일 25만원 입니다.';
+const statementShortMonthNote =
+    '※ 당 현장은 1개월 미만 현장으로 1개월 임대료 초과되어 1개월분으로 계산하였습니다.';
 const _defaultStatementSupplyAmount = 3000000;
 
 int statementSupplyAmount(SalesLedgerEntry item) {
@@ -41,6 +44,8 @@ String statementItemNote(
 }) {
   final days = statementUsageDays(item);
   final parts = <String>[];
+  if (options.contains('shortRental')) parts.add(statementShortRentalNote);
+  if (options.contains('shortMonth')) parts.add(statementShortMonthNote);
   if (options.contains('note') && item.note.trim().isNotEmpty)
     parts.add(item.note.trim());
   if (options.contains('days') && days != null && days != 30)
