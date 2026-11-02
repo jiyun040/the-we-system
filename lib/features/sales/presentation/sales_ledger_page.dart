@@ -442,7 +442,8 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
 }
 
 class _StatementNoteOptionsDialog extends StatefulWidget {
-  const _StatementNoteOptionsDialog();
+  const _StatementNoteOptionsDialog({this.initial = const {}});
+  final Set<String> initial;
   @override
   State<_StatementNoteOptionsDialog> createState() =>
       _StatementNoteOptionsDialogState();
@@ -450,7 +451,7 @@ class _StatementNoteOptionsDialog extends StatefulWidget {
 
 class _StatementNoteOptionsDialogState
     extends State<_StatementNoteOptionsDialog> {
-  final selected = <String>{'note', 'days', 'negotiation'};
+  late final Set<String> selected = {...widget.initial};
   @override
   Widget build(BuildContext context) => PopScope(
     canPop: false,
@@ -1629,10 +1630,39 @@ Widget _editAmountRow(String label, String value, {bool bold = false}) =>
       ),
     );
 
-class _StatementDialog extends StatelessWidget {
+class _StatementDialog extends StatefulWidget {
   const _StatementDialog({required this.statement, required this.month});
   final SalesStatement statement;
   final DateTime month;
+  @override
+  State<_StatementDialog> createState() => _StatementDialogState();
+}
+
+class _StatementDialogState extends State<_StatementDialog> {
+  late SalesStatement statement;
+  @override
+  void initState() {
+    super.initState();
+    statement = widget.statement;
+  }
+
+  Future<void> _editNotes() async {
+    final selected = await showDialog<Set<String>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) =>
+          _StatementNoteOptionsDialog(initial: statement.noteOptions),
+    );
+    if (selected == null) return;
+    setState(
+      () => statement = SalesStatement(
+        projectName: statement.projectName,
+        items: statement.items,
+        noteOptions: selected,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => TheWeModalSurface(
     maxWidth: 1000,
@@ -1640,7 +1670,21 @@ class _StatementDialog extends StatelessWidget {
     padding: const EdgeInsets.all(18),
     child: Column(
       children: [
-        TheWeModalHeader(title: '내역서', onClose: () => Navigator.pop(context)),
+        Row(
+          children: [
+            Expanded(
+              child: TheWeModalHeader(
+                title: '내역서',
+                onClose: () => Navigator.pop(context),
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: _editNotes,
+              icon: const Icon(Icons.edit_note_outlined),
+              label: const Text('비고 수정'),
+            ),
+          ],
+        ),
         Expanded(
           child: SalesStatementPreview(
             statement: statement,
@@ -1656,7 +1700,8 @@ class _StatementDialog extends StatelessWidget {
               label: const Text('엑셀 다운로드'),
             ),
             FilledButton.icon(
-              onPressed: () => _downloadStatementPdf(context, statement, month),
+              onPressed: () =>
+                  _downloadStatementPdf(context, statement, widget.month),
               icon: const Icon(Icons.picture_as_pdf_outlined),
               label: const Text('PDF 다운로드'),
             ),
