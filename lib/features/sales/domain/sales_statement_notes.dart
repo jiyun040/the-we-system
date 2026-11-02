@@ -9,7 +9,9 @@ const _defaultStatementSupplyAmount = 3000000;
 
 int statementSupplyAmount(SalesLedgerEntry item) {
   final days = statementUsageDays(item);
-  if (days != null && days != 30) return days * 100000;
+  if (days != null && days < 30) {
+    return (days * 160000 + 500000).clamp(0, _defaultStatementSupplyAmount);
+  }
   return item.supplyAmount > 0
       ? item.supplyAmount
       : _defaultStatementSupplyAmount;
@@ -44,8 +46,6 @@ String statementItemNote(
 }) {
   final days = statementUsageDays(item);
   final parts = <String>[];
-  if (options.contains('shortRental')) parts.add(statementShortRentalNote);
-  if (options.contains('shortMonth')) parts.add(statementShortMonthNote);
   if (options.contains('note') && item.note.trim().isNotEmpty)
     parts.add(item.note.trim());
   if (options.contains('days') && days != null && days != 30)
@@ -59,6 +59,8 @@ List<String> statementFooterNotes(
 }) {
   final entries = items.toList();
   final notes = <String>[];
+  if (options.contains('shortRental')) notes.add(statementShortRentalNote);
+  if (options.contains('shortMonth')) notes.add(statementShortMonthNote);
   if (options.contains('negotiation') &&
       entries.any(
         (item) =>
