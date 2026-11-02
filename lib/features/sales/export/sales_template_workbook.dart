@@ -855,7 +855,7 @@ Uint8List buildStatementTemplate(
         amount,
         vat,
         amount + vat,
-        row.$2 ? '' : statementItemNote(item),
+        row.$2 ? '' : statementItemNote(item, options: statement.noteOptions),
       ];
       for (var c = 0; c < 8; c++) {
         book.set(
@@ -878,7 +878,10 @@ Uint8List buildStatementTemplate(
       book.set('${e.key}29', e.value, formula: 'SUM(${e.key}12:${e.key}28)');
     }
     final pageItems = rows.skip(page * 17).take(17).map((row) => row.$1);
-    final footerNotes = statementFooterNotes(pageItems);
+    final footerNotes = statementFooterNotes(
+      pageItems,
+      options: statement.noteOptions,
+    );
     if (footerNotes.isNotEmpty) {
       book.set('A31', footerNotes.join('\n'));
       for (final column in const ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) {

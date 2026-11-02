@@ -35,17 +35,30 @@ int? statementUsageDays(SalesLedgerEntry item) {
       1;
 }
 
-String statementItemNote(SalesLedgerEntry item) {
+String statementItemNote(
+  SalesLedgerEntry item, {
+  Set<String> options = const {},
+}) {
   final days = statementUsageDays(item);
-  return days != null && days != 30 ? '$days일' : '';
+  final parts = <String>[];
+  if (options.contains('note') && item.note.trim().isNotEmpty)
+    parts.add(item.note.trim());
+  if (options.contains('days') && days != null && days != 30)
+    parts.add('$days일');
+  return parts.join(' / ');
 }
 
-List<String> statementFooterNotes(Iterable<SalesLedgerEntry> items) {
+List<String> statementFooterNotes(
+  Iterable<SalesLedgerEntry> items, {
+  Set<String> options = const {},
+}) {
   final entries = items.toList();
   final notes = <String>[];
-  if (entries.any(
-    (item) => item.adjustmentAmount > 0 || item.adjustmentReason.contains('네고'),
-  )) {
+  if (options.contains('negotiation') &&
+      entries.any(
+        (item) =>
+            item.adjustmentAmount > 0 || item.adjustmentReason.contains('네고'),
+      )) {
     notes.add(_negotiationNote);
   }
   return notes;

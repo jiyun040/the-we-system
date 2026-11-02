@@ -445,7 +445,14 @@ class SideBar extends ConsumerWidget {
                           label: '매출관리대장',
                           selected: onSalesLedgerPage,
                           isCompact: isCompact,
-                          onTap: () => navigateNamed(AppRouteName.salesLedger),
+                          onTap: () {
+                            if (onSalesLedgerPage) {
+                              onNavigate?.call();
+                              return;
+                            }
+                            onNavigate?.call();
+                            context.pushNamed(AppRouteName.salesLedger);
+                          },
                         ),
                     ],
                   ),

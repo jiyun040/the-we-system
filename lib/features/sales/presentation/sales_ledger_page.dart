@@ -179,9 +179,18 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     try {
       final statement = await _api.fetchStatement(entry.projectName, _month);
       if (!mounted) return;
+      final noteOptions = await showDialog<Set<String>>(
+        context: context,
+        builder: (_) => const _StatementNoteOptionsDialog(),
+      );
+      final selected = SalesStatement(
+        projectName: statement.projectName,
+        items: statement.items,
+        noteOptions: noteOptions ?? const {},
+      );
       await showDialog<void>(
         context: context,
-        builder: (_) => _StatementDialog(statement: statement, month: _month),
+        builder: (_) => _StatementDialog(statement: selected, month: _month),
       );
     } catch (_) {
       if (mounted) {
@@ -402,6 +411,51 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       mimeType: MimeType.microsoftExcel,
     );
   }
+}
+
+class _StatementNoteOptionsDialog extends StatefulWidget {
+  const _StatementNoteOptionsDialog();
+  @override
+  State<_StatementNoteOptionsDialog> createState() =>
+      _StatementNoteOptionsDialogState();
+}
+
+class _StatementNoteOptionsDialogState
+    extends State<_StatementNoteOptionsDialog> {
+  final selected = <String>{'note', 'days', 'negotiation'};
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('내역서 비고 선택'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final option in const [
+          ('note', '매출관리대장 비고'),
+          ('days', '사용 일수'),
+          ('negotiation', '네고 안내 문구'),
+        ])
+          CheckboxListTile(
+            value: selected.contains(option.$1),
+            title: Text(option.$2),
+            onChanged: (value) => setState(
+              () => value == true
+                  ? selected.add(option.$1)
+                  : selected.remove(option.$1),
+            ),
+          ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('취소'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, selected),
+        child: const Text('확인'),
+      ),
+    ],
+  );
 }
 
 class _SalesLedgerArchivesPage extends StatefulWidget {
@@ -782,7 +836,9 @@ class _LedgerContent extends StatelessWidget {
       ChoiceChip(
         label: Text(status.isEmpty ? '전체' : status),
         selected:
-            !overdueOnly && accountingFilter.isEmpty && selectedStatus == status,
+            !overdueOnly &&
+            accountingFilter.isEmpty &&
+            selectedStatus == status,
         onSelected: (_) => onStatus(status),
       ),
     ChoiceChip(

@@ -228,7 +228,12 @@ class SalesLedgerSummary {
 }
 
 class SalesStatement {
-  const SalesStatement({required this.projectName, required this.items});
+  const SalesStatement({
+    required this.projectName,
+    required this.items,
+    this.noteOptions = const {},
+  });
   final String projectName;
   final List<SalesLedgerEntry> items;
+  final Set<String> noteOptions;
 }

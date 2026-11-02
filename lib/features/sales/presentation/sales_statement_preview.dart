@@ -109,7 +109,7 @@ List<StatementText> statementPageText(
       money.format(amount),
       money.format(vat),
       money.format(amount + vat),
-      row.$2 ? '' : statementItemNote(item),
+      row.$2 ? '' : statementItemNote(item, options: statement.noteOptions),
     ];
     for (var c = 0; c < 8; c++) {
       output.add(
@@ -147,6 +147,7 @@ List<StatementText> statementPageText(
   }
   final footerNotes = statementFooterNotes(
     rows.skip(page * 17).take(17).map((row) => row.$1),
+    options: statement.noteOptions,
   );
   if (footerNotes.isNotEmpty) {
     for (var i = 0; i < footerNotes.length; i++) {
@@ -254,6 +255,7 @@ class SalesStatementPreview extends StatelessWidget {
           statementRows(
             statement.items,
           ).skip(page * 17).take(17).map((row) => row.$1),
+          options: statement.noteOptions,
         ).isNotEmpty)
           const Positioned(
             left: 36.5,
@@ -344,6 +346,7 @@ Future<Uint8List> statementTemplatePdf(SalesStatement statement) async {
               statementRows(
                 statement.items,
               ).skip(page * 17).take(17).map((row) => row.$1),
+              options: statement.noteOptions,
             ).isNotEmpty)
               pw.Positioned(
                 left: 36.5,
