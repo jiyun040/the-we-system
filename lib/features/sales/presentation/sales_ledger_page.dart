@@ -80,12 +80,12 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     final matching = query.isEmpty
         ? _allItems
         : _allItems.where((item) =>
-          [
-            item.projectName,
-            item.contractor,
-            item.partner,
-            item.note,
-          ].any((value) => _normalizeSearchText(value).contains(query)),
+        [
+          item.projectName,
+          item.contractor,
+          item.partner,
+          item.note,
+        ].any((value) => _normalizeSearchText(value).contains(query)),
     )
         .toList();
     final statusItems = _status.isEmpty
@@ -1173,9 +1173,30 @@ class _LedgerTable extends StatelessWidget {
             [
               for (var col = 0; col < 15; col++)
                 if (col == 7 || col == 8 || col == 9)
-                  () async {
-                    final dates = await showDialog<_LedgerDates>(context: context, builder: (_) => _LedgerDatesDialog(billing: item.billingDate, invoice: item.invoiceDate, deposit: item.depositDate, onlyKind: col == 7 ? 'billing' : col == 8 ? 'invoice' : 'deposit', month: month));
-                    if (dates != null) onEdit(item.copyWith(billingDate: dates.billing, clearBillingDate: dates.billing == null, invoiceDate: dates.invoice, clearInvoiceDate: dates.invoice == null, depositDate: dates.deposit, clearDepositDate: dates.deposit == null));
+                      () async {
+                    final kind = col == 7 ? 'billing' : col == 8 ? 'invoice' : 'deposit';
+                    final current = col == 7 ? item.billingDate : col == 8 ? item.invoiceDate : item.depositDate;
+
+                    final value = await showTheWeDatePicker(
+                      context,
+                      initialDate: current ?? month,
+                      clearOnReselect: true,
+                      hasSelection: current != null,
+                      firstDate: DateTime(DateTime.now().year - 5),
+                      lastDate: DateTime.now(),
+                      title: '${kind == 'billing' ? '청구' : kind == 'invoice' ? '계산서 발행' : '입금'} 날짜 선택',
+                    );
+                    if (value == null) return;
+                    final v = value.year == 1 ? null : value;
+
+                    onEdit(item.copyWith(
+                      billingDate: kind == 'billing' ? v : item.billingDate,
+                      clearBillingDate: kind == 'billing' && v == null,
+                      invoiceDate: kind == 'invoice' ? v : item.invoiceDate,
+                      clearInvoiceDate: kind == 'invoice' && v == null,
+                      depositDate: kind == 'deposit' ? v : item.depositDate,
+                      clearDepositDate: kind == 'deposit' && v == null,
+                    ));
                   }
                 else null,
             ],
@@ -1539,43 +1560,42 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
               ),
             ),
             const SizedBox(height: 25),
-            Wrap(
-              spacing: 16,
-              runSpacing: 14,
-              children: [
-                field(
-                  '입금액 (자동계산)',
-                  InputDecorator(
-                    decoration: const InputDecoration(isDense: true),
-                    child: Text('합계 ${_money(supply + tax)}'),
-                  ),
+            SizedBox(
+              width: double.infinity,
+              child: field(
+                '입금액 (자동계산)',
+                InputDecorator(
+                  decoration: const InputDecoration(isDense: true),
+                  child: Text('합계 ${_money(supply + tax)}'),
                 ),
-                SizedBox(
+                width: double.infinity,
+              ),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: field(
+                '계산서 발행처',
+                TheWeDropdown<String>(
+                  value: invoiceIssuer.text,
                   width: double.infinity,
-                  child: field(
-                    '계산서 발행처',
-                    TheWeDropdown<String>(
-                      value: invoiceIssuer.text,
-                      width: double.infinity,
-                      items: [
-                        '시공사',
-                        '협력사',
-                        if (!['', '시공사', '협력사'].contains(invoiceIssuer.text))
-                          invoiceIssuer.text,
-                      ],
-                      labelBuilder: (value) =>
-                      switch (value) {
-                        '시공사' => '시공사 · ${item.contractor}',
-                        '협력사' => '협력사 · ${item.partner}',
-                        _ => value,
-                      },
-                      onChanged: (value) =>
-                          setState(() => invoiceIssuer.text = value ?? '협력사'),
-                    ),
-                    width: double.infinity,
-                  ),
+                  items: [
+                    '시공사',
+                    '협력사',
+                    if (!['', '시공사', '협력사'].contains(invoiceIssuer.text))
+                      invoiceIssuer.text,
+                  ],
+                  labelBuilder: (value) =>
+                  switch (value) {
+                    '시공사' => '시공사 · ${item.contractor}',
+                    '협력사' => '협력사 · ${item.partner}',
+                    _ => value,
+                  },
+                  onChanged: (value) =>
+                      setState(() => invoiceIssuer.text = value ?? '협력사'),
                 ),
-              ],
+                width: double.infinity,
+              ),
             ),
             const SizedBox(height: 14),
             SizedBox(
@@ -1586,6 +1606,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                   controller: note,
                   decoration: const InputDecoration(isDense: true),
                 ),
+                width: double.infinity,
               ),
             ),
             const SizedBox(height: 24),
@@ -1627,135 +1648,6 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
   }
 }
 
-class _LedgerDates {
-  const _LedgerDates({this.billing, this.invoice, this.deposit});
-
-  final DateTime? billing;
-  final DateTime? invoice;
-  final DateTime? deposit;
-}
-
-class _LedgerDatesDialog extends StatefulWidget {
-  const _LedgerDatesDialog(
-      {required this.billing, required this.invoice, required this.deposit, this.onlyKind, required this.month});
-
-  final DateTime? billing, invoice, deposit;
-  final String? onlyKind;
-  final DateTime month;
-
-  @override State<_LedgerDatesDialog> createState() =>
-      _LedgerDatesDialogState();
-}
-
-class _LedgerDatesDialogState extends State<_LedgerDatesDialog> {
-  late DateTime? billing = widget.billing,
-      invoice = widget.invoice,
-      deposit = widget.deposit;
-
-  Future<void> pick(String kind) async {
-    final current = kind == 'billing' ? billing : kind == 'invoice'
-        ? invoice
-        : deposit;
-    final value = await showTheWeDatePicker(
-        context, initialDate: current ?? widget.month,
-        clearOnReselect: true,
-        hasSelection: current != null,
-        firstDate: DateTime(DateTime
-            .now()
-            .year - 5),
-        lastDate: DateTime.now(),
-        title: '${kind == 'billing' ? '청구' : kind == 'invoice'
-            ? '계산서 발행'
-            : '입금'} 날짜 선택');
-    if (value == null || !mounted) return;
-    setState(() {
-      final v = value.year == 1 ? null : value;
-      if (kind == 'billing') billing = v;
-      if (kind == 'invoice') invoice = v;
-      if (kind == 'deposit') deposit = v;
-    });
-  }
-
-  @override Widget build(BuildContext context) {
-    Widget field(String label, DateTime? value, String kind) =>
-        OutlinedButton.icon(onPressed: () => pick(kind),
-            icon: const Icon(Icons.calendar_month_outlined, size: 18),
-            label: Text(value == null ? 'YYYY.MM.DD' : _date(value)),
-            style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft,
-                minimumSize: const Size.fromHeight(42),
-                foregroundColor: TheWeColor.black900,
-                side: const BorderSide(color: TheWeColor.blue100)));
-    return TheWeModalSurface(width: 440,
-        maxWidth: 440,
-        child: Column(mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TheWeModalHeader(title: '${widget.onlyKind == 'billing' ? '청구일' : widget.onlyKind == 'invoice' ? '계산서 발행일' : '입금일'} 수정',
-                  onClose: () => Navigator.pop(context)),
-              const SizedBox(height: 18),
-              if (widget.onlyKind == 'billing' || widget.onlyKind == null) ...[
-                Text('청구일', style: TheWeTextStyle.hintText), field('청구일', billing, 'billing'),
-              ],
-              if (widget.onlyKind == 'invoice' || widget.onlyKind == null) ...[
-                Text('계산서 발행일', style: TheWeTextStyle.hintText), field('계산서 발행일', invoice, 'invoice'),
-              ],
-              if (widget.onlyKind == 'deposit' || widget.onlyKind == null) ...[
-                Text('입금일', style: TheWeTextStyle.hintText), field('입금일', deposit, 'deposit'),
-              ],
-              const SizedBox(height: 20),
-              TheWeModalActions(primaryLabel: '저장',
-                  secondaryLabel: '취소',
-                  onSecondaryPressed: () => Navigator.pop(context),
-                  onPrimaryPressed: () =>
-                      Navigator.pop(context, _LedgerDates(
-                          billing: billing,
-                          invoice: invoice,
-                          deposit: deposit)))
-            ]));
-  }
-}
-
-String _mergeNote(String note, String reason) {
-  final n = note.trim();
-  final r = reason.trim();
-  if (r.isEmpty) return n;
-  if (n.isEmpty || n.contains(r)) return n.isEmpty ? r : n;
-  return '$n / $r';
-}
-
-bool _isOverdueUnpaid(SalesLedgerEntry item) {
-  final invoice = item.invoiceDate;
-  if (invoice == null || item.depositDate != null) return false;
-  final today = DateTime.now();
-  return today.difference(invoice).inDays >= 60;
-}
-
-String _issuerType(SalesLedgerEntry item) => item.invoiceIssuerType;
-
-Color _issuerColor(SalesLedgerEntry item) => const Color(0xFFE8F5E9);
-
-Widget _editAmountRow(String label, String value, {bool bold = false}) =>
-    Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          Text(
-            label,
-            style: TheWeTextStyle.caption.copyWith(
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: TheWeTextStyle.caption.copyWith(
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-            ),
-          ),
-        ],
-      ),
-    );
-
 class _StatementDialog extends StatefulWidget {
   const _StatementDialog({required this.statement, required this.month});
 
@@ -1784,10 +1676,10 @@ class _StatementDialogState extends State<_StatementDialog> {
     );
     if (selected == null) return;
     setState(() => statement = SalesStatement(
-        projectName: statement.projectName,
-        items: statement.items,
-        noteOptions: selected,
-      ),
+      projectName: statement.projectName,
+      items: statement.items,
+      noteOptions: selected,
+    ),
     );
   }
 
