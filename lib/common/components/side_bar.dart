@@ -88,11 +88,19 @@ class SideBar extends ConsumerWidget {
       Map<String, String> queryParameters = const {},
     }) {
       onNavigate?.call();
-      context.goNamed(
-        name,
-        pathParameters: pathParameters,
-        queryParameters: queryParameters,
-      );
+      if (onSalesLedgerPage) {
+        context.pushNamed(
+          name,
+          pathParameters: pathParameters,
+          queryParameters: queryParameters,
+        );
+      } else {
+        context.goNamed(
+          name,
+          pathParameters: pathParameters,
+          queryParameters: queryParameters,
+        );
+      }
     }
 
     void openAttendance(String section, {bool management = false}) {

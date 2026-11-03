@@ -53,11 +53,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
 
   SalesApiService get _api => SalesApiService(ref.read(dioProvider));
 
-  bool get _hasActiveLedgerFilter =>
-      _search.text.trim().isNotEmpty ||
-      _status.isNotEmpty ||
-      _accountingFilter.isNotEmpty ||
-      _overdueOnly;
+  bool get _hasActiveLedgerFilter => _search.text.trim().isNotEmpty || _status.isNotEmpty || _accountingFilter.isNotEmpty || _overdueOnly;
 
   @override
   void initState() {
@@ -83,16 +79,15 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     final query = _normalizeSearchText(_search.text);
     final matching = query.isEmpty
         ? _allItems
-        : _allItems
-              .where(
-                (item) => [
-                  item.projectName,
-                  item.contractor,
-                  item.partner,
-                  item.note,
-                ].any((value) => _normalizeSearchText(value).contains(query)),
-              )
-              .toList();
+        : _allItems.where((item) =>
+          [
+            item.projectName,
+            item.contractor,
+            item.partner,
+            item.note,
+          ].any((value) => _normalizeSearchText(value).contains(query)),
+    )
+        .toList();
     final statusItems = _status.isEmpty
         ? matching
         : matching.where((item) => item.status == _status).toList();
@@ -102,10 +97,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         ? statusItems.where((item) => item.billingDate == null).toList()
         : _accountingFilter == 'unissued'
         ? statusItems
-              .where(
-                (item) => item.billingDate != null && item.invoiceDate == null,
-              )
-              .toList()
+        .where((item) => item.billingDate != null && item.invoiceDate == null,).toList()
         : statusItems;
     _summary = SalesLedgerSummary.fromEntries(_items);
   }
@@ -160,11 +152,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     try {
       final saved = await _api.updateEntry(changed);
       if (!mounted) return;
-      setState(
-        () => _items = _items
-            .map((item) => item.id == saved.id ? saved : item)
-            .toList(),
-      );
+      setState(() => _items = _items.map((item) => item.id == saved.id ? saved : item).toList(),);
       await _load();
     } catch (error) {
       if (mounted) {
@@ -190,12 +178,11 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         final days = statementUsageDays(item);
         return days != null && days < 30;
       });
-      final noteOptions = shortSite
-          ? await showDialog<Set<String>>(
-              context: context,
-              barrierDismissible: false,
-              builder: (_) => const _StatementNoteOptionsDialog(),
-            )
+      final noteOptions = shortSite ? await showDialog<Set<String>>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const _StatementNoteOptionsDialog(),
+      )
           : const <String>{'negotiation'};
       if (shortSite && noteOptions == null) return;
       final selected = SalesStatement(
@@ -229,12 +216,12 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     final sideBar = dashboard == null
         ? null
         : SideBar(
-            frequentForms: dashboard.dashboard.frequentForms,
-            pendingDocument: dashboard.dashboard.pendingCount,
-            receiveDocument: dashboard.dashboard.receivedCount,
-            openPendingDocument: dashboard.dashboard.referenceCount,
-            scheduledDocument: dashboard.dashboard.scheduledCount,
-          );
+      frequentForms: dashboard.dashboard.frequentForms,
+      pendingDocument: dashboard.dashboard.pendingCount,
+      receiveDocument: dashboard.dashboard.receivedCount,
+      openPendingDocument: dashboard.dashboard.referenceCount,
+      scheduledDocument: dashboard.dashboard.scheduledCount,
+    );
     final page = _LedgerContent(
       month: _month,
       loading: _loading,
@@ -284,9 +271,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
           mimeType: MimeType.microsoftExcel,
         );
       },
-      onOpenArchives: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => _SalesLedgerArchivesPage(api: _api)),
-      ),
+      onOpenArchives: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _SalesLedgerArchivesPage(api: _api)),),
       onEdit: _edit,
       onStatement: _showStatement,
     );
@@ -304,21 +289,16 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       },
       child: Scaffold(
         backgroundColor: TheWeColor.white,
-        appBar: MediaQuery.sizeOf(context).width < 520
-            ? const MobileNavigationAppBar()
-            : null,
-        drawer: MediaQuery.sizeOf(context).width < 520
-            ? const MobileNavigationDrawer()
-            : null,
-        body: MediaQuery.sizeOf(context).width < 520 || sideBar == null
-            ? page
+        appBar: MediaQuery.sizeOf(context).width < 520 ? const MobileNavigationAppBar() : null,
+        drawer: MediaQuery.sizeOf(context).width < 520 ? const MobileNavigationDrawer() : null,
+        body: MediaQuery.sizeOf(context).width < 520 || sideBar == null? page
             : Row(
-                children: [
-                  sideBar,
-                  const SideBarDivider(),
-                  Expanded(child: page),
-                ],
-              ),
+          children: [
+            sideBar,
+            const SideBarDivider(),
+            Expanded(child: page),
+          ],
+        ),
       ),
     );
   }
@@ -327,66 +307,67 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     final currentSelectedMonth = _month.month;
     final month = await showDialog<int>(
       context: context,
-      builder: (dialogContext) => TheWeModalSurface(
-        width: 360,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TheWeModalHeader(
-              title: '조회할 월 선택',
-              onClose: () => Navigator.pop(dialogContext),
-            ),
-            const SizedBox(height: 20),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 10,
-                crossAxisSpacing: 10,
-                childAspectRatio: 1.4,
-              ),
-              itemCount: 12,
-              itemBuilder: (context, index) {
-                final m = index + 1;
-                final isSelected = m == currentSelectedMonth;
-                return InkWell(
-                  onTap: () => Navigator.pop(dialogContext, m),
-                  borderRadius: BorderRadius.circular(10),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 150),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? TheWeColor.blue300
-                          : TheWeColor.blue100.withValues(alpha: 0.25),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: isSelected
-                            ? TheWeColor.blue300
-                            : Colors.transparent,
-                      ),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '$m월',
-                      style: TheWeTextStyle.subtitle.copyWith(
-                        color: isSelected
-                            ? TheWeColor.white
-                            : TheWeColor.black900,
-                        fontWeight: isSelected
-                            ? FontWeight.w700
-                            : FontWeight.w500,
-                      ),
-                    ),
+      builder: (dialogContext) =>
+          TheWeModalSurface(
+            width: 360,
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TheWeModalHeader(
+                  title: '조회할 월 선택',
+                  onClose: () => Navigator.pop(dialogContext),
+                ),
+                const SizedBox(height: 20),
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 10,
+                    crossAxisSpacing: 10,
+                    childAspectRatio: 1.4,
                   ),
-                );
-              },
+                  itemCount: 12,
+                  itemBuilder: (context, index) {
+                    final m = index + 1;
+                    final isSelected = m == currentSelectedMonth;
+                    return InkWell(
+                      onTap: () => Navigator.pop(dialogContext, m),
+                      borderRadius: BorderRadius.circular(10),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? TheWeColor.blue300
+                              : TheWeColor.blue100.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: isSelected
+                                ? TheWeColor.blue300
+                                : Colors.transparent,
+                          ),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text(
+                          '$m월',
+                          style: TheWeTextStyle.subtitle.copyWith(
+                            color: isSelected
+                                ? TheWeColor.white
+                                : TheWeColor.black900,
+                            fontWeight: isSelected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
     if (month == null) return;
     setState(() => _month = DateTime(DateTime.now().year, month));
@@ -443,7 +424,9 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
 
 class _StatementNoteOptionsDialog extends StatefulWidget {
   const _StatementNoteOptionsDialog({this.initial = const {}});
+
   final Set<String> initial;
+
   @override
   State<_StatementNoteOptionsDialog> createState() =>
       _StatementNoteOptionsDialogState();
@@ -452,53 +435,59 @@ class _StatementNoteOptionsDialog extends StatefulWidget {
 class _StatementNoteOptionsDialogState
     extends State<_StatementNoteOptionsDialog> {
   late final Set<String> selected = {...widget.initial};
+
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: false,
-    child: TheWeModalSurface(
-      width: 520,
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TheWeModalHeader(
-            title: '내역서 비고 선택',
-            onClose: () => Navigator.pop(context),
-          ),
-          const SizedBox(height: 12),
-          for (final option in const [
-            ('shortRental', statementShortRentalNote),
-            ('shortMonth', statementShortMonthNote),
-            ('negotiation', '※ 현장 여건으로 네고된 사항입니다.'),
-          ])
-            CheckboxListTile(
-              value: selected.contains(option.$1),
-              title: Text(option.$2),
-              controlAffinity: ListTileControlAffinity.leading,
-              onChanged: (value) => setState(
-                () => value == true
-                    ? selected.add(option.$1)
-                    : selected.remove(option.$1),
+  Widget build(BuildContext context) =>
+      PopScope(
+        canPop: false,
+        child: TheWeModalSurface(
+          width: 520,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              TheWeModalHeader(
+                title: '내역서 비고 선택',
+                onClose: () => Navigator.pop(context),
               ),
-            ),
-          const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerRight,
-            child: FilledButton(
-              onPressed: () => Navigator.pop(context, selected),
-              child: const Text('확인'),
-            ),
+              const SizedBox(height: 12),
+              for (final option in const [
+                ('shortRental', statementShortRentalNote),
+                ('shortMonth', statementShortMonthNote),
+                ('negotiation', '※ 현장 여건으로 네고된 사항입니다.'),
+              ])
+                CheckboxListTile(
+                  value: selected.contains(option.$1),
+                  title: Text(option.$2),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: (value) =>
+                      setState(
+                            () =>
+                        value == true
+                            ? selected.add(option.$1)
+                            : selected.remove(option.$1),
+                      ),
+                ),
+              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, selected),
+                  child: const Text('확인'),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-    ),
-  );
+        ),
+      );
 }
 
 class _SalesLedgerArchivesPage extends StatefulWidget {
   const _SalesLedgerArchivesPage({required this.api});
+
   final SalesApiService api;
+
   @override
   State<_SalesLedgerArchivesPage> createState() =>
       _SalesLedgerArchivesPageState();
@@ -506,6 +495,7 @@ class _SalesLedgerArchivesPage extends StatefulWidget {
 
 class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
   List<SalesLedgerArchive> _items = const [];
+
   @override
   void initState() {
     super.initState();
@@ -523,29 +513,33 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
     );
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => TheWeModalSurface(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TheWeModalHeader(
-              title: '파일 이름 수정',
-              onClose: () => Navigator.pop(context),
+      builder: (context) =>
+          TheWeModalSurface(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TheWeModalHeader(
+                  title: '파일 이름 수정',
+                  onClose: () => Navigator.pop(context),
+                ),
+                const SizedBox(height: 18),
+                TextField(controller: controller, autofocus: true),
+                const SizedBox(height: 18),
+                TheWeModalActions(
+                  primaryLabel: '저장',
+                  secondaryLabel: '취소',
+                  onPrimaryPressed: () =>
+                      Navigator.pop(context, controller.text),
+                  onSecondaryPressed: () => Navigator.pop(context),
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
-            TextField(controller: controller, autofocus: true),
-            const SizedBox(height: 18),
-            TheWeModalActions(
-              primaryLabel: '저장',
-              secondaryLabel: '취소',
-              onPrimaryPressed: () => Navigator.pop(context, controller.text),
-              onSecondaryPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
     controller.dispose();
-    if (name == null || name.trim().isEmpty) return;
+    if (name == null || name
+        .trim()
+        .isEmpty) return;
     await widget.api.renameArchive(item.year, name.trim());
     await _load();
   }
@@ -563,14 +557,15 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
   Future<void> _delete(SalesLedgerArchive item) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => TheWeConfirmDialog(
-        title: '보관 파일을 삭제할까요?',
-        message: '${item.year}년 매출관리대장이 삭제됩니다.',
-        primaryLabel: '삭제',
-        primaryColor: TheWeColor.danger,
-        onPrimaryPressed: () => Navigator.pop(context, true),
-        onSecondaryPressed: () => Navigator.pop(context, false),
-      ),
+      builder: (context) =>
+          TheWeConfirmDialog(
+            title: '보관 파일을 삭제할까요?',
+            message: '${item.year}년 매출관리대장이 삭제됩니다.',
+            primaryLabel: '삭제',
+            primaryColor: TheWeColor.danger,
+            onPrimaryPressed: () => Navigator.pop(context, true),
+            onSecondaryPressed: () => Navigator.pop(context, false),
+          ),
     );
     if (confirmed != true) return;
     await widget.api.deleteArchive(item.year);
@@ -604,10 +599,10 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
                     child: Text(
                       '보관된 연간 매출관리대장',
                       style:
-                          (isPhone
-                                  ? TheWeTextStyle.title
-                                  : TheWeTextStyle.pageTitle)
-                              .copyWith(fontWeight: FontWeight.w800),
+                      (isPhone
+                          ? TheWeTextStyle.title
+                          : TheWeTextStyle.pageTitle)
+                          .copyWith(fontWeight: FontWeight.w800),
                     ),
                   ),
                 ],
@@ -626,83 +621,83 @@ class _SalesLedgerArchivesPageState extends State<_SalesLedgerArchivesPage> {
               Expanded(
                 child: _items.isEmpty
                     ? Center(
-                        child: Text(
-                          '보관된 연간 매출관리대장이 없습니다.',
-                          style: TheWeTextStyle.body.copyWith(
-                            color: TheWeColor.black500,
+                  child: Text(
+                    '보관된 연간 매출관리대장이 없습니다.',
+                    style: TheWeTextStyle.body.copyWith(
+                      color: TheWeColor.black500,
+                    ),
+                  ),
+                )
+                    : ListView.builder(
+                  itemCount: _items.length,
+                  itemBuilder: (context, index) {
+                    final item = _items[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Card(
+                        color: TheWeColor.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: TheWeColor.black300.withValues(
+                              alpha: 0.35,
+                            ),
                           ),
                         ),
-                      )
-                    : ListView.builder(
-                        itemCount: _items.length,
-                        itemBuilder: (context, index) {
-                          final item = _items[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 10),
-                            child: Card(
-                              color: TheWeColor.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(
-                                  color: TheWeColor.black300.withValues(
-                                    alpha: 0.35,
-                                  ),
-                                ),
-                              ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 18,
-                                  vertical: 6,
-                                ),
-                                leading: const Icon(
-                                  Icons.description_outlined,
-                                  color: TheWeColor.green,
-                                ),
-                                title: Text(
-                                  '${item.year}년 매출관리대장',
-                                  style: TheWeTextStyle.body.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      item.name,
-                                      style: TheWeTextStyle.caption,
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '보관일 ${_formatArchiveDate(item.updatedAt)}',
-                                      style: TheWeTextStyle.caption.copyWith(
-                                        fontSize: 11,
-                                        color: TheWeColor.black500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                onTap: () => _download(item),
-                                trailing: Wrap(
-                                  children: [
-                                    IconButton(
-                                      tooltip: '파일 이름 수정',
-                                      icon: const Icon(Icons.edit_outlined),
-                                      onPressed: () => _rename(item),
-                                    ),
-                                    IconButton(
-                                      tooltip: '삭제',
-                                      color: TheWeColor.danger,
-                                      icon: const Icon(Icons.delete_outline),
-                                      onPressed: () => _delete(item),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 6,
+                          ),
+                          leading: const Icon(
+                            Icons.description_outlined,
+                            color: TheWeColor.green,
+                          ),
+                          title: Text(
+                            '${item.year}년 매출관리대장',
+                            style: TheWeTextStyle.body.copyWith(
+                              fontWeight: FontWeight.w700,
                             ),
-                          );
-                        },
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.name,
+                                style: TheWeTextStyle.caption,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                '보관일 ${_formatArchiveDate(item.updatedAt)}',
+                                style: TheWeTextStyle.caption.copyWith(
+                                  fontSize: 11,
+                                  color: TheWeColor.black500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          onTap: () => _download(item),
+                          trailing: Wrap(
+                            children: [
+                              IconButton(
+                                tooltip: '파일 이름 수정',
+                                icon: const Icon(Icons.edit_outlined),
+                                onPressed: () => _rename(item),
+                              ),
+                              IconButton(
+                                tooltip: '삭제',
+                                color: TheWeColor.danger,
+                                icon: const Icon(Icons.delete_outline),
+                                onPressed: () => _delete(item),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -745,6 +740,7 @@ class _LedgerContent extends StatelessWidget {
     required this.onEdit,
     required this.onStatement,
   });
+
   final DateTime month;
   final bool loading;
   final String? error;
@@ -807,146 +803,157 @@ class _LedgerContent extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: _navigationControls(),
         ),
-      ] else ...[
-        Row(
-          children: [
-            _searchField(fullWidth: false),
-            const Spacer(),
-            ..._navigationControls(),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [..._statusChips(), ..._accountingChips()],
-        ),
-      ],
+      ] else
+        ...[
+          Row(
+            children: [
+              _searchField(fullWidth: false),
+              const Spacer(),
+              ..._navigationControls(),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [..._statusChips(), ..._accountingChips()],
+          ),
+        ],
       const SizedBox(height: 16),
     ];
-    Widget table() => loading
-        ? const Center(child: CircularProgressIndicator())
-        : error != null
-        ? Center(child: Text(error!))
-        : _LedgerTable(items: items, onEdit: onEdit, onStatement: onStatement);
+    Widget table() =>
+        loading
+            ? const Center(child: CircularProgressIndicator())
+            : error != null
+            ? Center(child: Text(error!))
+            : _LedgerTable(
+            items: items, onEdit: onEdit, onStatement: onStatement);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.all(compact ? 18 : 28),
         child: compact
             ? LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      ...content,
-                      SizedBox(height: constraints.maxHeight, child: table()),
-                    ],
-                  ),
+          builder: (context, constraints) =>
+              SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ...content,
+                    SizedBox(height: constraints.maxHeight, child: table()),
+                  ],
                 ),
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...content,
-                  Expanded(child: table()),
-                ],
               ),
+        )
+            : Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ...content,
+            Expanded(child: table()),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _searchField({required bool fullWidth}) => SizedBox(
-    width: fullWidth ? double.infinity : 300,
-    child: TextField(
-      controller: search,
-      onSubmitted: (_) => onSearch(),
-      decoration: const InputDecoration(
-        isDense: true,
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-        hintText: '공사명, 시공사, 협력사, 비고 검색',
-        prefixIcon: Icon(Icons.search),
-      ),
-    ),
-  );
+  Widget _searchField({required bool fullWidth}) =>
+      SizedBox(
+        width: fullWidth ? double.infinity : 300,
+        child: TextField(
+          controller: search,
+          onSubmitted: (_) => onSearch(),
+          decoration: const InputDecoration(
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            hintText: '공사명, 시공사, 협력사, 비고 검색',
+            prefixIcon: Icon(Icons.search),
+          ),
+        ),
+      );
 
-  List<Widget> _statusChips() => [
-    for (final status in const ['', '신규', '진행', '종료'])
-      ChoiceChip(
-        label: Text(status.isEmpty ? '전체' : status),
-        selected:
+  List<Widget> _statusChips() =>
+      [
+        for (final status in const ['', '신규', '진행', '종료'])
+          ChoiceChip(
+            label: Text(status.isEmpty ? '전체' : status),
+            selected:
             !overdueOnly &&
-            accountingFilter.isEmpty &&
-            selectedStatus == status,
-        onSelected: (_) => onStatus(status),
-      ),
-    ChoiceChip(
-      label: const Text('60일 초과 미입금 현장'),
-      selected: overdueOnly,
-      onSelected: onOverdueChanged,
-    ),
-  ];
+                accountingFilter.isEmpty &&
+                selectedStatus == status,
+            onSelected: (_) => onStatus(status),
+          ),
+        ChoiceChip(
+          label: const Text('60일 초과 미입금 현장'),
+          selected: overdueOnly,
+          onSelected: onOverdueChanged,
+        ),
+      ];
 
-  List<Widget> _accountingChips() => [
-    ChoiceChip(
-      label: const Text('청구 미완료'),
-      selected: accountingFilter == 'unbilled',
-      onSelected: (_) =>
-          onAccountingFilter(accountingFilter == 'unbilled' ? '' : 'unbilled'),
-    ),
-    ChoiceChip(
-      label: const Text('계산서 미발급'),
-      selected: accountingFilter == 'unissued',
-      onSelected: (_) =>
-          onAccountingFilter(accountingFilter == 'unissued' ? '' : 'unissued'),
-    ),
-  ];
+  List<Widget> _accountingChips() =>
+      [
+        ChoiceChip(
+          label: const Text('청구 미완료'),
+          selected: accountingFilter == 'unbilled',
+          onSelected: (_) =>
+              onAccountingFilter(
+                  accountingFilter == 'unbilled' ? '' : 'unbilled'),
+        ),
+        ChoiceChip(
+          label: const Text('계산서 미발급'),
+          selected: accountingFilter == 'unissued',
+          onSelected: (_) =>
+              onAccountingFilter(
+                  accountingFilter == 'unissued' ? '' : 'unissued'),
+        ),
+      ];
 
-  List<Widget> _navigationControls() => [
-    OutlinedButton.icon(
-      onPressed: onExport,
-      icon: const Icon(Icons.download_outlined, size: 18),
-      label: const Text('엑셀 내보내기'),
-    ),
-    OutlinedButton.icon(
-      onPressed: onExportYear,
-      icon: const Icon(Icons.archive_outlined, size: 18),
-      label: const Text('올해 연간 보관'),
-    ),
-    IconButton(
-      onPressed: onPrevious,
-      icon: const Icon(Icons.chevron_left),
-      tooltip: '이전 달',
-    ),
-    TextButton(
-      onPressed: onPickMonth,
-      child: Text(
-        '${month.year}년 ${month.month}월',
-        style: TheWeTextStyle.section,
-      ),
-    ),
-    IconButton(
-      onPressed: onNext,
-      icon: const Icon(Icons.chevron_right),
-      tooltip: '다음 달',
-    ),
-  ];
+  List<Widget> _navigationControls() =>
+      [
+        OutlinedButton.icon(
+          onPressed: onExport,
+          icon: const Icon(Icons.download_outlined, size: 18),
+          label: const Text('엑셀 내보내기'),
+        ),
+        OutlinedButton.icon(
+          onPressed: onExportYear,
+          icon: const Icon(Icons.archive_outlined, size: 18),
+          label: const Text('올해 연간 보관'),
+        ),
+        IconButton(
+          onPressed: onPrevious,
+          icon: const Icon(Icons.chevron_left),
+          tooltip: '이전 달',
+        ),
+        TextButton(
+          onPressed: onPickMonth,
+          child: Text(
+            '${month.year}년 ${month.month}월',
+            style: TheWeTextStyle.section,
+          ),
+        ),
+        IconButton(
+          onPressed: onNext,
+          icon: const Icon(Icons.chevron_right),
+          tooltip: '다음 달',
+        ),
+      ];
 
-  List<Widget> _toolbarChildren() => [
-    _searchField(fullWidth: false),
-    const SizedBox(width: 8),
-    Flexible(
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: [..._statusChips(), ..._accountingChips()],
-      ),
-    ),
-    const Spacer(),
-    for (final control in _navigationControls()) ...[
-      control,
-      const SizedBox(width: 8),
-    ],
-  ];
+  List<Widget> _toolbarChildren() =>
+      [
+        _searchField(fullWidth: false),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [..._statusChips(), ..._accountingChips()],
+          ),
+        ),
+        const Spacer(),
+        for (final control in _navigationControls()) ...[
+          control,
+          const SizedBox(width: 8),
+        ],
+      ];
 }
 
 class _SummaryCards extends StatelessWidget {
@@ -955,131 +962,139 @@ class _SummaryCards extends StatelessWidget {
     required this.items,
     required this.month,
   });
+
   final SalesLedgerSummary summary;
   final List<SalesLedgerEntry> items;
   final DateTime month;
+
   @override
-  Widget build(BuildContext context) => LayoutBuilder(
-    builder: (context, constraints) {
-      final metrics = SalesLedgerCardMetrics.fromEntries(items, month);
-      final cards = [
-        ('공급가 합계', _money(summary.supplyAmount), 'VAT 별도', TheWeColor.black900),
-        (
-          '청구 건수',
-          '${summary.billCount}건',
-          '현장 ${metrics.billedSiteCount}곳',
-          TheWeColor.black900,
-        ),
-        (
-          '미청구',
-          '${summary.unbilledCount}건',
-          '예상 ${_money(metrics.estimatedUnbilledAmount)}',
-          const Color(0xFFE06A00),
-        ),
-        (
-          '계산서 미발행',
-          '${summary.unissuedInvoiceCount}건',
-          '청구 완료 건 중',
-          const Color(0xFFE06A00),
-        ),
-        (
-          '미입금 (VAT 포함)',
-          _money((summary.unpaidAmount * 1.1).round()),
-          '현장 ${metrics.unpaidSiteCount}곳',
-          TheWeColor.danger,
-        ),
-      ];
-      return Container(
-        decoration: BoxDecoration(
-          border: Border.all(color: TheWeColor.blue100),
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: constraints.maxWidth < 600
-            ? Column(
-                children: [
-                  for (var index = 0; index < cards.length; index += 2)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: _summaryCard(cards[index])),
-                        Expanded(
-                          child: index + 1 < cards.length
-                              ? _summaryCard(cards[index + 1])
-                              : const SizedBox.shrink(),
+  Widget build(BuildContext context) =>
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final metrics = SalesLedgerCardMetrics.fromEntries(items, month);
+          final cards = [
+            ('공급가 합계', _money(summary.supplyAmount), 'VAT 별도', TheWeColor
+                .black900),
+            (
+            '청구 건수',
+            '${summary.billCount}건',
+            '현장 ${metrics.billedSiteCount}곳',
+            TheWeColor.black900,
+            ),
+            (
+            '미청구',
+            '${summary.unbilledCount}건',
+            '예상 ${_money(metrics.estimatedUnbilledAmount)}',
+            const Color(0xFFE06A00),
+            ),
+            (
+            '계산서 미발행',
+            '${summary.unissuedInvoiceCount}건',
+            '청구 완료 건 중',
+            const Color(0xFFE06A00),
+            ),
+            (
+            '미입금 (VAT 포함)',
+            _money((summary.unpaidAmount * 1.1).round()),
+            '현장 ${metrics.unpaidSiteCount}곳',
+            TheWeColor.danger,
+            ),
+          ];
+          return Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: TheWeColor.blue100),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: constraints.maxWidth < 600
+                ? Column(
+              children: [
+                for (var index = 0; index < cards.length; index += 2)
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _summaryCard(cards[index])),
+                      Expanded(
+                        child: index + 1 < cards.length
+                            ? _summaryCard(cards[index + 1])
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
+                  ),
+              ],
+            )
+                : Row(
+              children: cards
+                  .map(
+                    (card) =>
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 16,
+                          horizontal: 4,
                         ),
-                      ],
-                    ),
-                ],
-              )
-            : Row(
-                children: cards
-                    .map(
-                      (card) => Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 16,
-                            horizontal: 4,
-                          ),
-                          alignment: Alignment.center,
-                          child: Column(
-                            children: [
-                              Text(
-                                card.$1,
-                                style: TheWeTextStyle.hintText.copyWith(
-                                  color: TheWeColor.black500,
-                                ),
+                        alignment: Alignment.center,
+                        child: Column(
+                          children: [
+                            Text(
+                              card.$1,
+                              style: TheWeTextStyle.hintText.copyWith(
+                                color: TheWeColor.black500,
                               ),
-                              const SizedBox(height: 5),
-                              Text(
-                                card.$2,
-                                style: TheWeTextStyle.subtitle.copyWith(
-                                  color: card.$4,
-                                ),
+                            ),
+                            const SizedBox(height: 5),
+                            Text(
+                              card.$2,
+                              style: TheWeTextStyle.subtitle.copyWith(
+                                color: card.$4,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                card.$3,
-                                style: TheWeTextStyle.hintText.copyWith(
-                                  color: TheWeColor.black500,
-                                ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              card.$3,
+                              style: TheWeTextStyle.hintText.copyWith(
+                                color: TheWeColor.black500,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
                       ),
-                    )
-                    .toList(),
-              ),
+                    ),
+              )
+                  .toList(),
+            ),
+          );
+        },
       );
-    },
-  );
 
-  Widget _summaryCard((String, String, String, Color) card) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
-    child: Column(
-      children: [
-        Text(
-          card.$1,
-          textAlign: TextAlign.center,
-          style: TheWeTextStyle.hintText.copyWith(color: TheWeColor.black500),
+  Widget _summaryCard((String, String, String, Color) card) =>
+      Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 6),
+        child: Column(
+          children: [
+            Text(
+              card.$1,
+              textAlign: TextAlign.center,
+              style: TheWeTextStyle.hintText.copyWith(
+                  color: TheWeColor.black500),
+            ),
+            const SizedBox(height: 5),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                card.$2,
+                style: TheWeTextStyle.subtitle.copyWith(color: card.$4),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              card.$3,
+              textAlign: TextAlign.center,
+              style: TheWeTextStyle.hintText.copyWith(
+                  color: TheWeColor.black500),
+            ),
+          ],
         ),
-        const SizedBox(height: 5),
-        FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Text(
-            card.$2,
-            style: TheWeTextStyle.subtitle.copyWith(color: card.$4),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          card.$3,
-          textAlign: TextAlign.center,
-          style: TheWeTextStyle.hintText.copyWith(color: TheWeColor.black500),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 class _LedgerTable extends StatelessWidget {
@@ -1088,109 +1103,117 @@ class _LedgerTable extends StatelessWidget {
     required this.onEdit,
     required this.onStatement,
   });
+
   final List<SalesLedgerEntry> items;
   final ValueChanged<SalesLedgerEntry> onEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
+
   @override
-  Widget build(BuildContext context) => TheWeDataTable(
-    headers: const [
-      '번호',
-      '공사명',
-      '시공사',
-      '협력사',
-      '호기',
-      '사용일',
-      '일수',
-      '청구',
-      '계산서',
-      '입금',
-      '공급가',
-      '회차',
-      '상태',
-      '비고',
-      '분류',
-    ],
-    minWidth: 1580,
-    columnFlexes: const [
-      .65,
-      2.25,
-      1.15,
-      1.2,
-      .85,
-      1.25,
-      .95,
-      .9,
-      .9,
-      .9,
-      1.15,
-      .85,
-      .8,
-      1.7,
-      .7,
-    ],
-    rows: [
-      for (var index = 0; index < items.length; index++)
-        _row(context, index, items[index]),
-    ],
-    rowColors: List.filled(items.length, Colors.white),
-    cellColors: [
-      for (final item in items)
-        [
-          for (var col = 0; col < 15; col++)
-            ((col == 2 && _issuerType(item) == '시공사') ||
-                    (col == 3 && _issuerType(item) == '협력사'))
-                ? _issuerColor(item)
-                : ((col == 7 && item.billingDate == null) ||
-                      (col == 8 && item.invoiceDate == null) ||
-                      (col == 9 && item.depositDate == null))
-                ? TheWeColor.danger.withValues(alpha: .12)
-                : null,
+  Widget build(BuildContext context) =>
+      TheWeDataTable(
+        headers: const [
+          '번호',
+          '공사명',
+          '시공사',
+          '협력사',
+          '호기',
+          '사용일',
+          '일수',
+          '청구',
+          '계산서',
+          '입금',
+          '공급가',
+          '회차',
+          '상태',
+          '비고',
+          '분류',
         ],
-    ],
-    onRowTaps: [for (final item in items) () => onEdit(item)],
-  );
-  List<Widget> _row(BuildContext context, int index, SalesLedgerEntry item) => [
-    _cell('${index + 1}', maxLines: 1, fitToWidth: true),
-    Align(
-      alignment: Alignment.centerLeft,
-      child: TextButton(
-        onPressed: () => onStatement(item),
-        child: Text(
-          item.projectName,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: TheWeTextStyle.caption.copyWith(
-            color: TheWeColor.blue300,
-            fontWeight: FontWeight.w700,
+        minWidth: 1580,
+        columnFlexes: const [
+          .65,
+          2.25,
+          1.15,
+          1.2,
+          .85,
+          1.25,
+          .95,
+          .9,
+          .9,
+          .9,
+          1.15,
+          .85,
+          .8,
+          1.7,
+          .7,
+        ],
+        rows: [
+          for (var index = 0; index < items.length; index++)
+            _row(context, index, items[index]),
+        ],
+        rowColors: List.filled(items.length, Colors.white),
+        cellColors: [
+          for (final item in items)
+            [
+              for (var col = 0; col < 15; col++)
+                ((col == 2 && _issuerType(item) == '시공사') ||
+                    (col == 3 && _issuerType(item) == '협력사'))
+                    ? _issuerColor(item)
+                    : ((col == 7 && item.billingDate == null) ||
+                    (col == 8 && item.invoiceDate == null) ||
+                    (col == 9 && item.depositDate == null))
+                    ? TheWeColor.danger.withValues(alpha: .12)
+                    : null,
+            ],
+        ],
+        onRowTaps: [for (final item in items) () => onEdit(item)],
+      );
+
+  List<Widget> _row(BuildContext context, int index, SalesLedgerEntry item) =>
+      [
+        _cell('${index + 1}', maxLines: 1, fitToWidth: true),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton(
+            onPressed: () => onStatement(item),
+            child: Text(
+              item.projectName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TheWeTextStyle.caption.copyWith(
+                color: TheWeColor.blue300,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ),
-      ),
-    ),
-    _cell(item.contractor),
-    _cell(item.partner),
-    _cell(item.elevator, maxLines: 1),
-    _cell(
-      '${_date(item.startDate)}\n~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
-    ),
-    _cell(
-      _duration(item.startDate, item.endDate),
-      maxLines: 1,
-      fitToWidth: true,
-    ),
-    _cell(_shortDate(item.billingDate)),
-    _cell(_shortDate(item.invoiceDate)),
-    _cell(_shortDate(item.depositDate)),
-    _cell(_money(item.supplyAmount), maxLines: 1, fitToWidth: true),
-    _cell('${item.installment}회차', maxLines: 1),
-    _StatusPill(status: item.status),
-    _cell(item.note, left: true),
-    _cell(item.category.isEmpty ? '-' : item.category),
-  ];
+        _cell(item.contractor),
+        _cell(item.partner),
+        _cell(item.elevator, maxLines: 1),
+        _cell(
+          '${_date(item.startDate)}\n~ ${item.endDate == null ? '진행 중' : _date(
+              item.endDate!)}',
+        ),
+        _cell(
+          _duration(item.startDate, item.endDate),
+          maxLines: 1,
+          fitToWidth: true,
+        ),
+        _cell(_shortDate(item.billingDate)),
+        _cell(_shortDate(item.invoiceDate)),
+        _cell(_shortDate(item.depositDate)),
+        _cell(_money(item.supplyAmount), maxLines: 1, fitToWidth: true),
+        _cell('${item.installment}회차', maxLines: 1),
+        _StatusPill(status: item.status),
+        _cell(item.note, left: true),
+        _cell(item.category.isEmpty ? '-' : item.category),
+      ];
 }
 
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status});
+
   final String status;
+
   @override
   Widget build(BuildContext context) {
     final color = switch (status) {
@@ -1219,7 +1242,9 @@ class _StatusPill extends StatelessWidget {
 
 class _LedgerEditDialog extends StatefulWidget {
   const _LedgerEditDialog({required this.item});
+
   final SalesLedgerEntry item;
+
   @override
   State<_LedgerEditDialog> createState() => _LedgerEditDialogState();
 }
@@ -1238,6 +1263,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
   DateTime? billing;
   DateTime? invoice;
   DateTime? deposit;
+
   @override
   void initState() {
     super.initState();
@@ -1290,13 +1316,13 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
       firstDate: DateTime(DateTime.now().year - 5),
       lastDate: DateTime.now(),
       title:
-          '${switch (kind) {
-            'start' => '시작일',
-            'end' => '종료일',
-            'billing' => '청구',
-            'invoice' => '계산서 발행',
-            _ => '입금',
-          }} 날짜 선택',
+      '${switch (kind) {
+        'start' => '시작일',
+        'end' => '종료일',
+        'billing' => '청구',
+        'invoice' => '계산서 발행',
+        _ => '입금',
+      }} 날짜 선택',
     );
     if (selected == null) return;
     if (selected.year == 1) {
@@ -1323,42 +1349,42 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     final item = widget.item;
     final compact = MediaQuery.sizeOf(context).width < 600;
     final enteredSupply = int.tryParse(amount.text.replaceAll(',', '')) ?? 0;
-    final adjustmentValue =
-        int.tryParse(adjustment.text.replaceAll(',', '')) ?? 0;
+    final adjustmentValue = int.tryParse(adjustment.text.replaceAll(',', '')) ?? 0;
     final supply = enteredSupply - adjustmentValue;
     final tax = (supply * .1).round();
-    final modalContentWidth = compact
-        ? MediaQuery.sizeOf(context).width - 72
-        : 640.0 - 56;
+    final modalContentWidth = compact ? MediaQuery.sizeOf(context).width - 72 : 640.0 - 56;
     final fieldWidth = compact ? double.infinity : (modalContentWidth - 16) / 2;
-    Widget field(String label, Widget child, {double? width}) => SizedBox(
-      width: width ?? fieldWidth,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TheWeTextStyle.hintText.copyWith(color: TheWeColor.black500),
+    Widget field(String label, Widget child, {double? width}) =>
+        SizedBox(
+          width: width ?? fieldWidth,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TheWeTextStyle.hintText.copyWith(
+                    color: TheWeColor.black500),
+              ),
+              const SizedBox(height: 5),
+              child,
+            ],
           ),
-          const SizedBox(height: 5),
-          child,
-        ],
-      ),
-    );
-    Widget dateField(String label, DateTime? value, String kind) => field(
-      label,
-      OutlinedButton.icon(
-        onPressed: () => choose(kind),
-        icon: const Icon(Icons.calendar_month_outlined, size: 18),
-        label: Text(value == null ? 'YYYY.MM.DD' : _date(value)),
-        style: OutlinedButton.styleFrom(
-          alignment: Alignment.centerLeft,
-          minimumSize: const Size.fromHeight(42),
-          foregroundColor: TheWeColor.black900,
-          side: const BorderSide(color: TheWeColor.blue100),
-        ),
-      ),
-    );
+        );
+    Widget dateField(String label, DateTime? value, String kind) =>
+        field(
+          label,
+          OutlinedButton.icon(
+            onPressed: () => choose(kind),
+            icon: const Icon(Icons.calendar_month_outlined, size: 18),
+            label: Text(value == null ? 'YYYY.MM.DD' : _date(value)),
+            style: OutlinedButton.styleFrom(
+              alignment: Alignment.centerLeft,
+              minimumSize: const Size.fromHeight(42),
+              foregroundColor: TheWeColor.black900,
+              side: const BorderSide(color: TheWeColor.blue100),
+            ),
+          ),
+        );
     return TheWeModalSurface(
       width: 640,
       maxWidth: 640,
@@ -1409,7 +1435,8 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
             Text('정산일  말일', style: TheWeTextStyle.caption),
             const SizedBox(height: 5),
             Text(
-              '계약기간  ${_date(item.contractStartDate ?? item.startDate)} ~ ${(item.contractEndDate ?? item.endDate) == null ? '사용중' : _date(item.contractEndDate ?? item.endDate)}',
+              '계약기간  ${_date(
+                  item.contractStartDate ?? item.startDate)} ~ ${(item.contractEndDate ?? item.endDate) == null ? '사용중' : _date(item.contractEndDate ?? item.endDate)}',
               style: TheWeTextStyle.caption,
             ),
             const SizedBox(height: 25),
@@ -1504,9 +1531,26 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
               spacing: 16,
               runSpacing: 14,
               children: [
-                dateField('청구일', billing, 'billing'),
-                dateField('계산서 발행일', invoice, 'invoice'),
-                dateField('입금일', deposit, 'deposit'),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final dates = await showDialog<_LedgerDates>(
+                      context: context,
+                      builder: (_) =>
+                          _LedgerDatesDialog(
+                            billing: billing,
+                            invoice: invoice,
+                            deposit: deposit,
+                          ),
+                    );
+                    if (dates != null) setState(() {
+                      billing = dates.billing;
+                      invoice = dates.invoice;
+                      deposit = dates.deposit;
+                    });
+                  },
+                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
+                  label: const Text('청구·계산서·입금일 수정'),
+                ),
                 field(
                   '입금액 (자동계산)',
                   InputDecorator(
@@ -1527,7 +1571,8 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
                         if (!['', '시공사', '협력사'].contains(invoiceIssuer.text))
                           invoiceIssuer.text,
                       ],
-                      labelBuilder: (value) => switch (value) {
+                      labelBuilder: (value) =>
+                      switch (value) {
                         '시공사' => '시공사 · ${item.contractor}',
                         '협력사' => '협력사 · ${item.partner}',
                         _ => value,
@@ -1590,6 +1635,91 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
   }
 }
 
+class _LedgerDates {
+  const _LedgerDates({this.billing, this.invoice, this.deposit});
+
+  final DateTime? billing;
+  final DateTime? invoice;
+  final DateTime? deposit;
+}
+
+class _LedgerDatesDialog extends StatefulWidget {
+  const _LedgerDatesDialog(
+      {required this.billing, required this.invoice, required this.deposit});
+
+  final DateTime? billing, invoice, deposit;
+
+  @override State<_LedgerDatesDialog> createState() =>
+      _LedgerDatesDialogState();
+}
+
+class _LedgerDatesDialogState extends State<_LedgerDatesDialog> {
+  late DateTime? billing = widget.billing,
+      invoice = widget.invoice,
+      deposit = widget.deposit;
+
+  Future<void> pick(String kind) async {
+    final current = kind == 'billing' ? billing : kind == 'invoice'
+        ? invoice
+        : deposit;
+    final value = await showTheWeDatePicker(
+        context, initialDate: current ?? DateTime.now(),
+        clearOnReselect: true,
+        hasSelection: current != null,
+        firstDate: DateTime(DateTime
+            .now()
+            .year - 5),
+        lastDate: DateTime.now(),
+        title: '${kind == 'billing' ? '청구' : kind == 'invoice'
+            ? '계산서 발행'
+            : '입금'} 날짜 선택');
+    if (value == null || !mounted) return;
+    setState(() {
+      final v = value.year == 1 ? null : value;
+      if (kind == 'billing') billing = v;
+      if (kind == 'invoice') invoice = v;
+      if (kind == 'deposit') deposit = v;
+    });
+  }
+
+  @override Widget build(BuildContext context) {
+    Widget field(String label, DateTime? value, String kind) =>
+        OutlinedButton.icon(onPressed: () => pick(kind),
+            icon: const Icon(Icons.calendar_month_outlined, size: 18),
+            label: Text(value == null ? 'YYYY.MM.DD' : _date(value)),
+            style: OutlinedButton.styleFrom(alignment: Alignment.centerLeft,
+                minimumSize: const Size.fromHeight(42),
+                foregroundColor: TheWeColor.black900,
+                side: const BorderSide(color: TheWeColor.blue100)));
+    return TheWeModalSurface(width: 440,
+        maxWidth: 440,
+        child: Column(mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TheWeModalHeader(title: '청구 · 계산서 · 입금일 수정',
+                  onClose: () => Navigator.pop(context)),
+              const SizedBox(height: 18),
+              Text('청구일', style: TheWeTextStyle.hintText),
+              field('청구일', billing, 'billing'),
+              const SizedBox(height: 12),
+              Text('계산서 발행일', style: TheWeTextStyle.hintText),
+              field('계산서 발행일', invoice, 'invoice'),
+              const SizedBox(height: 12),
+              Text('입금일', style: TheWeTextStyle.hintText),
+              field('입금일', deposit, 'deposit'),
+              const SizedBox(height: 20),
+              TheWeModalActions(primaryLabel: '저장',
+                  secondaryLabel: '취소',
+                  onSecondaryPressed: () => Navigator.pop(context),
+                  onPrimaryPressed: () =>
+                      Navigator.pop(context, _LedgerDates(
+                          billing: billing,
+                          invoice: invoice,
+                          deposit: deposit)))
+            ]));
+  }
+}
+
 String _mergeNote(String note, String reason) {
   final n = note.trim();
   final r = reason.trim();
@@ -1608,6 +1738,7 @@ bool _isOverdueUnpaid(SalesLedgerEntry item) {
 String _issuerType(SalesLedgerEntry item) => item.invoiceIssuerType;
 
 Color _issuerColor(SalesLedgerEntry item) => const Color(0xFFE8F5E9);
+
 Widget _editAmountRow(String label, String value, {bool bold = false}) =>
     Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1632,14 +1763,17 @@ Widget _editAmountRow(String label, String value, {bool bold = false}) =>
 
 class _StatementDialog extends StatefulWidget {
   const _StatementDialog({required this.statement, required this.month});
+
   final SalesStatement statement;
   final DateTime month;
+
   @override
   State<_StatementDialog> createState() => _StatementDialogState();
 }
 
 class _StatementDialogState extends State<_StatementDialog> {
   late SalesStatement statement;
+
   @override
   void initState() {
     super.initState();
@@ -1654,8 +1788,7 @@ class _StatementDialogState extends State<_StatementDialog> {
           _StatementNoteOptionsDialog(initial: statement.noteOptions),
     );
     if (selected == null) return;
-    setState(
-      () => statement = SalesStatement(
+    setState(() => statement = SalesStatement(
         projectName: statement.projectName,
         items: statement.items,
         noteOptions: selected,
@@ -1664,58 +1797,56 @@ class _StatementDialogState extends State<_StatementDialog> {
   }
 
   @override
-  Widget build(BuildContext context) => TheWeModalSurface(
-    maxWidth: 1000,
-    maxHeightFactor: .94,
-    padding: const EdgeInsets.all(18),
-    child: Column(
-      children: [
-        Row(
+  Widget build(BuildContext context) =>
+      TheWeModalSurface(
+        maxWidth: 1000,
+        maxHeightFactor: .94,
+        padding: const EdgeInsets.all(18),
+        child: Column(
           children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TheWeModalHeader(
+                    title: '내역서',
+                    onClose: () => Navigator.pop(context),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _editNotes,
+                  icon: const Icon(Icons.edit_note_outlined),
+                  label: const Text('비고 수정'),
+                ),
+              ],
+            ),
             Expanded(
-              child: TheWeModalHeader(
-                title: '내역서',
-                onClose: () => Navigator.pop(context),
+              child: SalesStatementPreview(
+                statement: statement,
+                issued: DateTime.now(),
               ),
             ),
-            OutlinedButton.icon(
-              onPressed: _editNotes,
-              icon: const Icon(Icons.edit_note_outlined),
-              label: const Text('비고 수정'),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _downloadStatementExcel(context, statement),
+                  icon: const Icon(Icons.table_view_outlined),
+                  label: const Text('엑셀 다운로드'),
+                ),
+                FilledButton.icon(
+                  onPressed: () =>
+                      _downloadStatementPdf(context, statement, widget.month),
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: const Text('PDF 다운로드'),
+                ),
+              ],
             ),
           ],
         ),
-        Expanded(
-          child: SalesStatementPreview(
-            statement: statement,
-            issued: DateTime.now(),
-          ),
-        ),
-        Wrap(
-          spacing: 8,
-          children: [
-            OutlinedButton.icon(
-              onPressed: () => _downloadStatementExcel(context, statement),
-              icon: const Icon(Icons.table_view_outlined),
-              label: const Text('엑셀 다운로드'),
-            ),
-            FilledButton.icon(
-              onPressed: () =>
-                  _downloadStatementPdf(context, statement, widget.month),
-              icon: const Icon(Icons.picture_as_pdf_outlined),
-              label: const Text('PDF 다운로드'),
-            ),
-          ],
-        ),
-      ],
-    ),
-  );
+      );
 }
 
-Future<void> _downloadStatementExcel(
-  BuildContext context,
-  SalesStatement statement,
-) async {
+Future<void> _downloadStatementExcel(BuildContext context, SalesStatement statement,) async {
   await FileSaver.instance.saveFile(
     name: '내역서_${statement.projectName}',
     bytes: await statementTemplateXlsx(statement),
@@ -1725,11 +1856,7 @@ Future<void> _downloadStatementExcel(
   if (context.mounted) showTheWeSnackBar(context, message: '엑셀 파일로 저장했습니다.');
 }
 
-Future<void> _downloadStatementPdf(
-  BuildContext context,
-  SalesStatement statement,
-  DateTime month,
-) async {
+Future<void> _downloadStatementPdf(BuildContext context, SalesStatement statement, DateTime month,) async {
   try {
     await FileSaver.instance.saveFile(
       name: '내역서_${statement.projectName}',
@@ -1751,44 +1878,44 @@ Future<void> _downloadStatementPdf(
   }
 }
 
-Widget _cell(
-  String value, {
+Widget _cell(String value, {
   bool left = false,
   int maxLines = 2,
   bool fitToWidth = false,
-}) => Align(
-  alignment: left ? Alignment.centerLeft : Alignment.center,
-  child: Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-    child: fitToWidth
-        ? FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              value,
-              maxLines: 1,
-              softWrap: false,
-              style: TheWeTextStyle.caption,
-            ),
-          )
-        : Text(
+}) =>
+    Align(
+      alignment: left ? Alignment.centerLeft : Alignment.center,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: fitToWidth
+            ? FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(
             value,
-            textAlign: left ? TextAlign.left : TextAlign.center,
-            maxLines: maxLines,
-            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+            softWrap: false,
             style: TheWeTextStyle.caption,
           ),
-  ),
-);
+        )
+            : Text(
+          value,
+          textAlign: left ? TextAlign.left : TextAlign.center,
+          maxLines: maxLines,
+          overflow: TextOverflow.ellipsis,
+          style: TheWeTextStyle.caption,
+        ),
+      ),
+    );
+
 String _date(DateTime? value) =>
     value == null ? '-' : DateFormat('yyyy.MM.dd').format(value);
+
 String _shortDate(DateTime? value) =>
     value == null ? '-' : DateFormat('MM.dd').format(value);
+
 String _money(num value) => NumberFormat('#,###').format(value);
 
-final _currencyInputFormatter = TextInputFormatter.withFunction((
-  oldValue,
-  newValue,
-) {
+final _currencyInputFormatter = TextInputFormatter.withFunction((oldValue, newValue,) {
   final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
   if (digits.isEmpty) return const TextEditingValue();
   final formatted = _money(int.tryParse(digits) ?? 0);
