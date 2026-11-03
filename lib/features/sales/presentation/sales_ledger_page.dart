@@ -744,6 +744,7 @@ class _LedgerContent extends StatelessWidget {
   final DateTime month;
   final bool loading;
   final String? error;
+  final DateTime month;
   final List<SalesLedgerEntry> items;
   final SalesLedgerSummary summary;
   final TextEditingController search;
@@ -827,7 +828,7 @@ class _LedgerContent extends StatelessWidget {
             : error != null
             ? Center(child: Text(error!))
             : _LedgerTable(
-            items: items, onEdit: onEdit, onStatement: onStatement);
+            month: month, items: items, onEdit: onEdit, onStatement: onStatement);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.all(compact ? 18 : 28),
@@ -1099,6 +1100,7 @@ class _SummaryCards extends StatelessWidget {
 
 class _LedgerTable extends StatelessWidget {
   const _LedgerTable({
+    required this.month,
     required this.items,
     required this.onEdit,
     required this.onStatement,
@@ -1322,7 +1324,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     };
     final selected = await showTheWeDatePicker(
       context,
-      initialDate: current ?? DateTime.now(),
+      initialDate: current ?? widget.month,
       clearOnReselect: true,
       hasSelection: current != null,
       firstDate: DateTime(DateTime.now().year - 5),
@@ -1635,10 +1637,11 @@ class _LedgerDates {
 
 class _LedgerDatesDialog extends StatefulWidget {
   const _LedgerDatesDialog(
-      {required this.billing, required this.invoice, required this.deposit, this.onlyKind});
+      {required this.billing, required this.invoice, required this.deposit, this.onlyKind, required this.month});
 
   final DateTime? billing, invoice, deposit;
   final String? onlyKind;
+  final DateTime month;
 
   @override State<_LedgerDatesDialog> createState() =>
       _LedgerDatesDialogState();
@@ -1654,7 +1657,7 @@ class _LedgerDatesDialogState extends State<_LedgerDatesDialog> {
         ? invoice
         : deposit;
     final value = await showTheWeDatePicker(
-        context, initialDate: current ?? DateTime.now(),
+        context, initialDate: current ?? widget.month,
         clearOnReselect: true,
         hasSelection: current != null,
         firstDate: DateTime(DateTime
@@ -1690,14 +1693,15 @@ class _LedgerDatesDialogState extends State<_LedgerDatesDialog> {
               TheWeModalHeader(title: '${widget.onlyKind == 'billing' ? '청구일' : widget.onlyKind == 'invoice' ? '계산서 발행일' : '입금일'} 수정',
                   onClose: () => Navigator.pop(context)),
               const SizedBox(height: 18),
-              Text('청구일', style: TheWeTextStyle.hintText),
-              field('청구일', billing, 'billing'),
-              const SizedBox(height: 12),
-              Text('계산서 발행일', style: TheWeTextStyle.hintText),
-              field('계산서 발행일', invoice, 'invoice'),
-              const SizedBox(height: 12),
-              Text('입금일', style: TheWeTextStyle.hintText),
-              field('입금일', deposit, 'deposit'),
+              if (widget.onlyKind == 'billing' || widget.onlyKind == null) ...[
+                Text('청구일', style: TheWeTextStyle.hintText), field('청구일', billing, 'billing'),
+              ],
+              if (widget.onlyKind == 'invoice' || widget.onlyKind == null) ...[
+                Text('계산서 발행일', style: TheWeTextStyle.hintText), field('계산서 발행일', invoice, 'invoice'),
+              ],
+              if (widget.onlyKind == 'deposit' || widget.onlyKind == null) ...[
+                Text('입금일', style: TheWeTextStyle.hintText), field('입금일', deposit, 'deposit'),
+              ],
               const SizedBox(height: 20),
               TheWeModalActions(primaryLabel: '저장',
                   secondaryLabel: '취소',
