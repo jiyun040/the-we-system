@@ -744,7 +744,6 @@ class _LedgerContent extends StatelessWidget {
   final DateTime month;
   final bool loading;
   final String? error;
-  final DateTime month;
   final List<SalesLedgerEntry> items;
   final SalesLedgerSummary summary;
   final TextEditingController search;
@@ -1107,6 +1106,7 @@ class _LedgerTable extends StatelessWidget {
   });
 
   final List<SalesLedgerEntry> items;
+  final DateTime month;
   final ValueChanged<SalesLedgerEntry> onEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
@@ -1174,7 +1174,7 @@ class _LedgerTable extends StatelessWidget {
               for (var col = 0; col < 15; col++)
                 if (col == 7 || col == 8 || col == 9)
                   () async {
-                    final dates = await showDialog<_LedgerDates>(context: context, builder: (_) => _LedgerDatesDialog(billing: item.billingDate, invoice: item.invoiceDate, deposit: item.depositDate, onlyKind: col == 7 ? 'billing' : col == 8 ? 'invoice' : 'deposit'));
+                    final dates = await showDialog<_LedgerDates>(context: context, builder: (_) => _LedgerDatesDialog(billing: item.billingDate, invoice: item.invoiceDate, deposit: item.depositDate, onlyKind: col == 7 ? 'billing' : col == 8 ? 'invoice' : 'deposit', month: month));
                     if (dates != null) onEdit(item.copyWith(billingDate: dates.billing, clearBillingDate: dates.billing == null, invoiceDate: dates.invoice, clearInvoiceDate: dates.invoice == null, depositDate: dates.deposit, clearDepositDate: dates.deposit == null));
                   }
                 else null,
@@ -1324,7 +1324,7 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
     };
     final selected = await showTheWeDatePicker(
       context,
-      initialDate: current ?? widget.month,
+      initialDate: current ?? DateTime.now(),
       clearOnReselect: true,
       hasSelection: current != null,
       firstDate: DateTime(DateTime.now().year - 5),
