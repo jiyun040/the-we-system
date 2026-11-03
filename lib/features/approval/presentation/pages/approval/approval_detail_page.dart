@@ -186,7 +186,7 @@ class _DocumentToolbar extends ConsumerWidget {
         children: [
           Row(
             children: [
-              const TheWeBackButton(),
+              const TheWeBackButton(fallbackRouteName: AppRouteName.salesLedger),
               const SizedBox(width: 8),
               Expanded(
                 child: compact

@@ -1166,6 +1166,18 @@ class _LedgerTable extends StatelessWidget {
             ],
         ],
         onRowTaps: [for (final item in items) () => onEdit(item)],
+        onCellTaps: [
+          for (final item in items)
+            [
+              for (var col = 0; col < 15; col++)
+                if (col == 7 || col == 8 || col == 9)
+                  () async {
+                    final dates = await showDialog<_LedgerDates>(context: context, builder: (_) => _LedgerDatesDialog(billing: item.billingDate, invoice: item.invoiceDate, deposit: item.depositDate, onlyKind: col == 7 ? 'billing' : col == 8 ? 'invoice' : 'deposit'));
+                    if (dates != null) onEdit(item.copyWith(billingDate: dates.billing, clearBillingDate: dates.billing == null, invoiceDate: dates.invoice, clearInvoiceDate: dates.invoice == null, depositDate: dates.deposit, clearDepositDate: dates.deposit == null));
+                  }
+                else null,
+            ],
+        ],
       );
 
   List<Widget> _row(BuildContext context, int index, SalesLedgerEntry item) =>
@@ -1525,32 +1537,10 @@ class _LedgerEditDialogState extends State<_LedgerEditDialog> {
               ),
             ),
             const SizedBox(height: 25),
-            Text('청구 · 계산서 · 입금', style: TheWeTextStyle.section),
-            const SizedBox(height: 12),
             Wrap(
               spacing: 16,
               runSpacing: 14,
               children: [
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final dates = await showDialog<_LedgerDates>(
-                      context: context,
-                      builder: (_) =>
-                          _LedgerDatesDialog(
-                            billing: billing,
-                            invoice: invoice,
-                            deposit: deposit,
-                          ),
-                    );
-                    if (dates != null) setState(() {
-                      billing = dates.billing;
-                      invoice = dates.invoice;
-                      deposit = dates.deposit;
-                    });
-                  },
-                  icon: const Icon(Icons.calendar_month_outlined, size: 18),
-                  label: const Text('청구·계산서·입금일 수정'),
-                ),
                 field(
                   '입금액 (자동계산)',
                   InputDecorator(
@@ -1645,9 +1635,10 @@ class _LedgerDates {
 
 class _LedgerDatesDialog extends StatefulWidget {
   const _LedgerDatesDialog(
-      {required this.billing, required this.invoice, required this.deposit});
+      {required this.billing, required this.invoice, required this.deposit, this.onlyKind});
 
   final DateTime? billing, invoice, deposit;
+  final String? onlyKind;
 
   @override State<_LedgerDatesDialog> createState() =>
       _LedgerDatesDialogState();
@@ -1696,7 +1687,7 @@ class _LedgerDatesDialogState extends State<_LedgerDatesDialog> {
         child: Column(mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TheWeModalHeader(title: '청구 · 계산서 · 입금일 수정',
+              TheWeModalHeader(title: '${onlyKind == 'billing' ? '청구일' : onlyKind == 'invoice' ? '계산서 발행일' : '입금일'} 수정',
                   onClose: () => Navigator.pop(context)),
               const SizedBox(height: 18),
               Text('청구일', style: TheWeTextStyle.hintText),
