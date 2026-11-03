@@ -1687,7 +1687,7 @@ class _LedgerDatesDialogState extends State<_LedgerDatesDialog> {
         child: Column(mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TheWeModalHeader(title: '${onlyKind == 'billing' ? '청구일' : onlyKind == 'invoice' ? '계산서 발행일' : '입금일'} 수정',
+              TheWeModalHeader(title: '${widget.onlyKind == 'billing' ? '청구일' : widget.onlyKind == 'invoice' ? '계산서 발행일' : '입금일'} 수정',
                   onClose: () => Navigator.pop(context)),
               const SizedBox(height: 18),
               Text('청구일', style: TheWeTextStyle.hintText),
