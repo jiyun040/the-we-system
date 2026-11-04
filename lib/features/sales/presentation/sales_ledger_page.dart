@@ -170,6 +170,13 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     }
   }
 
+  Future<void> _saveInlineDate(SalesLedgerEntry item) async {
+    try {
+      await _api.updateEntry(item);
+      await _load();
+    } catch (_) {}
+  }
+
   Future<void> _showStatement(SalesLedgerEntry entry) async {
     try {
       final statement = await _api.fetchStatement(entry.projectName, _month);
@@ -273,6 +280,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       },
       onOpenArchives: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => _SalesLedgerArchivesPage(api: _api)),),
       onEdit: _edit,
+      onDateEdit: _saveInlineDate,
       onStatement: _showStatement,
     );
     return PopScope<void>(
@@ -738,6 +746,7 @@ class _LedgerContent extends StatelessWidget {
     required this.onDownloadArchive,
     required this.onOpenArchives,
     required this.onEdit,
+    required this.onDateEdit,
     required this.onStatement,
   });
 
@@ -763,6 +772,7 @@ class _LedgerContent extends StatelessWidget {
   final Future<void> Function(SalesLedgerArchive) onDownloadArchive;
   final VoidCallback onOpenArchives;
   final ValueChanged<SalesLedgerEntry> onEdit;
+  final ValueChanged<SalesLedgerEntry> onDateEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
   @override
@@ -827,7 +837,8 @@ class _LedgerContent extends StatelessWidget {
             : error != null
             ? Center(child: Text(error!))
             : _LedgerTable(
-            month: month, items: items, onEdit: onEdit, onStatement: onStatement);
+            month: month, items: items, onEdit: onEdit,
+            onDateEdit: onDateEdit, onStatement: onStatement);
     return SafeArea(
       child: Padding(
         padding: EdgeInsets.all(compact ? 18 : 28),
@@ -1102,12 +1113,14 @@ class _LedgerTable extends StatefulWidget {
     required this.month,
     required this.items,
     required this.onEdit,
+    required this.onDateEdit,
     required this.onStatement,
   });
 
   final List<SalesLedgerEntry> items;
   final DateTime month;
   final ValueChanged<SalesLedgerEntry> onEdit;
+  final ValueChanged<SalesLedgerEntry> onDateEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
   @override
@@ -1151,9 +1164,9 @@ class _LedgerTableState extends State<_LedgerTable> {
           .85,
           1.25,
           .95,
-          .9,
-          .9,
-          .9,
+          1.2,
+          1.2,
+          1.2,
           1.15,
           .85,
           .8,
@@ -1169,14 +1182,11 @@ class _LedgerTableState extends State<_LedgerTable> {
           for (final item in items)
             [
               for (var col = 0; col < 15; col++)
-                ((col == 2 && _issuerType(item) == '시공사') ||
-                    (col == 3 && _issuerType(item) == '협력사'))
-                    ? _issuerColor(item)
-                    : ((col == 7 && item.billingDate == null) ||
+                ((col == 7 && item.billingDate == null) ||
                     (col == 8 && item.invoiceDate == null) ||
                     (col == 9 && item.depositDate == null))
                     ? TheWeColor.danger.withValues(alpha: .12)
-                    : null,
+                    : ((col == 2 || col == 3) ? Colors.green.withValues(alpha: .10) : null),
             ],
         ],
         onRowTaps: [for (final item in items) () => onEdit(item)],
@@ -1232,6 +1242,7 @@ class _LedgerTableState extends State<_LedgerTable> {
       );
     }
     final controller = TextEditingController(text: value == null ? '' : _shortDate(value));
+    SalesLedgerEntry? pending;
     return TextField(
       controller: controller,
       autofocus: true,
@@ -1249,10 +1260,12 @@ class _LedgerTableState extends State<_LedgerTable> {
           invoiceDate: kind == 'invoice' ? parsed : item.invoiceDate,
           depositDate: kind == 'deposit' ? parsed : item.depositDate,
         );
-        onEdit(changed);
-        setState(() => _editing = null);
+        pending = changed;
       },
-      onEditingComplete: () => setState(() => _editing = null),
+      onSubmitted: (_) async {
+        if (pending != null) await widget.onDateEdit(pending!);
+        if (mounted) setState(() => _editing = null);
+      },
     );
   }
 
