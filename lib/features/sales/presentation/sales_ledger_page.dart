@@ -1157,10 +1157,7 @@ class _LedgerTable extends StatelessWidget {
           for (final item in items)
             [
               for (var col = 0; col < 15; col++)
-                ((col == 2 && _issuerType(item) == '시공사') ||
-                    (col == 3 && _issuerType(item) == '협력사'))
-                    ? _issuerColor(item)
-                    : ((col == 7 && item.billingDate == null) ||
+                ((col == 7 && item.billingDate == null) ||
                     (col == 8 && item.invoiceDate == null) ||
                     (col == 9 && item.depositDate == null))
                     ? TheWeColor.danger.withValues(alpha: .12)
@@ -1200,15 +1197,9 @@ class _LedgerTable extends StatelessWidget {
           maxLines: 1,
           fitToWidth: true,
         ),
-        _dateField(item.billingDate, (value) => onEdit(item.copyWith(
-          billingDate: value, clearBillingDate: value == null,
-        ))),
-        _dateField(item.invoiceDate, (value) => onEdit(item.copyWith(
-          invoiceDate: value, clearInvoiceDate: value == null,
-        ))),
-        _dateField(item.depositDate, (value) => onEdit(item.copyWith(
-          depositDate: value, clearDepositDate: value == null,
-        ))),
+        _cell(_shortDate(item.billingDate)),
+        _cell(_shortDate(item.invoiceDate)),
+        _cell(_shortDate(item.depositDate)),
         _cell(_money(item.supplyAmount), maxLines: 1, fitToWidth: true),
         _cell('${item.installment}회차', maxLines: 1),
         _StatusPill(status: item.status),
@@ -1216,30 +1207,6 @@ class _LedgerTable extends StatelessWidget {
         _cell(item.category.isEmpty ? '-' : item.category),
       ];
 
-  Widget _dateField(DateTime? value, ValueChanged<DateTime?> onChanged) {
-    final controller = TextEditingController(text: value == null ? '' : _shortDate(value));
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: TextField(
-        controller: controller,
-        textAlign: TextAlign.center,
-        keyboardType: TextInputType.number,
-        decoration: const InputDecoration(isDense: true, hintText: 'MMDD', border: InputBorder.none),
-        onChanged: (raw) {
-          final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
-          if (digits.length != 4) return;
-          final parsed = DateTime.tryParse('${month.year}-${digits.substring(0, 2)}-${digits.substring(2)}');
-          if (parsed != null && parsed.month == int.parse(digits.substring(0, 2)) && parsed.day == int.parse(digits.substring(2))) {
-            controller.value = TextEditingValue(text: _shortDate(parsed), selection: TextSelection.collapsed(offset: 5));
-            onChanged(parsed);
-          }
-        },
-        onEditingComplete: () {
-          if (controller.text.trim().isEmpty && value != null) onChanged(null);
-        },
-      ),
-    );
-  }
 }
 
 class _StatusPill extends StatelessWidget {
