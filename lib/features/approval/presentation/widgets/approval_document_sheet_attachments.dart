@@ -204,6 +204,7 @@ class _AttachmentPreviewDialog extends StatefulWidget {
 
 class _AttachmentPreviewDialogState extends State<_AttachmentPreviewDialog> {
   final PdfViewerController _controller = PdfViewerController();
+  int _rotation = 0;
 
   Future<void> _fitWidth() async {
     if (!_controller.isReady) return;
@@ -273,6 +274,11 @@ class _AttachmentPreviewDialogState extends State<_AttachmentPreviewDialog> {
                     ),
                   ],
                   IconButton(
+                    tooltip: '90도 회전',
+                    onPressed: () => setState(() => _rotation = (_rotation + 90) % 360),
+                    icon: const Icon(Icons.rotate_right),
+                  ),
+                  IconButton(
                     tooltip: '축소',
                     onPressed: _controller.zoomDown,
                     icon: const Icon(Icons.zoom_out),
@@ -297,7 +303,9 @@ class _AttachmentPreviewDialogState extends State<_AttachmentPreviewDialog> {
             Expanded(
               child: ColoredBox(
                 color: TheWeColor.background,
-                child: PdfViewer.data(
+                child: RotatedBox(
+                  quarterTurns: _rotation ~/ 90,
+                  child: PdfViewer.data(
                   widget.attachment.bytes,
                   sourceName:
                       '${widget.attachment.name}-${widget.attachment.base64Data.hashCode}',
@@ -322,6 +330,7 @@ class _AttachmentPreviewDialogState extends State<_AttachmentPreviewDialog> {
                         );
                       });
                     },
+                  ),
                   ),
                 ),
               ),
