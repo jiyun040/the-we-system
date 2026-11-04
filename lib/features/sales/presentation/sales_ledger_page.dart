@@ -1792,6 +1792,37 @@ Widget _cell(String value, {
       ),
     );
 
+bool _isOverdueUnpaid(SalesLedgerEntry item) {
+  final billing = item.billingDate;
+  return billing != null && item.depositDate == null &&
+      DateTime.now().difference(billing).inDays > 60;
+}
+
+String _issuerType(SalesLedgerEntry item) => item.invoiceIssuerType;
+
+Color _issuerColor(SalesLedgerEntry item) =>
+    item.invoiceIssuerType == '시공사' ? TheWeColor.blue300 : TheWeColor.green;
+
+Widget _editAmountRow(String label, String value, {bool bold = false}) =>
+    Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: bold ? TheWeTextStyle.subtitle : TheWeTextStyle.body)),
+          Text(value, style: bold ? TheWeTextStyle.subtitle : TheWeTextStyle.body),
+        ],
+      ),
+    );
+
+String _mergeNote(String note, String adjustmentReason) {
+  final base = note.trim();
+  final reason = adjustmentReason.trim();
+  if (reason.isEmpty) return base;
+  if (base.isEmpty) return reason;
+  if (base.contains(reason)) return base;
+  return '$base ($reason)';
+}
+
 String _date(DateTime? value) =>
     value == null ? '-' : DateFormat('yyyy.MM.dd').format(value);
 
