@@ -1168,39 +1168,6 @@ class _LedgerTable extends StatelessWidget {
             ],
         ],
         onRowTaps: [for (final item in items) () => onEdit(item)],
-        onCellTaps: [
-          for (final item in items)
-            [
-              for (var col = 0; col < 15; col++)
-                if (col == 7 || col == 8 || col == 9)
-                      () async {
-                    final kind = col == 7 ? 'billing' : col == 8 ? 'invoice' : 'deposit';
-                    final current = col == 7 ? item.billingDate : col == 8 ? item.invoiceDate : item.depositDate;
-
-                    final value = await showTheWeDatePicker(
-                      context,
-                      initialDate: current ?? month,
-                      clearOnReselect: true,
-                      hasSelection: current != null,
-                      firstDate: DateTime(DateTime.now().year - 5),
-                      lastDate: DateTime.now(),
-                      title: '${kind == 'billing' ? '청구' : kind == 'invoice' ? '계산서 발행' : '입금'} 날짜 선택',
-                    );
-                    if (value == null) return;
-                    final v = value.year == 1 ? null : value;
-
-                    onEdit(item.copyWith(
-                      billingDate: kind == 'billing' ? v : item.billingDate,
-                      clearBillingDate: kind == 'billing' && v == null,
-                      invoiceDate: kind == 'invoice' ? v : item.invoiceDate,
-                      clearInvoiceDate: kind == 'invoice' && v == null,
-                      depositDate: kind == 'deposit' ? v : item.depositDate,
-                      clearDepositDate: kind == 'deposit' && v == null,
-                    ));
-                  }
-                else null,
-            ],
-        ],
       );
 
   List<Widget> _row(BuildContext context, int index, SalesLedgerEntry item) =>
@@ -1233,15 +1200,46 @@ class _LedgerTable extends StatelessWidget {
           maxLines: 1,
           fitToWidth: true,
         ),
-        _cell(_shortDate(item.billingDate)),
-        _cell(_shortDate(item.invoiceDate)),
-        _cell(_shortDate(item.depositDate)),
+        _dateField(item.billingDate, (value) => onEdit(item.copyWith(
+          billingDate: value, clearBillingDate: value == null,
+        ))),
+        _dateField(item.invoiceDate, (value) => onEdit(item.copyWith(
+          invoiceDate: value, clearInvoiceDate: value == null,
+        ))),
+        _dateField(item.depositDate, (value) => onEdit(item.copyWith(
+          depositDate: value, clearDepositDate: value == null,
+        ))),
         _cell(_money(item.supplyAmount), maxLines: 1, fitToWidth: true),
         _cell('${item.installment}회차', maxLines: 1),
         _StatusPill(status: item.status),
         _cell(item.note, left: true),
         _cell(item.category.isEmpty ? '-' : item.category),
       ];
+
+  Widget _dateField(DateTime? value, ValueChanged<DateTime?> onChanged) {
+    final controller = TextEditingController(text: value == null ? '' : _shortDate(value));
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: TextField(
+        controller: controller,
+        textAlign: TextAlign.center,
+        keyboardType: TextInputType.number,
+        decoration: const InputDecoration(isDense: true, hintText: 'MMDD', border: InputBorder.none),
+        onChanged: (raw) {
+          final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+          if (digits.length != 4) return;
+          final parsed = DateTime.tryParse('${month.year}-${digits.substring(0, 2)}-${digits.substring(2)}');
+          if (parsed != null && parsed.month == int.parse(digits.substring(0, 2)) && parsed.day == int.parse(digits.substring(2))) {
+            controller.value = TextEditingValue(text: _shortDate(parsed), selection: TextSelection.collapsed(offset: 5));
+            onChanged(parsed);
+          }
+        },
+        onEditingComplete: () {
+          if (controller.text.trim().isEmpty && value != null) onChanged(null);
+        },
+      ),
+    );
+  }
 }
 
 class _StatusPill extends StatelessWidget {
