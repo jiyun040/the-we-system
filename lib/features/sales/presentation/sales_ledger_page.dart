@@ -1097,7 +1097,7 @@ class _SummaryCards extends StatelessWidget {
       );
 }
 
-class _LedgerTable extends StatelessWidget {
+class _LedgerTable extends StatefulWidget {
   const _LedgerTable({
     required this.month,
     required this.items,
@@ -1109,6 +1109,18 @@ class _LedgerTable extends StatelessWidget {
   final DateTime month;
   final ValueChanged<SalesLedgerEntry> onEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
+
+  @override
+  State<_LedgerTable> createState() => _LedgerTableState();
+}
+
+class _LedgerTableState extends State<_LedgerTable> {
+  String? _editing;
+
+  List<SalesLedgerEntry> get items => widget.items;
+  DateTime get month => widget.month;
+  ValueChanged<SalesLedgerEntry> get onEdit => widget.onEdit;
+  ValueChanged<SalesLedgerEntry> get onStatement => widget.onStatement;
 
   @override
   Widget build(BuildContext context) =>
@@ -1157,7 +1169,10 @@ class _LedgerTable extends StatelessWidget {
           for (final item in items)
             [
               for (var col = 0; col < 15; col++)
-                ((col == 7 && item.billingDate == null) ||
+                ((col == 2 && _issuerType(item) == '시공사') ||
+                    (col == 3 && _issuerType(item) == '협력사'))
+                    ? _issuerColor(item)
+                    : ((col == 7 && item.billingDate == null) ||
                     (col == 8 && item.invoiceDate == null) ||
                     (col == 9 && item.depositDate == null))
                     ? TheWeColor.danger.withValues(alpha: .12)
@@ -1197,15 +1212,49 @@ class _LedgerTable extends StatelessWidget {
           maxLines: 1,
           fitToWidth: true,
         ),
-        _cell(_shortDate(item.billingDate)),
-        _cell(_shortDate(item.invoiceDate)),
-        _cell(_shortDate(item.depositDate)),
+        _dateCell(item, 'billing', item.billingDate),
+        _dateCell(item, 'invoice', item.invoiceDate),
+        _dateCell(item, 'deposit', item.depositDate),
         _cell(_money(item.supplyAmount), maxLines: 1, fitToWidth: true),
         _cell('${item.installment}회차', maxLines: 1),
         _StatusPill(status: item.status),
         _cell(item.note, left: true),
         _cell(item.category.isEmpty ? '-' : item.category),
       ];
+
+  Widget _dateCell(SalesLedgerEntry item, String kind, DateTime? value) {
+    final key = '${item.id}:$kind';
+    if (_editing != key) {
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _editing = key),
+        child: _cell(_shortDate(value)),
+      );
+    }
+    final controller = TextEditingController(text: value == null ? '' : _shortDate(value));
+    return TextField(
+      controller: controller,
+      autofocus: true,
+      textAlign: TextAlign.center,
+      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(isDense: true, hintText: 'MMDD', border: InputBorder.none),
+      onChanged: (raw) {
+        final digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+        if (digits.length != 4) return;
+        final parsed = DateTime.tryParse('${month.year}-${digits.substring(0, 2)}-${digits.substring(2)}');
+        if (parsed == null || parsed.month != int.parse(digits.substring(0, 2)) || parsed.day != int.parse(digits.substring(2))) return;
+        controller.value = TextEditingValue(text: _shortDate(parsed), selection: const TextSelection.collapsed(offset: 5));
+        final changed = item.copyWith(
+          billingDate: kind == 'billing' ? parsed : item.billingDate,
+          invoiceDate: kind == 'invoice' ? parsed : item.invoiceDate,
+          depositDate: kind == 'deposit' ? parsed : item.depositDate,
+        );
+        onEdit(changed);
+        setState(() => _editing = null);
+      },
+      onEditingComplete: () => setState(() => _editing = null),
+    );
+  }
 
 }
 
