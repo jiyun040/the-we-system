@@ -10,7 +10,6 @@ class ApprovalDateInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final negative = newValue.text.trimLeft().startsWith('-');
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     final limited = digits.substring(0, digits.length.clamp(0, 8));
     final buffer = StringBuffer();
@@ -37,6 +36,7 @@ class ApprovalAmountInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
+    final negative = newValue.text.trimLeft().startsWith('-');
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (digits.isEmpty) {
       return negative
