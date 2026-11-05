@@ -10,6 +10,7 @@ class ApprovalDateInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
+    final negative = newValue.text.trimLeft().startsWith('-');
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     final limited = digits.substring(0, digits.length.clamp(0, 8));
     final buffer = StringBuffer();
@@ -37,10 +38,14 @@ class ApprovalAmountInputFormatter extends TextInputFormatter {
     TextEditingValue newValue,
   ) {
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
-    if (digits.isEmpty) return const TextEditingValue();
+    if (digits.isEmpty) {
+      return negative
+          ? const TextEditingValue(text: '-', selection: TextSelection.collapsed(offset: 1))
+          : const TextEditingValue();
+    }
     final number = int.tryParse(digits);
     if (number == null) return oldValue;
-    final value = _format.format(number);
+    final value = '${negative ? '-' : ''}${_format.format(number)}';
     return TextEditingValue(
       text: value,
       selection: TextSelection.collapsed(offset: value.length),
