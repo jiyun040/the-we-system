@@ -121,9 +121,7 @@ Future<void> showApprovalAttachmentPreview(
                   onPressed: () => Navigator.pop(dialogContext),
                 ),
               ),
-              Expanded(
-                child: InteractiveViewer(child: Image.memory(attachment.bytes)),
-              ),
+              Expanded(child: _RotatableImagePreview(attachment: attachment)),
             ],
           ),
         ),
@@ -190,6 +188,42 @@ Future<void> showApprovalAttachmentPreview(
     builder: (dialogContext) =>
         _AttachmentPreviewDialog(attachment: attachment),
   );
+}
+
+
+class _RotatableImagePreview extends StatefulWidget {
+  const _RotatableImagePreview({required this.attachment});
+
+  final ApprovalAttachment attachment;
+
+  @override
+  State<_RotatableImagePreview> createState() => _RotatableImagePreviewState();
+}
+
+class _RotatableImagePreviewState extends State<_RotatableImagePreview> {
+  int _turns = 0;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              tooltip: '90도 회전',
+              onPressed: () => setState(() => _turns = (_turns + 1) % 4),
+              icon: const Icon(Icons.rotate_right),
+            ),
+          ),
+          Expanded(
+            child: InteractiveViewer(
+              child: RotatedBox(
+                quarterTurns: _turns,
+                child: Image.memory(widget.attachment.bytes),
+              ),
+            ),
+          ),
+        ],
+      );
 }
 
 class _AttachmentPreviewDialog extends StatefulWidget {
