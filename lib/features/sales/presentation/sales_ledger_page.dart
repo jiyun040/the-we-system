@@ -772,7 +772,7 @@ class _LedgerContent extends StatelessWidget {
   final Future<void> Function(SalesLedgerArchive) onDownloadArchive;
   final VoidCallback onOpenArchives;
   final ValueChanged<SalesLedgerEntry> onEdit;
-  final ValueChanged<SalesLedgerEntry> onDateEdit;
+  final Future<void> Function(SalesLedgerEntry) onDateEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
   @override
@@ -1120,7 +1120,7 @@ class _LedgerTable extends StatefulWidget {
   final List<SalesLedgerEntry> items;
   final DateTime month;
   final ValueChanged<SalesLedgerEntry> onEdit;
-  final ValueChanged<SalesLedgerEntry> onDateEdit;
+  final Future<void> Function(SalesLedgerEntry) onDateEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
 
   @override
