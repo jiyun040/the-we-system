@@ -103,7 +103,9 @@ class ApprovalMobileLineItemEditor extends StatelessWidget {
                 column.$1 == 'amount' ||
                     column.$1 == 'total' ||
                     column.$1 == 'quantity'
-                ? TextInputType.number
+                ? (column.$1 == 'amount' || column.$1 == 'total'
+                    ? const TextInputType.numberWithOptions(signed: true)
+                    : TextInputType.number)
                 : column.$1 == 'date'
                 ? TextInputType.datetime
                 : TextInputType.multiline,
@@ -287,7 +289,9 @@ class ApprovalPdfInputCell extends StatelessWidget {
       onChanged: onChanged,
       textAlign: textAlign,
       keyboardType: isAmount || isQuantity
-          ? TextInputType.number
+          ? (isAmount
+              ? const TextInputType.numberWithOptions(signed: true)
+              : TextInputType.number)
           : isDate
           ? TextInputType.datetime
           : TextInputType.multiline,

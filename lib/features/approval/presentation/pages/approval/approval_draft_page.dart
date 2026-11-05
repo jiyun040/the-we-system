@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart';
@@ -51,12 +52,40 @@ class _ApprovalDraftPageState extends ConsumerState<ApprovalDraftPage> {
   final Set<int> manuallyEditedLineTotals = {};
   bool departmentVisible = false;
   bool initialized = false;
+  Timer? _autosaveTimer;
+  bool _dirty = false;
+
+  @override
+  void initState() {
+    super.initState();
+    titleController.addListener(_markDirty);
+    contentController.addListener(_markDirty);
+  }
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
+    titleController.removeListener(_markDirty);
+    contentController.removeListener(_markDirty);
     titleController.dispose();
     contentController.dispose();
     super.dispose();
+  }
+
+  void _markDirty() {
+    if (!initialized) return;
+    _dirty = true;
+    _autosaveTimer ??= Timer.periodic(const Duration(seconds: 10), (_) async {
+      if (!_dirty || !mounted || selectedFormId == null) return;
+      _dirty = false;
+      await ref.read(approvalDashboardControllerProvider.notifier).saveDraft(
+        formId: selectedFormId!, documentId: editingDocumentId,
+        title: titleController.text.trim(), content: contentController.text.trim(),
+        linkedDocuments: linkedDocuments, attachments: attachments,
+        departmentVisible: departmentVisible, formFields: formFields,
+        lineItems: lineItems, approvalLineId: selectedApprovalLineId,
+      );
+    });
   }
 
   @override

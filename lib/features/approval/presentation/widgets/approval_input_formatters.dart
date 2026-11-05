@@ -36,7 +36,8 @@ class ApprovalAmountInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final negative = newValue.text.trimLeft().startsWith('-');
+    final negative = newValue.text.trimLeft().startsWith('-') ||
+        (oldValue.text.startsWith('-') && newValue.text.isNotEmpty);
     final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (digits.isEmpty) {
       return negative
