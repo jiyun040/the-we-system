@@ -1182,7 +1182,10 @@ class _LedgerTableState extends State<_LedgerTable> {
                     (col == 8 && item.invoiceDate == null) ||
                     (col == 9 && item.depositDate == null))
                     ? TheWeColor.danger.withValues(alpha: .12)
-                    : ((col == 2 || col == 3) ? Colors.green.withValues(alpha: .10) : null),
+                    : (((col == 2 && _issuerType(item) == '시공사') ||
+                              (col == 3 && _issuerType(item) == '협력사'))
+                          ? Colors.green.withValues(alpha: .10)
+                          : null),
             ],
         ],
         onRowTaps: [for (final item in items) () => onEdit(item)],
