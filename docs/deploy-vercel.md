@@ -29,8 +29,8 @@ Vercel 빌드 설정은 `vercel.json`에 포함되어 있으므로 Vercel 화면
 배포 전에 Vercel 환경변수에 실제 Django API 주소를 반드시 추가합니다.
 
 - Name: `API_BASE_URL`
-- Production: `https://the-we-system.vercel.app/api/v1`
-- Preview(`develop`): `https://the-we-system.vercel.app/api/v1`
+- Production: `https://the-we-erp.cloud/api/v1`
+- Preview(`develop`): `https://the-we-erp.cloud/api/v1`
 - Development: `http://127.0.0.1:8000/api/v1`
 
 `API_BASE_URL`이 없으면 빌드는 실패합니다. 운영 웹에서는 Vercel의 `/api/v1` 경로가 EC2 Django 서버로 프록시되므로 브라우저의 HTTPS 혼합 콘텐츠 오류 없이 API를 호출합니다.
@@ -44,7 +44,7 @@ Vercel 빌드 설정은 `vercel.json`에 포함되어 있으므로 Vercel 화면
 예시:
 
 ```text
-https://the-we-system.vercel.app
+https://the-we-erp.cloud
 ```
 
 사용자는 브라우저에서 URL을 열거나, 모바일/PC에서 PWA로 설치해 사용할 수 있습니다.

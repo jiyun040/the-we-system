@@ -1,9 +1,0 @@
-[build]
-    publish = "web"
-    command = "flutter build web --release --basehref ./"
-
-[build.environment]
-    API_BASE_UTL = "http://3.39.38"
-
-[[plugins]]
-    package = "netlify-plugin-flutter"
