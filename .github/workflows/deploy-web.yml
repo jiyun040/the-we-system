@@ -36,5 +36,9 @@ jobs:
           sudo rm -rf /var/www/the-we-erp/*
           sudo cp -r build/web/. /var/www/the-we-erp/
           sudo chown -R www-data:www-data /var/www/the-we-erp
+          # The API and the Flutter SPA share this domain. Keep the SPA as
+          # Nginx's root so / does not expose Django's health JSON response.
+          sudo cp deploy/nginx/the-we-erp.conf /etc/nginx/sites-available/the-we-erp
+          sudo ln -sfn /etc/nginx/sites-available/the-we-erp /etc/nginx/sites-enabled/the-we-erp
           sudo nginx -t
           sudo systemctl reload nginx
