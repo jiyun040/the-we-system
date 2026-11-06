@@ -11,6 +11,8 @@ import 'package:the_we_system/features/approval/domain/entities/document/approva
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/admin_mode_restore_intent.dart';
 import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_notice_detail_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'approval_home_overview.dart';
 import 'approval_home_processing.dart';
 
@@ -25,6 +27,7 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
   final TextEditingController searchController = TextEditingController();
   final ScrollController waitingScrollController = ScrollController();
   bool _checkedAdminRestore = false;
+  bool _noticePopupChecked = false;
 
   Future<void> _returnToAdminAccessGate(String userId) async {
     final shouldRestore = await shouldOfferAdminModeAfterRefresh(userId);
@@ -73,6 +76,7 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
           : null,
       body: state.when(
         data: (approvalState) {
+          _showUnreadNotice(approvalState);
           if (!_checkedAdminRestore &&
               approvalState.currentUser?.canAccessAdminMode == true) {
             _checkedAdminRestore = true;
@@ -193,6 +197,30 @@ class _ApprovalHomePageState extends ConsumerState<ApprovalHomePage> {
             Center(child: CircularProgressIndicator(color: TheWeColor.blue300)),
       ),
     );
+  }
+
+  Future<void> _showUnreadNotice(ApprovalDashboardState approvalState) async {
+    if (_noticePopupChecked || !mounted) return;
+    final userId = approvalState.currentUser?.id;
+    if (userId == null) return;
+    final notices =
+        approvalState.notices.where((notice) => !notice.isDraft).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    if (notices.isEmpty) return;
+
+    _noticePopupChecked = true;
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    final notice = notices.first;
+    final key = 'approval_notice_seen_${userId}_${notice.id}';
+    if (prefs.getBool(key) == true) return;
+    await prefs.setBool(key, true);
+    if (!mounted) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        showApprovalNoticeDetailDialog(context, notice);
+      }
+    });
   }
 
   List<ApprovalDocument> _filterDocuments(
