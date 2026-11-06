@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,28 +29,12 @@ jobs:
             --base-href=/ \
             --dart-define=API_BASE_URL=https://the-we-erp.cloud/api/v1
 
-      - name: Upload web build
-        uses: appleboy/scp-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: build/web/*
-          target: /tmp/the-we-web
-          strip_components: 2
-
       - name: Activate deployment
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            sudo mkdir -p /var/www/the-we-erp
-            sudo rm -rf /var/www/the-we-erp/*
-            sudo cp -r /tmp/the-we-web/* /var/www/the-we-erp/
-            sudo chown -R www-data:www-data /var/www/the-we-erp
-            sudo nginx -t
-            sudo systemctl reload nginx
-            rm -rf /tmp/the-we-web
+        run: |
+          set -e
+          sudo mkdir -p /var/www/the-we-erp
+          sudo rm -rf /var/www/the-we-erp/*
+          sudo cp -r build/web/. /var/www/the-we-erp/
+          sudo chown -R www-data:www-data /var/www/the-we-erp
+          sudo nginx -t
+          sudo systemctl reload nginx
