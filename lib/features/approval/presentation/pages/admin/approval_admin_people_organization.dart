@@ -104,10 +104,10 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  TextField(
+                  _DepartmentAutocompleteField(
                     controller: department,
+                    departments: state.departments,
                     readOnly: initialDepartment.isNotEmpty,
-                    decoration: const InputDecoration(labelText: '부서'),
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -264,9 +264,9 @@ class AdminEmployeeManagement extends ConsumerWidget {
                     decoration: const InputDecoration(labelText: '이름'),
                   ),
                   const SizedBox(height: 10),
-                  TextField(
+                  _DepartmentAutocompleteField(
                     controller: department,
-                    decoration: const InputDecoration(labelText: '부서'),
+                    departments: state.departments,
                   ),
                   const SizedBox(height: 10),
                   TextField(
@@ -382,6 +382,112 @@ class AdminEmployeeManagement extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DepartmentAutocompleteField extends StatelessWidget {
+  const _DepartmentAutocompleteField({
+    required this.controller,
+    required this.departments,
+    this.readOnly = false,
+  });
+
+  final TextEditingController controller;
+  final List<String> departments;
+  final bool readOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return Autocomplete<String>(
+      key: const ValueKey('employee-department-autocomplete'),
+      initialValue: TextEditingValue(text: controller.text),
+      optionsBuilder: (value) {
+        final query = value.text.trim().toLowerCase();
+        final options = departments
+            .where((department) => department.trim().isNotEmpty)
+            .where(
+              (department) =>
+                  query.isEmpty || department.toLowerCase().contains(query),
+            )
+            .toSet()
+            .toList();
+        options.sort((left, right) => left.compareTo(right));
+        return options;
+      },
+      onSelected: (value) => controller.text = value,
+      optionsViewBuilder: (context, onSelected, options) => Align(
+        alignment: Alignment.topLeft,
+        child: Material(
+          color: TheWeColor.white,
+          elevation: 12,
+          shadowColor: TheWeColor.black900.withValues(alpha: .18),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: TheWeColor.blue200.withValues(alpha: .7),
+            ),
+          ),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 340),
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              shrinkWrap: true,
+              itemCount: options.length,
+              itemBuilder: (context, index) {
+                final option = options.elementAt(index);
+                return InkWell(
+                  borderRadius: BorderRadius.circular(9),
+                  onTap: () => onSelected(option),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    child: Text(
+                      option,
+                      style: TheWeTextStyle.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: TheWeColor.black900,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ),
+      fieldViewBuilder: (context, fieldController, focusNode, onSubmitted) {
+        if (fieldController.text != controller.text) {
+          fieldController.value = controller.value;
+        }
+        return TextField(
+          controller: fieldController,
+          focusNode: focusNode,
+          readOnly: readOnly,
+          onChanged: (value) {
+            if (controller.text != value) controller.text = value;
+          },
+          onSubmitted: (_) => onSubmitted(),
+          decoration: const InputDecoration(
+            labelText: '부서',
+            hintText: '부서명을 입력하세요.',
+            prefixIcon: Icon(Icons.apartment_outlined),
+            filled: true,
+            fillColor: TheWeColor.white,
+            contentPadding: EdgeInsets.symmetric(horizontal: 14),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: TheWeColor.blue200),
+              borderRadius: BorderRadius.all(Radius.circular(14)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: TheWeColor.blue300, width: 1.4),
+              borderRadius: BorderRadius.all(Radius.circular(14)),
+            ),
+          ),
+        );
+      },
     );
   }
 }
