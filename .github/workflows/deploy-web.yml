@@ -45,4 +45,9 @@ jobs:
           sudo rm -f /etc/nginx/sites-enabled/default
           sudo ln -sfn /etc/nginx/sites-available/the-we-erp /etc/nginx/sites-enabled/the-we-erp
           sudo nginx -t
+          # A fresh VM may have nginx installed but inactive; reload does
+          # nothing in that case. Ensure the service is running and survives
+          # reboots, then verify that the local HTTP listener responds.
+          sudo systemctl enable --now nginx
           sudo systemctl reload nginx
+          curl --fail --silent --show-error --max-time 10 -H 'Host: the-we-erp.cloud' http://127.0.0.1/ >/dev/null
