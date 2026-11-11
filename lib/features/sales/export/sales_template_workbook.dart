@@ -805,14 +805,7 @@ Uint8List buildStatementTemplate(
   for (var page = 0; page < pageCount; page++) {
     book.sheet = original.copy();
     final first = statement.items.firstOrNull;
-    book.set(
-      'B4',
-      first == null
-          ? ''
-          : first.invoiceIssuerType == '시공사'
-          ? first.contractor
-          : first.partner,
-    );
+    book.set('B4', first?.invoiceIssuerName ?? '');
     book.set('B6', statement.projectName);
     book.set('E9', _excelDate(issued));
     book.set(
