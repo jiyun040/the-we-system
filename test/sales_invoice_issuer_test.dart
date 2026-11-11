@@ -22,6 +22,8 @@ void main() {
       expect(entry('').invoiceIssuerType, '협력사');
       expect(entry('').toEditableJson()['invoiceIssuer'], '협력사');
       expect(entry('다른회사').invoiceIssuerType, '');
+      expect(entry('다른회사').invoiceIssuerName, '다른회사');
+      expect(entry('다른회사').toEditableJson()['invoiceIssuer'], '다른회사');
     },
   );
   test('API sends issuer and preserves returned value', () async {
