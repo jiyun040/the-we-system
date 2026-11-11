@@ -322,6 +322,26 @@ class TheWeApiService {
     return ApprovalDocument.fromJson(response.data ?? <String, dynamic>{});
   });
 
+  Future<ApprovalDocument> updateMaterialPhotos(
+    String id,
+    Map<String, String> photos,
+  ) => _guard(() async {
+    final response = await _dio.patch<Map<String, dynamic>>(
+      '/approvals/documents/$id/material-photos',
+      data: photos,
+    );
+    return ApprovalDocument.fromJson(response.data ?? <String, dynamic>{});
+  });
+
+  Future<ApprovalDocument> requestMaterialFinalApproval(String id) =>
+      _guard(() async {
+        final response = await _dio.post<Map<String, dynamic>>(
+          '/approvals/documents/$id/material-final-approval',
+          data: const <String, dynamic>{},
+        );
+        return ApprovalDocument.fromJson(response.data ?? <String, dynamic>{});
+      });
+
   Future<ApprovalDocument> actOnDocument(
     String id, {
     required bool approve,
