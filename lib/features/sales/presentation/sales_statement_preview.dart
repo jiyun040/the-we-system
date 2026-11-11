@@ -44,11 +44,7 @@ List<StatementText> statementPageText(
   });
   output.addAll([
     StatementText(
-      first == null
-          ? ''
-          : first.invoiceIssuerType == '시공사'
-          ? first.contractor
-          : first.partner,
+      first?.invoiceIssuerName ?? '',
       121.4,
       138.5,
       139.1,
