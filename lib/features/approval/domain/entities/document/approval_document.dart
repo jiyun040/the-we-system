@@ -44,3 +44,12 @@ abstract class ApprovalDocument with _$ApprovalDocument {
   factory ApprovalDocument.fromJson(Map<String, dynamic> json) =>
       _$ApprovalDocumentFromJson(json);
 }
+
+extension ApprovalDocumentDisplayStatus on ApprovalDocument {
+  String get displayStatus =>
+      form == '자재구매신청서' &&
+          status == '결재대기' &&
+          formFields['_materialApprovalStage'] == 'awaiting_photos'
+      ? '2차 진행중'
+      : status;
+}

@@ -20,7 +20,7 @@ bool canUpdateMaterialPhotos(
   bool adminAccess = false,
 }) =>
     isMaterialPurchaseDocument(document) &&
-    document.status == '완료' &&
+    (document.status == '완료' || document.status == '결재대기') &&
     (document.formFields['_materialApprovalStage'] == null ||
         document.formFields['_materialApprovalStage'] == 'awaiting_photos') &&
     userName != null &&

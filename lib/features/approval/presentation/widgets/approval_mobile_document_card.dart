@@ -54,7 +54,7 @@ class ApprovalMobileDocumentCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _StatusBadge(text: document.status, color: statusColor),
+                _StatusBadge(text: document.displayStatus, color: statusColor),
               ],
             ),
             const SizedBox(height: 12),

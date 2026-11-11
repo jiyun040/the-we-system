@@ -409,7 +409,7 @@ class _DraftProgressRow extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                     ),
                     child: Text(
-                      document.status,
+                      document.displayStatus,
                       style: TheWeTextStyle.caption.copyWith(
                         color: document.status == '반려'
                             ? TheWeColor.pink

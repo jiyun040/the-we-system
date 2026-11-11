@@ -404,7 +404,7 @@ class _DocumentTable extends ConsumerWidget {
                 ),
                 ApprovalDocumentTableText(document.department),
                 ApprovalDocumentTableText(document.documentNo),
-                ApprovalDocumentStatusChip(document.status),
+                ApprovalDocumentStatusChip(document.displayStatus),
                 Wrap(
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,
