@@ -76,12 +76,13 @@ List<EmployeeAccount> approvalChainFor(
   EmployeeAccount drafter,
   List<EmployeeAccount> accounts,
 ) {
-  final approvers = accounts
-      .where((account) => account.isAdmin && account.id != drafter.id)
-      .toList();
-  if (approvers.isNotEmpty) {
-    return approvers;
-  }
+  final representatives = accounts.where((account) =>
+      account.id != drafter.id &&
+      (account.id == 'ceo' || account.position.contains('대표'))).toList();
+  if (representatives.isNotEmpty) return [representatives.first];
+
+  final approvers = accounts.where((account) => account.isAdmin && account.id != drafter.id).toList();
+  if (approvers.isNotEmpty) return [approvers.first];
 
   return accounts.where((account) => account.id != drafter.id).take(1).toList();
 }
