@@ -62,6 +62,12 @@ class SalesLedgerEntry {
     return '';
   }
 
+  String get invoiceIssuerName => switch (invoiceIssuerType) {
+    '시공사' => contractor,
+    '협력사' => partner,
+    _ => invoiceIssuer.trim(),
+  };
+
   final int adjustmentAmount;
   final String adjustmentReason;
 
@@ -173,6 +179,26 @@ class SalesLedgerEntry {
     adjustmentAmount: adjustmentAmount ?? this.adjustmentAmount,
     adjustmentReason: adjustmentReason ?? this.adjustmentReason,
   );
+}
+
+List<SalesLedgerEntry> siteDateUpdates(
+  Iterable<SalesLedgerEntry> entries,
+  SalesLedgerEntry original,
+  SalesLedgerEntry changed,
+) {
+  final billingChanged = original.billingDate != changed.billingDate;
+  final invoiceChanged = original.invoiceDate != changed.invoiceDate;
+  if (!billingChanged && !invoiceChanged) return const [];
+  return entries
+      .where((entry) =>
+          entry.id != original.id && entry.projectName == original.projectName)
+      .map((entry) => entry.copyWith(
+            billingDate: billingChanged ? changed.billingDate : entry.billingDate,
+            clearBillingDate: billingChanged && changed.billingDate == null,
+            invoiceDate: invoiceChanged ? changed.invoiceDate : entry.invoiceDate,
+            clearInvoiceDate: invoiceChanged && changed.invoiceDate == null,
+          ))
+      .toList();
 }
 
 class SalesLedgerSummary {
