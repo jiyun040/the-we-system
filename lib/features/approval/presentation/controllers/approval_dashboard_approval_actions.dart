@@ -2,6 +2,31 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
 extension ApprovalDashboardApprovalActions on ApprovalDashboardController {
+  Future<void> updateMaterialPhotos(
+    String documentId,
+    Map<String, String> photos,
+  ) async {
+    try {
+      replaceApprovalDocument(
+        this,
+        await api.updateMaterialPhotos(documentId, photos),
+      );
+    } catch (error) {
+      reportOperationError(error, fallback: '자재 사진을 저장하지 못했습니다.');
+    }
+  }
+
+  Future<void> requestMaterialFinalApproval(String documentId) async {
+    try {
+      replaceApprovalDocument(
+        this,
+        await api.requestMaterialFinalApproval(documentId),
+      );
+    } catch (error) {
+      reportOperationError(error, fallback: '2차 최종승인을 요청하지 못했습니다.');
+    }
+  }
+
   Future<void> approveDocument(
     String documentId, {
     required String action,
