@@ -10,8 +10,21 @@ import 'package:the_we_system/features/approval/presentation/controllers/approva
 import 'package:the_we_system/features/approval/presentation/widgets/approval_dialogs.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_pdf.dart';
+import 'package:the_we_system/features/approval/presentation/widgets/approval_material_photos.dart';
 
 import 'approval_detail_panels.dart';
+
+bool canUpdateMaterialPhotos(
+  ApprovalDocument document,
+  String? userName, {
+  bool adminAccess = false,
+}) =>
+    isMaterialPurchaseDocument(document) &&
+    document.status == '완료' &&
+    (document.formFields['_materialApprovalStage'] == null ||
+        document.formFields['_materialApprovalStage'] == 'awaiting_photos') &&
+    userName != null &&
+    (adminAccess || document.drafter == userName);
 
 class ApprovalDetailPage extends ConsumerWidget {
   const ApprovalDetailPage({super.key, required this.documentId});
@@ -57,6 +70,11 @@ class ApprovalDetailPage extends ConsumerWidget {
             document.drafter == currentUser.name) &&
         document.canEdit &&
         (document.status == '작성중' || document.status == '반려');
+    final canEditMaterialPhotos = canUpdateMaterialPhotos(
+      document,
+      currentUser?.name,
+      adminAccess: appState.hasAdminDocumentAccess,
+    );
 
     return Scaffold(
       backgroundColor: TheWeColor.white,
@@ -66,6 +84,7 @@ class ApprovalDetailPage extends ConsumerWidget {
           canApprove: canApprove,
           canCancel: canCancel,
           canEdit: canEdit,
+          canEditMaterialPhotos: canEditMaterialPhotos,
         ),
       ),
     );
@@ -78,12 +97,14 @@ class _DetailContent extends StatelessWidget {
     required this.canApprove,
     required this.canCancel,
     required this.canEdit,
+    required this.canEditMaterialPhotos,
   });
 
   final ApprovalDocument document;
   final bool canApprove;
   final bool canCancel;
   final bool canEdit;
+  final bool canEditMaterialPhotos;
 
   @override
   Widget build(BuildContext context) {
@@ -94,6 +115,7 @@ class _DetailContent extends StatelessWidget {
           canApprove: canApprove,
           canCancel: canCancel,
           canEdit: canEdit,
+          canEditMaterialPhotos: canEditMaterialPhotos,
         ),
         Divider(height: 1, color: TheWeColor.black300.withValues(alpha: 0.35)),
         Expanded(
@@ -103,7 +125,18 @@ class _DetailContent extends StatelessWidget {
               final showApprovalLine = document.status == '작성중';
               final sheetBody = Padding(
                 padding: EdgeInsets.all(isNarrow ? 16 : 28),
-                child: Center(child: ApprovalDocumentSheet(document: document)),
+                child: Center(
+                  child: ApprovalDocumentSheet(
+                    document: document,
+                    onMaterialPhotoChanged: canEditMaterialPhotos
+                        ? (key, value) => ProviderScope.containerOf(context)
+                              .read(
+                                approvalDashboardControllerProvider.notifier,
+                              )
+                              .updateMaterialPhotos(document.id, {key: value})
+                        : null,
+                  ),
+                ),
               );
               final rightPanel = Container(
                 width: isNarrow ? double.infinity : 330,
@@ -163,12 +196,14 @@ class _DocumentToolbar extends ConsumerWidget {
     required this.canApprove,
     required this.canCancel,
     required this.canEdit,
+    required this.canEditMaterialPhotos,
   });
 
   final ApprovalDocument document;
   final bool canApprove;
   final bool canCancel;
   final bool canEdit;
+  final bool canEditMaterialPhotos;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -288,6 +323,14 @@ class _DocumentToolbar extends ConsumerWidget {
                       AppRouteName.draft,
                       queryParameters: {'reuse': document.id},
                     ),
+                  ),
+                if (canEditMaterialPhotos)
+                  ApprovalToolbarButton(
+                    icon: Icons.verified_outlined,
+                    label: '2차 최종승인 요청',
+                    onPressed: () => ref
+                        .read(approvalDashboardControllerProvider.notifier)
+                        .requestMaterialFinalApproval(document.id),
                   ),
                 ApprovalToolbarButton(
                   icon: Icons.info_outline,
