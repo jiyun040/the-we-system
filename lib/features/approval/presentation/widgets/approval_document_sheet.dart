@@ -8,9 +8,14 @@ import 'approval_document_sheet_tables.dart';
 import 'approval_material_photos.dart';
 
 class ApprovalDocumentSheet extends StatelessWidget {
-  const ApprovalDocumentSheet({super.key, required this.document});
+  const ApprovalDocumentSheet({
+    super.key,
+    required this.document,
+    this.onMaterialPhotoChanged,
+  });
 
   final ApprovalDocument document;
+  final void Function(String key, String value)? onMaterialPhotoChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +88,10 @@ class ApprovalDocumentSheet extends StatelessWidget {
           ] else
             ApprovalPdfDocumentBody(document: document),
           if (isMaterialPurchaseDocument(document))
-            ApprovalMaterialPhotoSection(document: document),
+            ApprovalMaterialPhotoSection(
+              document: document,
+              onChanged: onMaterialPhotoChanged,
+            ),
           if (document.attachments.isNotEmpty) ...[
             const SizedBox(height: 22),
             ApprovalDocumentAttachmentArea(files: document.attachments),
