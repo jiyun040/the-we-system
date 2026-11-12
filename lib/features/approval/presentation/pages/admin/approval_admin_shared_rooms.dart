@@ -31,7 +31,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     setState(() => saving = true);
     try {
       await ref
-          .read(dioProvider)
+          .read<Dio>(dioProvider)
           .post(
             '/board/rooms',
             data: {
