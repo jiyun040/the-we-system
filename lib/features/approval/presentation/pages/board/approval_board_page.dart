@@ -27,6 +27,8 @@ class ApprovalBoardPage extends ConsumerStatefulWidget {
 
 class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   List<Map<String, dynamic>> posts = [];
+  List<Map<String, dynamic>> rooms = [];
+  String? selectedRoomId;
   String selectedDepartment = '';
   bool onlyMyPosts = false;
   String? error;
@@ -41,7 +43,11 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
 
   Future<void> _load() async {
     try {
-      final response = await ref
+      final api = ref.read(dioProvider);
+      final roomsResponse = await api.get<Map<String, dynamic>>('/board/rooms');
+      final response = await api.get<Map<String, dynamic>>('/board/posts', queryParameters: {
+        if (selectedRoomId != null) 'roomId': selectedRoomId,
+      });
           .read(dioProvider)
           .get<Map<String, dynamic>>('/board/posts');
       if (!mounted) return;
@@ -50,6 +56,8 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
             .whereType<Map>()
             .map((row) => Map<String, dynamic>.from(row))
             .toList();
+        rooms = (roomsResponse.data?['rooms'] as List<dynamic>? ?? const [])
+            .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
         loading = false;
         error = null;
       });
@@ -265,6 +273,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                           'attachments': files
                               .map((file) => file.toJson())
                               .toList(),
+                          if (selectedRoomId != null) 'roomId': selectedRoomId,
                         };
                         if (post == null) {
                           await ref
@@ -439,6 +448,18 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                     scrollDirection: Axis.horizontal,
                     child: Row(
                       children: [
+                        for (final room in rooms)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text('방 · ${room['name']}'),
+                              selected: selectedRoomId == room['id'].toString(),
+                              onSelected: (_) async {
+                                setState(() => selectedRoomId = room['id'].toString());
+                                await _load();
+                              },
+                            ),
+                          ),
                         for (final department in ['', ...?state?.departments])
                           Padding(
                             padding: const EdgeInsets.only(right: 8),

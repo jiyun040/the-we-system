@@ -19,6 +19,7 @@ import 'approval_admin_document_access.dart';
 import 'approval_admin_notices.dart';
 import 'approval_admin_people_organization.dart';
 import 'approval_admin_settings.dart';
+import 'approval_admin_shared_rooms.dart';
 
 enum _AdminDestination {
   dashboard(Icons.dashboard_outlined, '근태 관리'),
@@ -28,7 +29,8 @@ enum _AdminDestination {
   organization(Icons.account_tree_outlined, '조직 관리'),
   apps(Icons.apps_outlined, 'APP 관리'),
   settings(Icons.tune_outlined, '통합 설정'),
-  notices(Icons.campaign_outlined, '공지 관리');
+  notices(Icons.campaign_outlined, '공지 관리'),
+  sharedRooms(Icons.folder_shared_outlined, '자료공유 방 생성');
 
   const _AdminDestination(this.icon, this.label);
 
@@ -167,6 +169,8 @@ class _ApprovalAdminPageState extends ConsumerState<ApprovalAdminPage> {
                                           ),
                                   _AdminDestination.notices =>
                                     AdminNoticeManagement(state: state),
+                                  _AdminDestination.sharedRooms =>
+                                    AdminSharedRooms(state: state),
                                 },
                               ),
                             ),
