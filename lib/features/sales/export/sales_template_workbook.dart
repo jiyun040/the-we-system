@@ -799,7 +799,7 @@ Uint8List buildStatementTemplate(
   final overall = rows.fold<int>(0, (s, row) {
     final amount = row.$2
         ? -row.$1.adjustmentAmount
-        : statementSupplyAmount(row.$1);
+        : statementSupplyAmount(row.$1, billingType: statement.billingType);
     return s + amount + (amount * .1).round();
   });
   for (var page = 0; page < pageCount; page++) {
@@ -833,7 +833,7 @@ Uint8List buildStatementTemplate(
       final item = row.$1;
       final amount = row.$2
           ? -item.adjustmentAmount
-          : statementSupplyAmount(item);
+          : statementSupplyAmount(item, billingType: statement.billingType);
       final vat = (amount * .1).round();
       supply += amount;
       tax += vat;

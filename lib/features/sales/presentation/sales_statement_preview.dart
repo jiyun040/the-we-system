@@ -39,7 +39,7 @@ List<StatementText> statementPageText(
   final all = rows.fold<int>(0, (s, row) {
     final amount = row.$2
         ? -row.$1.adjustmentAmount
-        : statementSupplyAmount(row.$1);
+        : statementSupplyAmount(row.$1, billingType: statement.billingType);
     return s + amount + (amount * .1).round();
   });
   output.addAll([
@@ -90,7 +90,7 @@ List<StatementText> statementPageText(
     final item = row.$1;
     final amount = row.$2
         ? -item.adjustmentAmount
-        : statementSupplyAmount(item);
+        : statementSupplyAmount(item, billingType: statement.billingType);
     final vat = (amount * .1).round();
     supply += amount;
     tax += vat;

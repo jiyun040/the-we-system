@@ -7,9 +7,9 @@ const statementShortMonthNote =
     '※ 당 현장은 1개월 미만 현장으로 1개월 임대료 초과되어 1개월분으로 계산하였습니다.';
 const _defaultStatementSupplyAmount = 3000000;
 
-int statementSupplyAmount(SalesLedgerEntry item) {
+int statementSupplyAmount(SalesLedgerEntry item, {String billingType = '일대'}) {
   final days = statementUsageDays(item);
-  if (days != null && days < 30) {
+  if (billingType == '일대' && days != null && days < 30) {
     return (days * 160000 + 500000).clamp(0, _defaultStatementSupplyAmount);
   }
   return item.supplyAmount > 0
