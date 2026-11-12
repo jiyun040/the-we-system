@@ -43,13 +43,11 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
 
   Future<void> _load() async {
     try {
-      final api = ref.read(dioProvider);
+      final api = ref.read<Dio>(dioProvider);
       final roomsResponse = await api.get<Map<String, dynamic>>('/board/rooms');
       final response = await api.get<Map<String, dynamic>>('/board/posts', queryParameters: {
         if (selectedRoomId != null) 'roomId': selectedRoomId,
       });
-          .read(dioProvider)
-          .get<Map<String, dynamic>>('/board/posts');
       if (!mounted) return;
       setState(() {
         posts = (response.data?['posts'] as List<dynamic>? ?? const [])
@@ -277,11 +275,11 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                         };
                         if (post == null) {
                           await ref
-                              .read(dioProvider)
+                              .read<Dio>(dioProvider)
                               .post('/board/posts', data: data);
                         } else {
                           await ref
-                              .read(dioProvider)
+                              .read<Dio>(dioProvider)
                               .patch('/board/posts/${post['id']}', data: data);
                         }
                         if (!dialogContext.mounted) return;
@@ -321,7 +319,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(dioProvider).delete('/board/posts/${post['id']}');
+      await ref.read<Dio>(dioProvider).delete('/board/posts/${post['id']}');
       await _load();
     } catch (_) {
       if (mounted) setState(() => error = '게시글을 삭제하지 못했습니다.');
