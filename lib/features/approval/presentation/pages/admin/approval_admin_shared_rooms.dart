@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
-import 'package:the_we_system/common/components/the_we_dropdown.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
@@ -16,8 +15,8 @@ class AdminSharedRooms extends ConsumerStatefulWidget {
 
 class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   final name = TextEditingController();
-  String? department;
-  String? user;
+  final departments = <String>{};
+  final users = <String>{};
   bool saving = false;
   List<Map<String, dynamic>> rooms = [];
   @override void initState() { super.initState(); _loadRooms(); }
@@ -34,7 +33,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   }
 
   Future<void> create() async {
-    if (name.text.trim().isEmpty || (department == null && user == null))
+    if (name.text.trim().isEmpty || (departments.isEmpty && users.isEmpty))
       return;
     setState(() => saving = true);
     try {
@@ -44,15 +43,15 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
             '/board/rooms',
             data: {
               'name': name.text.trim(),
-              if (department != null) 'department': department,
-              if (user != null) 'userIds': [user],
+              'departments': departments.toList(),
+              'userIds': users.toList(),
             },
           );
       if (mounted) {
         name.clear();
         setState(() {
-          department = null;
-          user = null;
+          departments.clear();
+          users.clear();
         });
         await _loadRooms();
       }
@@ -85,9 +84,10 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   }
 
   @override
-  Widget build(BuildContext context) => Card(
-    color: TheWeColor.white,
-    child: Padding(
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Card(color: TheWeColor.white, child: Padding(
       padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,38 +104,22 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
             decoration: const InputDecoration(labelText: '방 이름'),
           ),
           const SizedBox(height: 14),
-          TheWeDropdown<String>(
-            value: department,
-            items: widget.state.departments,
-            labelBuilder: (v) => '부서 · $v',
-            hintText: '부서 선택',
-            onChanged: (v) => setState(() {
-              department = v == department ? null : v;
-              user = null;
-            }),
-          ),
+          Text('부서 선택', style: TheWeTextStyle.caption),
+          Wrap(spacing: 8, children: [for (final item in widget.state.departments) FilterChip(label: Text(item), selected: departments.contains(item), onSelected: (_) => setState(() => departments.contains(item) ? departments.remove(item) : departments.add(item)))]),
           const SizedBox(height: 12),
-          TheWeDropdown<String>(
-            value: user,
-            items: widget.state.accounts.map((e) => e.id).toList(),
-            labelBuilder: (id) =>
-                widget.state.accounts.firstWhere((e) => e.id == id).name,
-            hintText: '직원 선택',
-            onChanged: (v) => setState(() {
-              user = v == user ? null : v;
-              department = null;
-            }),
-          ),
+          Text('직원 선택', style: TheWeTextStyle.caption),
+          Wrap(spacing: 8, children: [for (final account in widget.state.accounts) FilterChip(label: Text(account.name), selected: users.contains(account.id), onSelected: (_) => setState(() => users.contains(account.id) ? users.remove(account.id) : users.add(account.id)))]),
           const SizedBox(height: 20),
           FilledButton.icon(
             onPressed: saving ? null : create,
             icon: const Icon(Icons.add),
             label: const Text('방 생성'),
           ),
-          const SizedBox(height: 28),
-          Text('생성된 자료공유 방', style: TheWeTextStyle.subtitle),
-          const SizedBox(height: 8),
-          for (final room in rooms)
+        ])),
+      const SizedBox(height: 24),
+      Text('생성된 자료공유 방', style: TheWeTextStyle.subtitle),
+      const SizedBox(height: 8),
+      for (final room in rooms)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Card(
@@ -152,8 +136,6 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
                 ),
               ),
             ),
-        ],
-      ),
-    ),
+    ],
   );
 }
