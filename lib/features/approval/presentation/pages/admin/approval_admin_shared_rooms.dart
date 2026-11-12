@@ -19,6 +19,14 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   String? department;
   String? user;
   bool saving = false;
+  List<Map<String, dynamic>> rooms = [];
+  @override void initState() { super.initState(); _loadRooms(); }
+  Future<void> _loadRooms() async {
+    try {
+      final response = await ref.read<Dio>(dioProvider).get<Map<String, dynamic>>('/board/rooms');
+      if (mounted) setState(() => rooms = (response.data?['rooms'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList());
+    } catch (_) {}
+  }
   @override
   void dispose() {
     name.dispose();
@@ -46,11 +54,34 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
           department = null;
           user = null;
         });
+        await _loadRooms();
       }
     } on DioException {
     } finally {
       if (mounted) setState(() => saving = false);
     }
+  }
+
+  Future<void> _editRoom(Map<String, dynamic> room) async {
+    final controller = TextEditingController(text: room['name']?.toString() ?? '');
+    final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+      title: const Text('자료공유 방 수정'),
+      content: TextField(controller: controller, autofocus: true, decoration: const InputDecoration(labelText: '방 이름')),
+      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('저장'))],
+    ));
+    if (confirmed != true || controller.text.trim().isEmpty) return;
+    await ref.read<Dio>(dioProvider).patch('/board/rooms/${room['id']}', data: {'name': controller.text.trim()});
+    await _loadRooms();
+  }
+
+  Future<void> _deleteRoom(Map<String, dynamic> room) async {
+    final confirmed = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+      title: const Text('자료공유 방 삭제'), content: Text('“${room['name']}” 방을 삭제하시겠습니까?'),
+      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제'))],
+    ));
+    if (confirmed != true) return;
+    await ref.read<Dio>(dioProvider).delete('/board/rooms/${room['id']}');
+    await _loadRooms();
   }
 
   @override
@@ -101,6 +132,19 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
             icon: const Icon(Icons.add),
             label: const Text('방 생성'),
           ),
+          const SizedBox(height: 28),
+          Text('생성된 자료공유 방', style: TheWeTextStyle.subtitle),
+          const SizedBox(height: 8),
+          for (final room in rooms)
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.folder_shared_outlined),
+              title: Text(room['name']?.toString() ?? ''),
+              trailing: Wrap(spacing: 4, children: [
+                IconButton(tooltip: '수정', onPressed: () => _editRoom(room), icon: const Icon(Icons.edit_outlined)),
+                IconButton(tooltip: '삭제', onPressed: () => _deleteRoom(room), icon: const Icon(Icons.delete_outline)),
+              ]),
+            ),
         ],
       ),
     ),
