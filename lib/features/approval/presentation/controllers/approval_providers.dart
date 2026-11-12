@@ -176,6 +176,7 @@ final approvalTemplateProvider = Provider.family<ApprovalFormTemplate?, String>(
 
 class ApprovalDashboardController
     extends AsyncNotifier<ApprovalDashboardState> {
+  Future<void>? _bootstrapRequest;
   ApprovalDashboardState? get currentDashboardState => state.asData?.value;
 
   TheWeApiService get api => ref.read(theWeApiServiceProvider);
@@ -191,13 +192,21 @@ class ApprovalDashboardController
   }
 
   Future<void> reloadRemoteState({bool? adminMode}) async {
-    final remote = await api.fetchBootstrap();
-    state = AsyncData(
-      _remoteState(
+    final existing = _bootstrapRequest;
+    if (existing != null) return existing;
+    final request = () async {
+      final remote = await api.fetchBootstrap();
+      state = AsyncData(_remoteState(
         remote,
         adminMode: adminMode ?? currentDashboardState?.adminMode ?? false,
-      ),
-    );
+      ));
+    }();
+    _bootstrapRequest = request;
+    try {
+      await request;
+    } finally {
+      if (identical(_bootstrapRequest, request)) _bootstrapRequest = null;
+    }
   }
 
   Future<void> refreshRemoteState() async {
