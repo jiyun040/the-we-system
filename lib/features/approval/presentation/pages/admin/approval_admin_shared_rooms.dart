@@ -110,7 +110,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
             labelBuilder: (v) => '부서 · $v',
             hintText: '부서 선택',
             onChanged: (v) => setState(() {
-              department = v;
+              department = v == department ? null : v;
               user = null;
             }),
           ),
@@ -122,7 +122,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
                 widget.state.accounts.firstWhere((e) => e.id == id).name,
             hintText: '직원 선택',
             onChanged: (v) => setState(() {
-              user = v;
+              user = v == user ? null : v;
               department = null;
             }),
           ),
@@ -136,14 +136,21 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
           Text('생성된 자료공유 방', style: TheWeTextStyle.subtitle),
           const SizedBox(height: 8),
           for (final room in rooms)
-            ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.folder_shared_outlined),
-              title: Text(room['name']?.toString() ?? ''),
-              trailing: Wrap(spacing: 4, children: [
-                IconButton(tooltip: '수정', onPressed: () => _editRoom(room), icon: const Icon(Icons.edit_outlined)),
-                IconButton(tooltip: '삭제', onPressed: () => _deleteRoom(room), icon: const Icon(Icons.delete_outline)),
-              ]),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Card(
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: TheWeColor.black300.withValues(alpha: .35))),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  leading: const Icon(Icons.folder_shared_outlined),
+                  title: Text(room['name']?.toString() ?? ''),
+                  trailing: Wrap(spacing: 4, children: [
+                    IconButton(tooltip: '수정', onPressed: () => _editRoom(room), icon: const Icon(Icons.edit_outlined)),
+                    IconButton(tooltip: '삭제', onPressed: () => _deleteRoom(room), icon: const Icon(Icons.delete_outline)),
+                  ]),
+                ),
+              ),
             ),
         ],
       ),
