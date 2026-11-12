@@ -1819,18 +1819,21 @@ class _StatementDialogState extends State<_StatementDialog> {
               icon: const Icon(Icons.edit_note_outlined),
               label: const Text('비고 수정'),
             ),
-            DropdownButton<String>(
-              value: statement.billingType,
-              items: const [
-                DropdownMenuItem(value: '월대', child: Text('월대')),
-                DropdownMenuItem(value: '일대', child: Text('일대')),
-              ],
-              onChanged: (value) => setState(
-                () => statement = SalesStatement(
-                  projectName: statement.projectName,
-                  items: statement.items,
-                  noteOptions: statement.noteOptions,
-                  billingType: value ?? statement.billingType,
+            const SizedBox(width: 14),
+            SizedBox(
+              width: 132,
+              child: TheWeDropdown<String>(
+                value: statement.billingType,
+                items: const ['월대', '일대'],
+                labelBuilder: (value) => value,
+                labelText: '청구 방식',
+                onChanged: (value) => setState(
+                  () => statement = SalesStatement(
+                    projectName: statement.projectName,
+                    items: statement.items,
+                    noteOptions: statement.noteOptions,
+                    billingType: value ?? statement.billingType,
+                  ),
                 ),
               ),
             ),
