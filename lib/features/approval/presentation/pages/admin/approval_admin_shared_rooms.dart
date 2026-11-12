@@ -115,7 +115,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
             icon: const Icon(Icons.add),
             label: const Text('방 생성'),
           ),
-        ])),
+        ]))),
       const SizedBox(height: 24),
       Text('생성된 자료공유 방', style: TheWeTextStyle.subtitle),
       const SizedBox(height: 8),
