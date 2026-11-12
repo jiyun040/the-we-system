@@ -217,7 +217,32 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
 
   Future<void> _showStatement(SalesLedgerEntry entry) async {
     try {
-      final statement = await _api.fetchStatement(entry.projectName, _month);
+      final initialStart =
+          entry.startDate ?? DateTime(_month.year, _month.month, 1);
+      final initialEnd =
+          entry.endDate ?? DateTime(_month.year, _month.month + 1, 0);
+      final start = await showTheWeDatePicker(
+        context,
+        initialDate: initialStart,
+        firstDate: DateTime(DateTime.now().year - 5),
+        lastDate: DateTime.now(),
+        title: '청구기간 시작일',
+      );
+      if (start == null || !mounted) return;
+      final end = await showTheWeDatePicker(
+        context,
+        initialDate: initialEnd.isBefore(start) ? start : initialEnd,
+        firstDate: start,
+        lastDate: DateTime.now(),
+        title: '청구기간 종료일',
+      );
+      if (end == null || !mounted) return;
+      final statement = await _api.fetchStatement(
+        entry.projectName,
+        _month,
+        startDate: start,
+        endDate: end,
+      );
       if (!mounted) return;
       final shortSite = statement.items.any((item) {
         final days = statementUsageDays(item);
@@ -235,6 +260,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
         projectName: statement.projectName,
         items: statement.items,
         noteOptions: noteOptions ?? const {},
+        billingType: '일대',
       );
       await showDialog<void>(
         context: context,
@@ -1768,6 +1794,7 @@ class _StatementDialogState extends State<_StatementDialog> {
         projectName: statement.projectName,
         items: statement.items,
         noteOptions: selected,
+        billingType: statement.billingType,
       ),
     );
   }
@@ -1791,6 +1818,21 @@ class _StatementDialogState extends State<_StatementDialog> {
               onPressed: _editNotes,
               icon: const Icon(Icons.edit_note_outlined),
               label: const Text('비고 수정'),
+            ),
+            DropdownButton<String>(
+              value: statement.billingType,
+              items: const [
+                DropdownMenuItem(value: '월대', child: Text('월대')),
+                DropdownMenuItem(value: '일대', child: Text('일대')),
+              ],
+              onChanged: (value) => setState(
+                () => statement = SalesStatement(
+                  projectName: statement.projectName,
+                  items: statement.items,
+                  noteOptions: statement.noteOptions,
+                  billingType: value ?? statement.billingType,
+                ),
+              ),
             ),
           ],
         ),

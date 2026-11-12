@@ -190,14 +190,19 @@ List<SalesLedgerEntry> siteDateUpdates(
   final invoiceChanged = original.invoiceDate != changed.invoiceDate;
   if (!billingChanged && !invoiceChanged) return const [];
   return entries
-      .where((entry) =>
-          entry.id != original.id && entry.projectName == original.projectName)
-      .map((entry) => entry.copyWith(
-            billingDate: billingChanged ? changed.billingDate : entry.billingDate,
-            clearBillingDate: billingChanged && changed.billingDate == null,
-            invoiceDate: invoiceChanged ? changed.invoiceDate : entry.invoiceDate,
-            clearInvoiceDate: invoiceChanged && changed.invoiceDate == null,
-          ))
+      .where(
+        (entry) =>
+            entry.id != original.id &&
+            entry.projectName == original.projectName,
+      )
+      .map(
+        (entry) => entry.copyWith(
+          billingDate: billingChanged ? changed.billingDate : entry.billingDate,
+          clearBillingDate: billingChanged && changed.billingDate == null,
+          invoiceDate: invoiceChanged ? changed.invoiceDate : entry.invoiceDate,
+          clearInvoiceDate: invoiceChanged && changed.invoiceDate == null,
+        ),
+      )
       .toList();
 }
 
@@ -258,8 +263,10 @@ class SalesStatement {
     required this.projectName,
     required this.items,
     this.noteOptions = const {},
+    this.billingType = '일대',
   });
   final String projectName;
   final List<SalesLedgerEntry> items;
   final Set<String> noteOptions;
+  final String billingType;
 }

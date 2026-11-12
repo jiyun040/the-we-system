@@ -170,14 +170,20 @@ class SalesApiService {
 
   Future<SalesStatement> fetchStatement(
     String projectName,
-    DateTime month,
-  ) async {
+    DateTime month, {
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/sales/statements',
         queryParameters: {
           'projectName': projectName,
           'month': '${month.year}-${month.month.toString().padLeft(2, '0')}',
+          if (startDate != null)
+            'startDate': startDate.toIso8601String().substring(0, 10),
+          if (endDate != null)
+            'endDate': endDate.toIso8601String().substring(0, 10),
         },
       );
       final data = response.data ?? const <String, dynamic>{};
