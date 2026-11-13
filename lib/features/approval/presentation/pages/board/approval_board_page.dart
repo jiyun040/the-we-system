@@ -76,6 +76,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
       text: post?['content']?.toString() ?? '',
     );
     var department = post?['department']?.toString() ?? selectedDepartment;
+    var roomId = post?['roomId']?.toString();
     var files = (post?['attachments'] as List<dynamic>? ?? const [])
         .whereType<Map>()
         .map(
@@ -123,14 +124,28 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TheWeDropdown<String>(
-                    value: department,
-                    items: ['', ...?state?.departments],
+                    value: roomId == null ? department : 'room:$roomId',
+                    items: ['', ...?state?.departments, ...rooms.map((room) => 'room:${room['id']}')],
                     labelText: '게시판',
-                    labelBuilder: (value) =>
-                        value.isEmpty ? '전체게시판' : '$value 게시판',
+                    labelBuilder: (value) {
+                      if (value.isEmpty) return '전체게시판';
+                      if (value.startsWith('room:')) {
+                        final id = value.substring(5);
+                        return '방 · ${rooms.firstWhere((room) => room['id'].toString() == id)['name']}';
+                      }
+                      return '$value 게시판';
+                    },
                     onChanged: saving
                         ? (_) {}
-                        : (value) => update(() => department = value ?? ''),
+                        : (value) => update(() {
+                            if ((value ?? '').startsWith('room:')) {
+                              roomId = value!.substring(5);
+                              department = '';
+                            } else {
+                              roomId = null;
+                              department = value ?? '';
+                            }
+                          }),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -268,6 +283,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                           'title': title.text.trim(),
                           'content': content.text.trim(),
                           'department': department,
+                          if (roomId != null) 'roomId': roomId,
                           'attachments': files
                               .map((file) => file.toJson())
                               .toList(),
