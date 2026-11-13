@@ -27,6 +27,7 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
   bool registering = false;
   Timer? registrationRetry;
   final Set<String> handledMessageIds = <String>{};
+  final Set<String> handledNavigationKeys = <String>{};
 
   bool get supported =>
       kIsWeb ||
@@ -81,7 +82,20 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
 
   void _openMessage(RemoteMessage message) {
     final route = message.data['route'];
-    if (route == '/leave' || route == '/') appRouter.go(route!);
+    final navigable = route == '/leave' ||
+        route == '/' ||
+        route?.startsWith('/board') == true;
+    if (!navigable) {
+      ref.read(approvalDashboardControllerProvider.notifier).reloadRemoteState();
+      return;
+    }
+    final navigationKey = message.messageId ??
+        '${route ?? ''}:${message.data['postId'] ?? ''}:${message.data['roomId'] ?? ''}';
+    if (!handledNavigationKeys.add(navigationKey)) return;
+    if (handledNavigationKeys.length > 100) {
+      handledNavigationKeys.remove(handledNavigationKeys.first);
+    }
+    appRouter.go(route!);
     ref.read(approvalDashboardControllerProvider.notifier).reloadRemoteState();
   }
 

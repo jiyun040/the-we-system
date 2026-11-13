@@ -19,8 +19,10 @@ import 'package:the_we_system/features/approval/presentation/widgets/approval_do
 import 'package:desktop_drop/desktop_drop.dart';
 
 class ApprovalBoardPage extends ConsumerStatefulWidget {
-  const ApprovalBoardPage({super.key, this.initialDepartment});
+  const ApprovalBoardPage({super.key, this.initialDepartment, this.initialRoomId, this.initialPostId});
   final String? initialDepartment;
+  final String? initialRoomId;
+  final String? initialPostId;
 
   @override
   ConsumerState<ApprovalBoardPage> createState() => _ApprovalBoardPageState();
@@ -39,6 +41,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   void initState() {
     super.initState();
     selectedDepartment = widget.initialDepartment ?? '';
+    selectedRoomId = widget.initialRoomId;
     _load();
   }
 
@@ -82,6 +85,19 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
         loading = false;
         error = null;
       });
+      final targetId = widget.initialPostId;
+      if (targetId != null) {
+        Map<String, dynamic>? target;
+        for (final post in posts) {
+          if (post['id'].toString() == targetId) {
+            target = post;
+            break;
+          }
+        }
+        if (target != null && mounted) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _openPostDetail(target!));
+        }
+      }
     } catch (_) {
       if (mounted) {
         setState(() {

@@ -154,6 +154,8 @@ final appRouter = GoRouter(
         child: ApprovalAuthGate(
           child: ApprovalBoardPage(
             initialDepartment: state.uri.queryParameters['department'],
+            initialRoomId: state.uri.queryParameters['roomId'],
+            initialPostId: state.uri.queryParameters['postId'],
           ),
         ),
       ),

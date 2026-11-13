@@ -95,8 +95,6 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const TheWeModalAlertIcon(),
-            const SizedBox(height: 16),
             TheWeModalHeader(
               title: '자료공유 방 수정',
               onClose: () => Navigator.pop(context, false),
@@ -111,7 +109,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
             Align(alignment: Alignment.centerLeft, child: Text('멤버 수정', style: TheWeTextStyle.caption)),
             StatefulBuilder(builder: (context, setModalState) => Wrap(
               spacing: 10,
-              runSpacing: 8,
+              runSpacing: 14,
               children: [
                 for (final department in widget.state.departments)
                   FilterChip(
@@ -128,7 +126,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
             const SizedBox(height: 10),
             StatefulBuilder(builder: (context, setModalState) => Wrap(
               spacing: 10,
-              runSpacing: 8,
+              runSpacing: 14,
               children: [
                 for (final account in widget.state.accounts)
                   FilterChip(
@@ -175,6 +173,8 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const TheWeModalAlertIcon(),
+            const SizedBox(height: 16),
             TheWeModalHeader(
               title: '자료공유 방 삭제',
               onClose: () => Navigator.pop(context, false),
@@ -226,7 +226,8 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
                     const SizedBox(height: 16),
                     Text('부서 선택', style: TheWeTextStyle.caption),
                     Wrap(
-                      spacing: 8,
+                  spacing: 14,
+                  runSpacing: 12,
                       children: [
                         for (final item in widget.state.departments)
                           FilterChip(
@@ -243,7 +244,8 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
                     const SizedBox(height: 12),
                     Text('직원 선택', style: TheWeTextStyle.caption),
                     Wrap(
-                      spacing: 8,
+                  spacing: 14,
+                  runSpacing: 12,
                       children: [
                         for (final account in widget.state.accounts)
                           FilterChip(
