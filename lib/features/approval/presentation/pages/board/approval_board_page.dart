@@ -453,7 +453,13 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                               label: Text('방 · ${room['name']}'),
                               selected: selectedRoomId == room['id'].toString(),
                               onSelected: (_) async {
-                                setState(() => selectedRoomId = room['id'].toString());
+                                setState(() {
+                                  selectedRoomId = selectedRoomId == room['id'].toString()
+                                      ? null
+                                      : room['id'].toString();
+                                  selectedDepartment = '';
+                                  onlyMyPosts = false;
+                                });
                                 await _load();
                               },
                             ),
@@ -470,6 +476,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                                   selectedDepartment == department,
                               onSelected: (_) => setState(() {
                                 selectedDepartment = department;
+                                selectedRoomId = null;
                                 onlyMyPosts = false;
                               }),
                             ),
@@ -482,6 +489,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                           onSelected: (_) => setState(() {
                             onlyMyPosts = true;
                             selectedDepartment = '';
+                            selectedRoomId = null;
                           }),
                         ),
                       ],

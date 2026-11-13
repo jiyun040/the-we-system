@@ -30,7 +30,7 @@ enum _AdminDestination {
   apps(Icons.apps_outlined, 'APP 관리'),
   settings(Icons.tune_outlined, '통합 설정'),
   notices(Icons.campaign_outlined, '공지 관리'),
-  sharedRooms(Icons.folder_shared_outlined, '자료공유 방 생성');
+  sharedRooms(Icons.folder_shared_outlined, '자료공유 방');
 
   const _AdminDestination(this.icon, this.label);
 
