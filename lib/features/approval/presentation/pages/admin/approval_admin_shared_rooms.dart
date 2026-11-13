@@ -169,31 +169,13 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   Future<void> _deleteRoom(Map<String, dynamic> room) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => TheWeModalSurface(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const TheWeModalAlertIcon(),
-            const SizedBox(height: 16),
-            TheWeModalHeader(
-              title: '자료공유 방 삭제',
-              onClose: () => Navigator.pop(context, false),
-            ),
-            Text(
-              '“${room['name']}” 방을 삭제하시겠습니까?',
-              textAlign: TextAlign.center,
-              style: TheWeTextStyle.body,
-            ),
-            const SizedBox(height: 20),
-            TheWeModalActions(
-              primaryLabel: '삭제',
-              secondaryLabel: '취소',
-              onPrimaryPressed: () => Navigator.pop(context, true),
-              onSecondaryPressed: () => Navigator.pop(context, false),
-              centered: true,
-            ),
-          ],
-        ),
+      builder: (context) => TheWeConfirmDialog(
+        title: '자료공유 방 삭제',
+        message: '“${room['name']}” 방을 삭제하시겠습니까?',
+        primaryLabel: '삭제',
+        secondaryLabel: '취소',
+        onPrimaryPressed: () => Navigator.of(context).pop(true),
+        onSecondaryPressed: () => Navigator.of(context).pop(false),
       ),
     );
     if (confirmed != true) return;
