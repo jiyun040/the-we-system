@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:the_we_system/common/constants/color.dart';
 import 'package:the_we_system/common/constants/text_style.dart';
+import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 
@@ -81,24 +82,20 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     );
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('자료공유 방 수정'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: '방 이름'),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('저장'),
-          ),
-        ],
-      ),
+      builder: (context) =>
+          TheWeModalSurface(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TheWeModalHeader(title: '자료공유 방 수정',
+                    onClose: () => Navigator.pop(context, false)),
+                TextField(controller: controller,
+                    autofocus: true,
+                    decoration: const InputDecoration(labelText: '방 이름')),
+                const SizedBox(height: 20),
+                TheWeModalActions(primaryLabel: '저장',
+                    secondaryLabel: '취소',
+                    onPrimaryPressed: () => Navigator.pop(context, true),
+                    onSecondaryPressed: () => Navigator.pop(context, false)),
+              ])),
     );
     if (confirmed != true || controller.text.trim().isEmpty) return;
     await ref
@@ -113,20 +110,20 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   Future<void> _deleteRoom(Map<String, dynamic> room) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('자료공유 방 삭제'),
-        content: Text('“${room['name']}” 방을 삭제하시겠습니까?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('삭제'),
-          ),
-        ],
-      ),
+      builder: (context) =>
+          TheWeModalSurface(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                TheWeModalHeader(title: '자료공유 방 삭제',
+                    onClose: () => Navigator.pop(context, false)),
+                Align(alignment: Alignment.centerLeft,
+                    child: Text('“${room['name']}” 방을 삭제하시겠습니까?',
+                        style: TheWeTextStyle.body)),
+                const SizedBox(height: 20),
+                TheWeModalActions(primaryLabel: '삭제',
+                    secondaryLabel: '취소',
+                    onPrimaryPressed: () => Navigator.pop(context, true),
+                    onSecondaryPressed: () => Navigator.pop(context, false)),
+              ])),
     );
     if (confirmed != true) return;
     await ref.read<Dio>(dioProvider).delete('/board/rooms/${room['id']}');
