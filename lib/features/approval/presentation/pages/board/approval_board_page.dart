@@ -17,6 +17,7 @@ import 'package:the_we_system/features/approval/domain/entities/document/approva
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
 import 'package:the_we_system/features/approval/presentation/widgets/approval_document_sheet_attachments.dart';
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApprovalBoardPage extends ConsumerStatefulWidget {
   const ApprovalBoardPage({super.key, this.initialDepartment, this.initialRoomId, this.initialPostId});
@@ -36,6 +37,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   bool onlyMyPosts = false;
   String? error;
   bool loading = true;
+  String? _autoOpenPostId;
 
   @override
   void initState() {
@@ -54,6 +56,33 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
+      if (selectedRoomId == null && widget.initialPostId == null) {
+        final prefs = await SharedPreferences.getInstance();
+        Map<String, dynamic>? newest;
+        String? newestRoomId;
+        for (final room in loadedRooms) {
+          final roomId = room['id'].toString();
+          final roomPosts = await api.get<Map<String, dynamic>>(
+            '/board/posts',
+            queryParameters: {'roomId': roomId},
+          );
+          final candidates = (roomPosts.data?['posts'] as List<dynamic>? ?? const [])
+              .whereType<Map>()
+              .map((post) => Map<String, dynamic>.from(post));
+          for (final post in candidates) {
+            final postId = post['id']?.toString();
+            if (postId == null || prefs.getString('board-room-$roomId') == postId) continue;
+            if (newest == null || _createdAt(post).isAfter(_createdAt(newest))) {
+              newest = post;
+              newestRoomId = roomId;
+            }
+          }
+        }
+        if (newestRoomId != null) {
+          selectedRoomId = newestRoomId;
+          _autoOpenPostId = newest?['id']?.toString();
+        }
+      }
     } on DioException catch (exception) {
       developer.log(
         '자료공유 방 목록 조회 실패: ${exception.response?.statusCode ?? 'network'} ${exception.message}',
@@ -85,7 +114,8 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
         loading = false;
         error = null;
       });
-      final targetId = widget.initialPostId;
+      final targetId = widget.initialPostId ?? _autoOpenPostId;
+      _autoOpenPostId = null;
       if (targetId != null) {
         Map<String, dynamic>? target;
         for (final post in posts) {
@@ -107,6 +137,9 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
       }
     }
   }
+
+  DateTime _createdAt(Map<String, dynamic> post) =>
+      DateTime.tryParse(post['createdAt']?.toString() ?? '') ?? DateTime(1970);
 
   Future<void> _edit([Map<String, dynamic>? post]) async {
     final state = ref.read(approvalDashboardControllerProvider).asData?.value;
@@ -401,6 +434,11 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   }
 
   Future<void> _openPostDetail(Map<String, dynamic> post) async {
+    final roomId = post['roomId']?.toString();
+    if (roomId != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('board-room-$roomId', post['id'].toString());
+    }
     final attachments = (post['attachments'] as List<dynamic>? ?? const [])
         .whereType<Map>()
         .map(
