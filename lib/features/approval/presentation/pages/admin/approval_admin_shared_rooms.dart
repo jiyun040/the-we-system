@@ -82,20 +82,29 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     );
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) =>
-          TheWeModalSurface(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TheWeModalHeader(title: '자료공유 방 수정',
-                    onClose: () => Navigator.pop(context, false)),
-                TextField(controller: controller,
-                    autofocus: true,
-                    decoration: const InputDecoration(labelText: '방 이름')),
-                const SizedBox(height: 20),
-                TheWeModalActions(primaryLabel: '저장',
-                    secondaryLabel: '취소',
-                    onPrimaryPressed: () => Navigator.pop(context, true),
-                    onSecondaryPressed: () => Navigator.pop(context, false)),
-              ])),
+      builder: (context) => TheWeModalSurface(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TheWeModalHeader(
+              title: '자료공유 방 수정',
+              onClose: () => Navigator.pop(context, false),
+            ),
+            TextField(
+              controller: controller,
+              autofocus: true,
+              decoration: const InputDecoration(labelText: '방 이름'),
+            ),
+            const SizedBox(height: 20),
+            TheWeModalActions(
+              primaryLabel: '저장',
+              secondaryLabel: '취소',
+              onPrimaryPressed: () => Navigator.pop(context, true),
+              onSecondaryPressed: () => Navigator.pop(context, false),
+            ),
+          ],
+        ),
+      ),
     );
     if (confirmed != true || controller.text.trim().isEmpty) return;
     await ref
@@ -110,20 +119,31 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   Future<void> _deleteRoom(Map<String, dynamic> room) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) =>
-          TheWeModalSurface(
-              child: Column(mainAxisSize: MainAxisSize.min, children: [
-                TheWeModalHeader(title: '자료공유 방 삭제',
-                    onClose: () => Navigator.pop(context, false)),
-                Align(alignment: Alignment.centerLeft,
-                    child: Text('“${room['name']}” 방을 삭제하시겠습니까?',
-                        style: TheWeTextStyle.body)),
-                const SizedBox(height: 20),
-                TheWeModalActions(primaryLabel: '삭제',
-                    secondaryLabel: '취소',
-                    onPrimaryPressed: () => Navigator.pop(context, true),
-                    onSecondaryPressed: () => Navigator.pop(context, false)),
-              ])),
+      builder: (context) => TheWeModalSurface(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TheWeModalHeader(
+              title: '자료공유 방 삭제',
+              onClose: () => Navigator.pop(context, false),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '“${room['name']}” 방을 삭제하시겠습니까?',
+                style: TheWeTextStyle.body,
+              ),
+            ),
+            const SizedBox(height: 20),
+            TheWeModalActions(
+              primaryLabel: '삭제',
+              secondaryLabel: '취소',
+              onPrimaryPressed: () => Navigator.pop(context, true),
+              onSecondaryPressed: () => Navigator.pop(context, false),
+            ),
+          ],
+        ),
+      ),
     );
     if (confirmed != true) return;
     await ref.read<Dio>(dioProvider).delete('/board/rooms/${room['id']}');
@@ -133,70 +153,109 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   Future<void> _openCreateDialog() async {
     await showDialog<void>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('자료공유 방 생성'),
-        content: SizedBox(
-          width: 560,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TextField(
-                  controller: name,
-                  decoration: const InputDecoration(labelText: '방 이름'),
-                ),
-                const SizedBox(height: 16),
-                Text('부서 선택', style: TheWeTextStyle.caption),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final item in widget.state.departments)
-                      FilterChip(
-                        label: Text(item),
-                        selected: departments.contains(item),
-                        onSelected: (_) => setState(
-                          () => departments.contains(item)
-                              ? departments.remove(item)
-                              : departments.add(item),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text('직원 선택', style: TheWeTextStyle.caption),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    for (final account in widget.state.accounts)
-                      FilterChip(
-                        label: Text(account.name),
-                        selected: users.contains(account.id),
-                        onSelected: (_) => setState(
-                          () => users.contains(account.id)
-                              ? users.remove(account.id)
-                              : users.add(account.id),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
+      builder: (_) => TheWeModalSurface(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TheWeModalHeader(
+              title: '자료공유 방 생성',
+              onClose: () => Navigator.pop(context),
             ),
-          ),
+            SizedBox(
+              width: 560,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: name,
+                      decoration: const InputDecoration(labelText: '방 이름'),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('부서 선택', style: TheWeTextStyle.caption),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final item in widget.state.departments)
+                          FilterChip(
+                            label: Text(item),
+                            selected: departments.contains(item),
+                            onSelected: (_) => setState(
+                              () => departments.contains(item)
+                                  ? departments.remove(item)
+                                  : departments.add(item),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text('직원 선택', style: TheWeTextStyle.caption),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        for (final account in widget.state.accounts)
+                          FilterChip(
+                            label: Text(account.name),
+                            selected: users.contains(account.id),
+                            onSelected: (_) => setState(
+                              () => users.contains(account.id)
+                                  ? users.remove(account.id)
+                                  : users.add(account.id),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            TheWeModalActions(
+              primaryLabel: '방 생성',
+              secondaryLabel: '취소',
+              onPrimaryPressed: () async {
+                await create();
+                if (mounted) Navigator.pop(context);
+              },
+              onSecondaryPressed: () => Navigator.pop(context),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
-          ),
-          FilledButton(
-            onPressed: () async {
-              await create();
-              if (mounted) Navigator.pop(context);
-            },
-            child: const Text('방 생성'),
-          ),
-        ],
+      ),
+    );
+  }
+
+  Future<void> _showMembers(Map<String, dynamic> room) async {
+    final members = (room['members'] as List<dynamic>? ?? const [])
+        .whereType<Map>()
+        .map((member) => Map<String, dynamic>.from(member))
+        .toList();
+    await showDialog<void>(
+      context: context,
+      builder: (_) => TheWeModalSurface(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TheWeModalHeader(
+              title: '${room['name']} 멤버',
+              onClose: () => Navigator.pop(context),
+            ),
+            if (members.isEmpty)
+              Text('등록된 멤버가 없습니다.', style: TheWeTextStyle.body)
+            else
+              ...members.map(
+                (member) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 5),
+                  child: Text(
+                    '${member['name'] ?? member['id']}${(member['department'] as String? ?? '').isEmpty ? '' : ' · ${member['department']}'}',
+                    style: TheWeTextStyle.body,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -234,6 +293,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
               ),
               leading: const Icon(Icons.folder_shared_outlined),
               title: Text(room['name']?.toString() ?? ''),
+              onTap: () => _showMembers(room),
               trailing: Wrap(
                 spacing: 4,
                 children: [

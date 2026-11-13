@@ -45,9 +45,10 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
     try {
       final api = ref.read<Dio>(dioProvider);
       final roomsResponse = await api.get<Map<String, dynamic>>('/board/rooms');
-      final response = await api.get<Map<String, dynamic>>('/board/posts', queryParameters: {
-        if (selectedRoomId != null) 'roomId': selectedRoomId,
-      });
+      final response = await api.get<Map<String, dynamic>>(
+        '/board/posts',
+        queryParameters: {if (selectedRoomId != null) 'roomId': selectedRoomId},
+      );
       if (!mounted) return;
       setState(() {
         posts = (response.data?['posts'] as List<dynamic>? ?? const [])
@@ -55,7 +56,9 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
             .map((row) => Map<String, dynamic>.from(row))
             .toList();
         rooms = (roomsResponse.data?['rooms'] as List<dynamic>? ?? const [])
-            .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
         loading = false;
         error = null;
       });
@@ -125,7 +128,11 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                 children: [
                   TheWeDropdown<String>(
                     value: roomId == null ? department : 'room:$roomId',
-                    items: ['', ...?state?.departments, ...rooms.map((room) => 'room:${room['id']}')],
+                    items: [
+                      '',
+                      ...?state?.departments,
+                      ...rooms.map((room) => 'room:${room['id']}'),
+                    ],
                     labelText: '게시판',
                     labelBuilder: (value) {
                       if (value.isEmpty) return '전체게시판';
@@ -470,7 +477,8 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                               selected: selectedRoomId == room['id'].toString(),
                               onSelected: (_) async {
                                 setState(() {
-                                  selectedRoomId = selectedRoomId == room['id'].toString()
+                                  selectedRoomId =
+                                      selectedRoomId == room['id'].toString()
                                       ? null
                                       : room['id'].toString();
                                   selectedDepartment = '';
@@ -488,6 +496,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                                 department.isEmpty ? '전체게시판' : department,
                               ),
                               selected:
+                                  selectedRoomId == null &&
                                   !onlyMyPosts &&
                                   selectedDepartment == department,
                               onSelected: (_) => setState(() {
