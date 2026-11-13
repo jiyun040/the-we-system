@@ -80,27 +80,75 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     final controller = TextEditingController(
       text: room['name']?.toString() ?? '',
     );
+    final selectedUsers = <String>{
+      for (final member in (room['members'] as List<dynamic>? ?? const []))
+        if (member is Map && member['id'] != null) member['id'].toString(),
+    };
+    final selectedDepartments = <String>{
+      for (final member in (room['members'] as List<dynamic>? ?? const []))
+        if (member is Map && (member['department']?.toString() ?? '').isNotEmpty)
+          member['department'].toString(),
+    };
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => TheWeModalSurface(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const TheWeModalAlertIcon(),
+            const SizedBox(height: 16),
             TheWeModalHeader(
               title: '자료공유 방 수정',
               onClose: () => Navigator.pop(context, false),
             ),
+            const SizedBox(height: 18),
             TextField(
               controller: controller,
               autofocus: true,
               decoration: const InputDecoration(labelText: '방 이름'),
             ),
+            const SizedBox(height: 14),
+            Align(alignment: Alignment.centerLeft, child: Text('멤버 수정', style: TheWeTextStyle.caption)),
+            StatefulBuilder(builder: (context, setModalState) => Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                for (final department in widget.state.departments)
+                  FilterChip(
+                    label: Text('$department 전체'),
+                    selected: selectedDepartments.contains(department),
+                    onSelected: (_) => setModalState(() {
+                      selectedDepartments.contains(department)
+                          ? selectedDepartments.remove(department)
+                          : selectedDepartments.add(department);
+                    }),
+                  ),
+              ],
+            )),
+            const SizedBox(height: 10),
+            StatefulBuilder(builder: (context, setModalState) => Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                for (final account in widget.state.accounts)
+                  FilterChip(
+                    label: Text(account.name),
+                    selected: selectedUsers.contains(account.id),
+                    onSelected: (_) => setModalState(() {
+                      selectedUsers.contains(account.id)
+                          ? selectedUsers.remove(account.id)
+                          : selectedUsers.add(account.id);
+                    }),
+                  ),
+              ],
+            )),
             const SizedBox(height: 20),
             TheWeModalActions(
               primaryLabel: '저장',
               secondaryLabel: '취소',
               onPrimaryPressed: () => Navigator.pop(context, true),
               onSecondaryPressed: () => Navigator.pop(context, false),
+              centered: true,
             ),
           ],
         ),
@@ -111,7 +159,11 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
         .read<Dio>(dioProvider)
         .patch(
           '/board/rooms/${room['id']}',
-          data: {'name': controller.text.trim()},
+          data: {
+            'name': controller.text.trim(),
+            'departments': selectedDepartments.toList(),
+            'userIds': selectedUsers.toList(),
+          },
         );
     await _loadRooms();
   }
@@ -127,12 +179,10 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
               title: '자료공유 방 삭제',
               onClose: () => Navigator.pop(context, false),
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '“${room['name']}” 방을 삭제하시겠습니까?',
-                style: TheWeTextStyle.body,
-              ),
+            Text(
+              '“${room['name']}” 방을 삭제하시겠습니까?',
+              textAlign: TextAlign.center,
+              style: TheWeTextStyle.body,
             ),
             const SizedBox(height: 20),
             TheWeModalActions(
@@ -140,6 +190,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
               secondaryLabel: '취소',
               onPrimaryPressed: () => Navigator.pop(context, true),
               onSecondaryPressed: () => Navigator.pop(context, false),
+              centered: true,
             ),
           ],
         ),
@@ -219,6 +270,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
                 if (mounted) Navigator.pop(context);
               },
               onSecondaryPressed: () => Navigator.pop(context),
+              centered: true,
             ),
           ],
         ),

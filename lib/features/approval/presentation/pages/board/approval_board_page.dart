@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:developer' as developer;
 
 import 'package:dio/dio.dart';
 import 'package:file_saver/file_saver.dart';
@@ -42,9 +43,31 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
   }
 
   Future<void> _load() async {
+    final api = ref.read<Dio>(dioProvider);
+    List<Map<String, dynamic>> loadedRooms = rooms;
     try {
-      final api = ref.read<Dio>(dioProvider);
       final roomsResponse = await api.get<Map<String, dynamic>>('/board/rooms');
+      loadedRooms = (roomsResponse.data?['rooms'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } on DioException catch (exception) {
+      developer.log(
+        '자료공유 방 목록 조회 실패: ${exception.response?.statusCode ?? 'network'} ${exception.message}',
+        name: 'approval_board',
+        error: exception.error,
+      );
+      loadedRooms = const [];
+    } catch (exception, stackTrace) {
+      developer.log(
+        '자료공유 방 목록 조회 중 예외 발생',
+        name: 'approval_board',
+        error: exception,
+        stackTrace: stackTrace,
+      );
+      loadedRooms = const [];
+    }
+    try {
       final response = await api.get<Map<String, dynamic>>(
         '/board/posts',
         queryParameters: {if (selectedRoomId != null) 'roomId': selectedRoomId},
@@ -55,10 +78,7 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
             .whereType<Map>()
             .map((row) => Map<String, dynamic>.from(row))
             .toList();
-        rooms = (roomsResponse.data?['rooms'] as List<dynamic>? ?? const [])
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList();
+        rooms = loadedRooms;
         loading = false;
         error = null;
       });
