@@ -158,7 +158,12 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     );
     if (changed == null) return;
     try {
-      final saved = await _api.updateEntry(changed);
+      final usageDatesChanged = item.startDate != changed.startDate ||
+          item.endDate != changed.endDate;
+      final saved = await _api.updateEntry(
+        changed,
+        includeUsageDates: usageDatesChanged,
+      );
       await _syncSiteDates(item, changed);
       if (!mounted) return;
       setState(
@@ -211,7 +216,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     SalesLedgerEntry changed,
   ) async {
     for (final entry in siteDateUpdates(_allItems, original, changed)) {
-      await _api.updateEntry(entry);
+      await _api.updateEntry(entry, includeUsageDates: false);
     }
   }
 

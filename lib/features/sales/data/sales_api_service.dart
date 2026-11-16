@@ -141,15 +141,24 @@ class SalesApiService {
     }
   }
 
-  Future<SalesLedgerEntry> updateEntry(SalesLedgerEntry entry) async {
+  Future<SalesLedgerEntry> updateEntry(
+    SalesLedgerEntry entry, {
+    bool includeUsageDates = true,
+  }) async {
     try {
+      final payload = entry.toEditableJson();
+      payload.remove('month');
+      if (!includeUsageDates) {
+        payload.remove('startDate');
+        payload.remove('endDate');
+      }
       final response = await _dio.patch<Map<String, dynamic>>(
         '/sales/ledger/${entry.id}',
-        data: entry.toEditableJson(),
+        data: payload,
       );
       final saved = SalesLedgerEntry.fromJson(response.data ?? const {});
       if (response.data?['invoiceIssuer']?.toString().trim() !=
-          entry.toEditableJson()['invoiceIssuer']) {
+          payload['invoiceIssuer']) {
         throw const ApiException(
           '계산서 발행처가 서버에 저장되지 않았습니다. 서버 업데이트 적용 여부를 확인해 주세요.',
         );
