@@ -1,5 +1,6 @@
 import 'approval_leave_dependencies.dart';
 import 'approval_leave_widgets.dart';
+import '../admin/approval_admin_leave_management.dart';
 
 class ApprovalLeaveContent extends ConsumerWidget {
   const ApprovalLeaveContent({super.key, required this.state});
@@ -33,6 +34,17 @@ class ApprovalLeaveContent extends ConsumerWidget {
                   userName: state.currentUser?.name ?? '',
                   onRequest: () => _showLeaveRequestDialog(context, ref),
                 ),
+                if (state.currentUser?.canViewEmployeeLeaveDirectory ==
+                    true) ...[
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    key: const ValueKey('employee-leave-directory-button'),
+                    onPressed: () =>
+                        showReadOnlyEmployeeLeaveDirectory(context, state),
+                    icon: const Icon(Icons.people_outline),
+                    label: const Text('전체 직원 연차 현황'),
+                  ),
+                ],
                 const SizedBox(height: 28),
                 Container(
                   padding: EdgeInsets.all(mobile ? 16 : 24),

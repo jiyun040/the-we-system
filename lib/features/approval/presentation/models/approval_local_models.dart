@@ -90,8 +90,13 @@ class EmployeeAccount {
 
   bool get canAccessAdminMode => isAdmin || isDesignatedAdministrator;
 
+  bool get canViewEmployeeLeaveDirectory =>
+      (name.trim() == '조상훈' && position.trim() == '대표') ||
+      (name.trim() == '조세훈' && position.trim() == '전무');
+
   bool get canAccessSalesLedger {
     if (isSystemAdministrator) return true;
+    if (name.trim() == '조상훈' && position.trim() == '대표') return true;
     if (department.trim() == '공무부서' || department.trim() == '공무') return true;
     return (department.trim() == '현장운영팀' || department.trim() == '현장운영') &&
         (name.trim() == '송형숙' || name.trim() == '조세훈');

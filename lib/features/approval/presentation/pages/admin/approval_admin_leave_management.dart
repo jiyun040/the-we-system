@@ -14,6 +14,17 @@ Future<void> showAdminEmployeeLeaveDirectory(
   );
 }
 
+Future<void> showReadOnlyEmployeeLeaveDirectory(
+  BuildContext context,
+  ApprovalDashboardState state,
+) async {
+  if (state.currentUser?.canViewEmployeeLeaveDirectory != true) return;
+  await showDialog<void>(
+    context: context,
+    builder: (_) => _EmployeeLeaveDirectoryDialog(state: state),
+  );
+}
+
 Future<void> showAdminLeaveRequestDirectory(
   BuildContext context,
   ApprovalDashboardState state, {
@@ -385,13 +396,10 @@ class _EmployeeLeaveBrowserDialogState
 }
 
 class _EmployeeLeaveDirectoryDialog extends StatefulWidget {
-  const _EmployeeLeaveDirectoryDialog({
-    required this.state,
-    required this.onSelected,
-  });
+  const _EmployeeLeaveDirectoryDialog({required this.state, this.onSelected});
 
   final ApprovalDashboardState state;
-  final ValueChanged<EmployeeAccount> onSelected;
+  final ValueChanged<EmployeeAccount>? onSelected;
 
   @override
   State<_EmployeeLeaveDirectoryDialog> createState() =>
@@ -516,7 +524,9 @@ class _EmployeeLeaveDirectoryDialogState
                             trailing: Text(
                               '${widget.state.isUnderOneYear(account) ? '월차' : '연차'} 잔여 ${adminLeaveDays(widget.state.remainingAnnualLeaveFor(account))}',
                             ),
-                            onTap: () => widget.onSelected(account),
+                            onTap: widget.onSelected == null
+                                ? null
+                                : () => widget.onSelected!(account),
                           );
                         },
                       )
@@ -545,10 +555,13 @@ class _EmployeeLeaveDirectoryDialogState
                               final pending = widget.state
                                   .pendingAnnualLeaveFor(account.id);
                               return <Widget>[
-                                TextButton(
-                                  onPressed: () => widget.onSelected(account),
-                                  child: Text(account.name),
-                                ),
+                                widget.onSelected == null
+                                    ? Text(account.name)
+                                    : TextButton(
+                                        onPressed: () =>
+                                            widget.onSelected!(account),
+                                        child: Text(account.name),
+                                      ),
                                 Text(account.position),
                                 Text(account.department),
                                 Text(
