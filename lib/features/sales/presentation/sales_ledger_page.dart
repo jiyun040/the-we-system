@@ -158,7 +158,8 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
     );
     if (changed == null) return;
     try {
-      final usageDatesChanged = item.startDate != changed.startDate ||
+      final usageDatesChanged =
+          item.startDate != changed.startDate ||
           item.endDate != changed.endDate;
       final saved = await _api.updateEntry(
         changed,
@@ -166,12 +167,21 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       );
       await _syncSiteDates(item, changed);
       if (!mounted) return;
-      setState(
-        () => _items = _items
-            .map((item) => item.id == saved.id ? saved : item)
-            .toList(),
-      );
-      await _load();
+      setState(() {
+        _allItems = _allItems.map((entry) {
+          if (entry.id == saved.id) return saved;
+          if (entry.projectName == item.projectName) {
+            return entry.copyWith(
+              billingDate: changed.billingDate,
+              clearBillingDate: changed.billingDate == null,
+              invoiceDate: changed.invoiceDate,
+              clearInvoiceDate: changed.invoiceDate == null,
+            );
+          }
+          return entry;
+        }).toList();
+        _applyFilters();
+      });
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -190,12 +200,27 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
 
   Future<void> _saveInlineDate(SalesLedgerEntry item) async {
     try {
-      await _api.updateEntry(item);
       final original = _allItems
           .where((entry) => entry.id == item.id)
           .firstOrNull;
+      final saved = await _api.updateEntry(item, includeUsageDates: false);
       if (original != null) await _syncSiteDates(original, item);
-      await _load();
+      if (!mounted) return;
+      setState(() {
+        _allItems = _allItems.map((entry) {
+          if (entry.id == saved.id) return saved;
+          if (original != null && entry.projectName == original.projectName) {
+            return entry.copyWith(
+              billingDate: item.billingDate,
+              clearBillingDate: item.billingDate == null,
+              invoiceDate: item.invoiceDate,
+              clearInvoiceDate: item.invoiceDate == null,
+            );
+          }
+          return entry;
+        }).toList();
+        _applyFilters();
+      });
     } catch (error) {
       if (mounted)
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1297,6 +1322,14 @@ class _LedgerTableState extends State<_LedgerTable> {
       text: value == null ? '' : _shortDate(value),
     );
     SalesLedgerEntry? pending;
+    var saved = false;
+    Future<void> save() async {
+      if (saved) return;
+      saved = true;
+      if (pending != null) await widget.onDateEdit(pending!);
+      if (mounted) setState(() => _editing = null);
+    }
+
     return TextField(
       controller: controller,
       autofocus: true,
@@ -1315,8 +1348,10 @@ class _LedgerTableState extends State<_LedgerTable> {
         );
         if (parsed == null ||
             parsed.month != int.parse(digits.substring(0, 2)) ||
-            parsed.day != int.parse(digits.substring(2)))
+            parsed.day != int.parse(digits.substring(2))) {
+          pending = null;
           return;
+        }
         controller.value = TextEditingValue(
           text: _shortDate(parsed),
           selection: const TextSelection.collapsed(offset: 5),
@@ -1326,12 +1361,10 @@ class _LedgerTableState extends State<_LedgerTable> {
           invoiceDate: kind == 'invoice' ? parsed : item.invoiceDate,
           depositDate: kind == 'deposit' ? parsed : item.depositDate,
         );
-        pending = changed;
+        pending = changed == item ? null : changed;
       },
-      onSubmitted: (_) async {
-        if (pending != null) await widget.onDateEdit(pending!);
-        if (mounted) setState(() => _editing = null);
-      },
+      onSubmitted: (_) => save(),
+      onTapOutside: (_) => save(),
     );
   }
 }
