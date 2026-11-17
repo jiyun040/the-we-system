@@ -35,6 +35,14 @@ const _superAdmin = EmployeeAccount(
   isAdmin: true,
 );
 
+const _representative = EmployeeAccount(
+  id: 'we8104',
+  password: '',
+  name: '조상훈',
+  department: '대표이사',
+  position: '대표이사',
+);
+
 Future<void> _pumpMenu(
   WidgetTester tester, {
   required EmployeeAccount account,
@@ -112,6 +120,13 @@ void main() {
   testWidgets('슈퍼어드민은 관리자 홈에서 매출관리대장을 본다', (tester) async {
     await _pumpMenu(tester, account: _superAdmin, adminMode: true);
     expect(find.text('매출관리대장'), findsOneWidget);
+  });
+
+  testWidgets('대표이사 일반계정은 매출관리대장을 본다', (tester) async {
+    await _pumpMenu(tester, account: _representative, adminMode: false);
+    expect(find.text('매출관리대장'), findsOneWidget);
+    expect(_representative.isAdmin, isFalse);
+    expect(_representative.canViewEmployeeLeaveDirectory, isTrue);
   });
 
   testWidgets('일반 화면의 기존 매출 권한은 유지한다', (tester) async {
