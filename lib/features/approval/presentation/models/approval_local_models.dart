@@ -90,14 +90,10 @@ class EmployeeAccount {
 
   bool get canAccessAdminMode => isAdmin || isDesignatedAdministrator;
 
-  bool get isRepresentativeAccount =>
-      normalizedId == 'we8104' ||
-      (name.trim() == '조상훈' &&
-          (position.trim() == '대표' || position.trim() == '대표이사'));
+  bool get isRepresentativeAccount => normalizedId == 'we8104';
 
   bool get canViewEmployeeLeaveDirectory =>
-      isRepresentativeAccount ||
-      (name.trim() == '조세훈' && position.trim() == '전무');
+      isRepresentativeAccount || normalizedId == 'we81041';
 
   bool get canAccessSalesLedger {
     if (isSystemAdministrator) return true;

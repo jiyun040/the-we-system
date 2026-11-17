@@ -129,6 +129,27 @@ void main() {
     expect(_representative.canViewEmployeeLeaveDirectory, isTrue);
   });
 
+  test('대표와 전무 계정만 전체 직원 연차 현황을 볼 수 있다', () {
+    const director = EmployeeAccount(
+      id: 'we81041',
+      password: '',
+      name: '조세훈',
+      department: '기술부',
+      position: '전무',
+    );
+    const other = EmployeeAccount(
+      id: 'other',
+      password: '',
+      name: '다른 직원',
+      department: '기술부',
+      position: '전무',
+    );
+    expect(_representative.canViewEmployeeLeaveDirectory, isTrue);
+    expect(director.canViewEmployeeLeaveDirectory, isTrue);
+    expect(director.canAccessSalesLedger, isFalse);
+    expect(other.canViewEmployeeLeaveDirectory, isFalse);
+  });
+
   testWidgets('일반 화면의 기존 매출 권한은 유지한다', (tester) async {
     await _pumpMenu(tester, account: _manager, adminMode: false);
     expect(find.text('매출관리대장'), findsOneWidget);
