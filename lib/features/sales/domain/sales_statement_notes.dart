@@ -29,7 +29,7 @@ List<(SalesLedgerEntry, bool)> statementRows(
 ];
 
 int? statementUsageDays(SalesLedgerEntry item) {
-  final start = item.startDate;
+  final start = item.effectiveStartDate;
   final end = item.endDate;
   if (start == null || end == null || end.isBefore(start)) return null;
   return DateTime.utc(

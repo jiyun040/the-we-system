@@ -248,7 +248,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   Future<void> _showStatement(SalesLedgerEntry entry) async {
     try {
       final initialStart =
-          entry.startDate ?? DateTime(_month.year, _month.month, 1);
+          entry.effectiveStartDate ?? DateTime(_month.year, _month.month, 1);
       final initialEnd =
           entry.endDate ?? DateTime(_month.year, _month.month + 1, 0);
       final start = await showTheWeDatePicker(
@@ -1292,10 +1292,10 @@ class _LedgerTableState extends State<_LedgerTable> {
     _cell(item.partner),
     _cell(item.elevator, maxLines: 1),
     _cell(
-      '${_date(item.startDate)}\n~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
+      '${_date(item.effectiveStartDate)}\n~ ${item.endDate == null ? '진행 중' : _date(item.endDate!)}',
     ),
     _cell(
-      _duration(item.startDate, item.endDate),
+      _duration(item.effectiveStartDate, item.endDate),
       maxLines: 1,
       fitToWidth: true,
     ),

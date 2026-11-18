@@ -37,6 +37,11 @@ class SalesLedgerEntry {
 
   /// First date on which the PDAM work record exists for this site/equipment.
   final DateTime? recordDate;
+  DateTime? get effectiveStartDate {
+    if (recordDate == null) return startDate;
+    if (startDate == null || recordDate!.isAfter(startDate!)) return recordDate;
+    return startDate;
+  }
   final String category;
   final DateTime? billingDate;
   final DateTime? invoiceDate;
