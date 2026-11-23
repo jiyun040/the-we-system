@@ -408,9 +408,14 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
         .map((e) => e['id'].toString())
         .toSet();
     enabled ? members.add(userId) : members.remove(userId);
-    for (final account in widget.state.accounts) {
-      if (_alwaysAllowed(account) || _defaultDepartmentAccess(room, account)) {
-        members.add(account.id);
+    final isDepartmentGroup = widget.state.departments.contains(
+      room['name']?.toString(),
+    );
+    if (isDepartmentGroup) {
+      for (final account in widget.state.accounts) {
+        if (_alwaysAllowed(account) || _defaultDepartmentAccess(room, account)) {
+          members.add(account.id);
+        }
       }
     }
     try {
@@ -464,8 +469,9 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
               final id = account.id;
               final members = (groups[index]['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
               final isDepartmentGroup = widget.state.departments.contains(groups[index]['name']?.toString());
+              final isVirtualGroup = groups[index]['id'].toString().startsWith('department:');
               final fixed = _alwaysAllowed(account) || (isDepartmentGroup && _defaultDepartmentAccess(groups[index], account));
-              return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed ? null : (value) => _toggle(groups[index], id, value));
+              return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed || isVirtualGroup ? null : (value) => _toggle(groups[index], id, value));
             })])],
           ),
         ),
