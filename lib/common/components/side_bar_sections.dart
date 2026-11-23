@@ -218,6 +218,7 @@ Future<String?> _showAdminOtpDialog(BuildContext context) {
               obscuringCharacter: '•',
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'OTP 인증번호'),
+              onSubmitted: (_) => Navigator.pop(context, controller.text),
             ),
           ],
         ),
