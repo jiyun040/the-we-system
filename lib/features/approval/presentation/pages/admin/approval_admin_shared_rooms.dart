@@ -32,7 +32,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     try {
       final response = await ref
           .read<Dio>(dioProvider)
-          .get<Map<String, dynamic>>('/board/rooms');
+          .get<Map<String, dynamic>>('/board/rooms', queryParameters: {'includeDepartments': true});
       if (mounted)
         setState(
           () => rooms = (response.data?['rooms'] as List<dynamic>? ?? const [])
@@ -303,7 +303,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     if (permissionMode) {
       return AdminSharedRoomPermissions(
         state: widget.state,
-        initialRooms: rooms,
+        initialRooms: const [],
         onBack: () => setState(() => permissionMode = false),
       );
     }
@@ -424,9 +424,12 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
     }
   }
   List<Widget> _permissionGroups(List<EmployeeAccount> accounts) {
-    final departmentGroups = widget.state.departments
-        .map((name) => <String, dynamic>{'id': 'department:$name', 'name': name, 'members': const []})
-        .toList();
+    final departmentGroups = widget.state.departments.map((name) {
+      return rooms.firstWhere(
+        (room) => room['name']?.toString() == name,
+        orElse: () => <String, dynamic>{'id': 'department:$name', 'name': name, 'members': const []},
+      );
+    }).toList();
     final customRooms = rooms
         .where((room) => !widget.state.departments.contains(room['name']?.toString()))
         .toList();
@@ -438,14 +441,20 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
         Card(
           elevation: 0,
           color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide.none,
+          ),
+          collapsedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide.none,
+          ),
           child: ExpansionTile(
             key: PageStorageKey(groups[index]['id']),
             initiallyExpanded: expandedGroup == groups[index]['id'],
             onExpansionChanged: (open) => setState(() => expandedGroup = open ? groups[index]['id'].toString() : null),
             tilePadding: const EdgeInsets.symmetric(horizontal: 18),
             title: Text(groups[index]['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
-            subtitle: const Text('눌러서 직원별 권한 보기'),
             childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
             children: [Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
               final id = account.id;
