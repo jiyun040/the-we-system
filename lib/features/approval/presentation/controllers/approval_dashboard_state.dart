@@ -622,7 +622,7 @@ class ApprovalDashboardState {
     final months = hireDate.year < now.year
         ? now.month - 1
         : hireDate.year == now.year
-        ? now.month - hireDate.month
+        ? now.month - hireDate.month - (hireDate.day > 1 ? 1 : 0)
         : 0;
     return months.clamp(0, 11) * monthlyLeavePerMonth;
   }

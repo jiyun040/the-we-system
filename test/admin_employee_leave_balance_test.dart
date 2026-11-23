@@ -125,7 +125,7 @@ void main() {
     expect(state.servicePeriodLabelFor(account), '0년 ${now.month - 1}개월차');
   });
 
-  test('중간 입사자는 입사월을 건너뛰고 다음 달부터 월차를 센다', () {
+  test('중간 입사자는 한 달 만근 후 그 다음 달에 월차를 받는다', () {
     final now = DateTime.now();
     final hireDate = DateTime(now.year, now.month - 1, 25);
     final account = EmployeeAccount(
@@ -143,7 +143,7 @@ void main() {
     );
 
     expect(state.totalCompletedServiceMonthsFor(account), 1);
-    expect(state.monthlyLeaveDaysFor(account), 1);
+    expect(state.monthlyLeaveDaysFor(account), 0);
   });
 
   test('월차는 새해에 0으로 초기화되고 해당 연도에 다시 누적된다', () {
