@@ -445,14 +445,18 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
             borderRadius: BorderRadius.circular(14),
             side: BorderSide.none,
           ),
-          collapsedShape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: BorderSide.none,
-          ),
           child: ExpansionTile(
             key: PageStorageKey(groups[index]['id']),
             initiallyExpanded: expandedGroup == groups[index]['id'],
             onExpansionChanged: (open) => setState(() => expandedGroup = open ? groups[index]['id'].toString() : null),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide.none,
+            ),
+            collapsedShape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: BorderSide.none,
+            ),
             tilePadding: const EdgeInsets.symmetric(horizontal: 18),
             title: Text(groups[index]['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
             childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
