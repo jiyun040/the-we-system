@@ -463,9 +463,9 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
             children: [Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
               final id = account.id;
               final members = (groups[index]['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
-              final fixed = _alwaysAllowed(account) || _defaultDepartmentAccess(groups[index], account);
-              final isDepartmentGroup = groups[index]['id'].toString().startsWith('department:');
-              return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed || isDepartmentGroup ? null : (value) => _toggle(groups[index], id, value));
+              final isDepartmentGroup = widget.state.departments.contains(groups[index]['name']?.toString());
+              final fixed = _alwaysAllowed(account) || (isDepartmentGroup && _defaultDepartmentAccess(groups[index], account));
+              return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed ? null : (value) => _toggle(groups[index], id, value));
             })])],
           ),
         ),
