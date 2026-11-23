@@ -161,7 +161,6 @@ class ApprovalDashboardState {
 
   bool get isAdmin => currentUser?.canAccessAdminMode ?? false;
 
-  /// System administrators are permission principals, not employees.
   List<EmployeeAccount> get leaveManagementAccounts => accounts
       .where((account) => !account.isSystemAdministrator)
       .toList();
@@ -610,13 +609,23 @@ class ApprovalDashboardState {
     final hireDate = DateTime.tryParse(account?.hireDate ?? '');
     if (hireDate == null) return 0;
     final now = DateTime.now();
-    var months = (now.year - hireDate.year) * 12 + now.month - hireDate.month;
-    if (now.day < hireDate.day) months--;
+    // 월차는 입사한 달에는 발생하지 않고, 다음 달부터 달력 기준으로 매월 1개월차씩 계산
+    final months = (now.year - hireDate.year) * 12 + now.month - hireDate.month;
     return months.clamp(0, 1188);
   }
 
-  int accruedMonthlyLeaveFor(EmployeeAccount? account) =>
-      completedServiceMonthsFor(account) * monthlyLeavePerMonth;
+  int accruedMonthlyLeaveFor(EmployeeAccount? account) {
+    final hireDate = DateTime.tryParse(account?.hireDate ?? '');
+    if (hireDate == null) return 0;
+    final now = DateTime.now();
+    // 매년 1월 초기화
+    final months = hireDate.year < now.year
+        ? now.month - 1
+        : hireDate.year == now.year
+        ? now.month - hireDate.month
+        : 0;
+    return months.clamp(0, 11) * monthlyLeavePerMonth;
+  }
 
   double annualLeaveDaysFor(EmployeeAccount account) => isUnderOneYear(account)
       ? 0
@@ -638,8 +647,7 @@ class ApprovalDashboardState {
     if (!isUnderOneYear(account)) {
       return account.monthlyLeaveDays ?? accrued;
     }
-    final configured = account.monthlyLeaveDays ?? 0;
-    return configured < accrued ? accrued : configured;
+    return accrued;
   }
 
   double totalAnnualLeaveFor(EmployeeAccount? account) {

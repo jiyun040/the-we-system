@@ -107,10 +107,10 @@ class _PushRegistrationState extends ConsumerState<PushRegistration> {
       handledMessageIds.remove(handledMessageIds.first);
     }
     final notification = message.notification;
-    if (notification == null) return;
+    if (notification == null && message.data.isEmpty) return;
     showBrowserNotification(
-      title: notification.title ?? '우리기술 ERP',
-      body: notification.body ?? '새로운 결재 알림이 있습니다.',
+      title: notification?.title ?? message.data['title'] ?? '우리기술 ERP',
+      body: notification?.body ?? message.data['body'] ?? '새로운 결재 알림이 있습니다.',
     );
   }
 

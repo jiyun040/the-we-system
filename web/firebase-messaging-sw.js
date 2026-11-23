@@ -14,7 +14,7 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const notification = payload.notification || {};
+  const notification = payload.notification || payload.data || {};
   self.registration.showNotification(notification.title || '우리기술 ERP', {
     body: notification.body || '새로운 결재 알림이 있습니다.',
     icon: '/icons/Icon-192.png',

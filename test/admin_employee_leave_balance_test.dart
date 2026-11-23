@@ -125,6 +125,47 @@ void main() {
     expect(state.servicePeriodLabelFor(account), '0년 ${now.month - 1}개월차');
   });
 
+  test('중간 입사자는 입사월을 건너뛰고 다음 달부터 월차를 센다', () {
+    final now = DateTime.now();
+    final hireDate = DateTime(now.year, now.month - 1, 25);
+    final account = EmployeeAccount(
+      id: 'mid-month-employee',
+      password: '',
+      name: '중간 입사 직원',
+      department: '관리부',
+      position: '사원',
+      hireDate:
+          '${hireDate.year}-${hireDate.month.toString().padLeft(2, '0')}-${hireDate.day.toString().padLeft(2, '0')}',
+    );
+    final state = signedOutApprovalState.copyWith(
+      accounts: [account],
+      monthlyLeavePerMonth: 1,
+    );
+
+    expect(state.totalCompletedServiceMonthsFor(account), 1);
+    expect(state.monthlyLeaveDaysFor(account), 1);
+  });
+
+  test('월차는 새해에 0으로 초기화되고 해당 연도에 다시 누적된다', () {
+    final now = DateTime.now();
+    final account = EmployeeAccount(
+      id: 'year-reset-employee',
+      password: '',
+      name: '월차 초기화 직원',
+      department: '관리부',
+      position: '사원',
+      hireDate: '${now.year - 1}-10-12',
+    );
+    final state = signedOutApprovalState.copyWith(
+      accounts: [account],
+      monthlyLeavePerMonth: 1,
+    );
+
+    final expected = now.month - 1;
+    expect(state.accruedMonthlyLeaveFor(account), expected);
+    expect(state.monthlyLeaveDaysFor(account), expected);
+  });
+
   test('근속 3개월 직원은 낮게 저장된 월차보다 발생 월차를 우선한다', () {
     final now = DateTime.now();
     final hireDate = DateTime(now.year, now.month - 3, now.day);
