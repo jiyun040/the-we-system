@@ -1022,9 +1022,9 @@ class AdminOrganizationManagement extends ConsumerWidget {
         const SizedBox(height: 18),
         LayoutBuilder(
           builder: (context, constraints) {
-            final width = constraints.maxWidth < 680
-                ? constraints.maxWidth
-                : (constraints.maxWidth - 16) / 2;
+            final width = constraints.maxWidth > 980
+                ? 980.0
+                : constraints.maxWidth;
             return Wrap(
               spacing: 16,
               runSpacing: 16,
