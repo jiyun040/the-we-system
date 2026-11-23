@@ -298,43 +298,6 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     );
   }
 
-  List<Widget> _permissionGroups(List<EmployeeAccount> accounts) {
-    final departmentGroups = widget.state.departments
-        .map((name) => <String, dynamic>{'id': 'department:$name', 'name': name, 'members': const []})
-        .toList();
-    final customRooms = rooms
-        .where((room) => !widget.state.departments.contains(room['name']?.toString()))
-        .toList();
-    final groups = <Map<String, dynamic>>[...departmentGroups, ...customRooms];
-    return [
-      for (var index = 0; index < groups.length; index++) ...[
-        if (index == departmentGroups.length && customRooms.isNotEmpty)
-          const Divider(height: 28),
-        Card(
-          elevation: 0,
-          color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          child: ExpansionTile(
-            key: PageStorageKey(groups[index]['id']),
-            initiallyExpanded: expandedGroup == groups[index]['id'],
-            onExpansionChanged: (open) => setState(() => expandedGroup = open ? groups[index]['id'].toString() : null),
-            tilePadding: const EdgeInsets.symmetric(horizontal: 18),
-            title: Text(groups[index]['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
-            subtitle: const Text('눌러서 직원별 권한 보기'),
-            childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-            children: [Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
-              final id = account.id;
-              final members = (groups[index]['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
-              final fixed = _alwaysAllowed(account) || _defaultDepartmentAccess(groups[index], account);
-              final isDepartmentGroup = groups[index]['id'].toString().startsWith('department:');
-              return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed || isDepartmentGroup ? null : (value) => _toggle(groups[index], id, value));
-            })])],
-          ),
-        ),
-      ],
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     if (permissionMode) {
@@ -460,6 +423,43 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
       if (mounted) setState(() => loadError = '권한을 저장하지 못했습니다.');
     }
   }
+  List<Widget> _permissionGroups(List<EmployeeAccount> accounts) {
+    final departmentGroups = widget.state.departments
+        .map((name) => <String, dynamic>{'id': 'department:$name', 'name': name, 'members': const []})
+        .toList();
+    final customRooms = rooms
+        .where((room) => !widget.state.departments.contains(room['name']?.toString()))
+        .toList();
+    final groups = <Map<String, dynamic>>[...departmentGroups, ...customRooms];
+    return [
+      for (var index = 0; index < groups.length; index++) ...[
+        if (index == departmentGroups.length && customRooms.isNotEmpty)
+          const Divider(height: 28),
+        Card(
+          elevation: 0,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          child: ExpansionTile(
+            key: PageStorageKey(groups[index]['id']),
+            initiallyExpanded: expandedGroup == groups[index]['id'],
+            onExpansionChanged: (open) => setState(() => expandedGroup = open ? groups[index]['id'].toString() : null),
+            tilePadding: const EdgeInsets.symmetric(horizontal: 18),
+            title: Text(groups[index]['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
+            subtitle: const Text('눌러서 직원별 권한 보기'),
+            childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+            children: [Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
+              final id = account.id;
+              final members = (groups[index]['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
+              final fixed = _alwaysAllowed(account) || _defaultDepartmentAccess(groups[index], account);
+              final isDepartmentGroup = groups[index]['id'].toString().startsWith('department:');
+              return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed || isDepartmentGroup ? null : (value) => _toggle(groups[index], id, value));
+            })])],
+          ),
+        ),
+      ],
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final accounts = widget.state.accounts.where((a) => !a.isSystemAdministrator).toList();
