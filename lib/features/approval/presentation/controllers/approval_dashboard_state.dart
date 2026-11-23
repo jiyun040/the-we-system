@@ -642,7 +642,9 @@ class ApprovalDashboardState {
   }
 
   double monthlyLeaveDaysFor(EmployeeAccount account) {
-    if (account.position.trim() == '실습') return 0;
+    if (account.isSystemAdministrator || account.position.trim() == '실습') {
+      return 0;
+    }
     final accrued = accruedMonthlyLeaveFor(account).toDouble();
     if (!isUnderOneYear(account)) {
       return account.monthlyLeaveDays ?? accrued;
@@ -651,7 +653,7 @@ class ApprovalDashboardState {
   }
 
   double totalAnnualLeaveFor(EmployeeAccount? account) {
-    if (account == null) return 0;
+    if (account == null || account.isSystemAdministrator) return 0;
     if (account.position.trim() == '실습') return 0;
     if (isUnderOneYear(account)) return monthlyLeaveDaysFor(account);
     return annualLeaveDaysFor(account);
