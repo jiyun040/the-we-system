@@ -397,7 +397,7 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
     }
   }
   bool _alwaysAllowed(EmployeeAccount account) =>
-      account.canAccessAdminMode || account.position.contains('대표');
+      account.isSystemAdministrator || account.isDesignatedAdministrator;
 
   bool _defaultDepartmentAccess(Map<String, dynamic> room, EmployeeAccount account) =>
       account.department.trim() == (room['name']?.toString() ?? '').trim();
@@ -426,22 +426,25 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
       if (loading) const Center(child: CircularProgressIndicator()),
       if (!loading && loadError != null) Text(loadError!, style: TheWeTextStyle.body.copyWith(color: TheWeColor.danger)),
       if (!loading && loadError == null && rooms.isEmpty) Text('생성된 자료공유 방이 없습니다. 먼저 방을 생성해 주세요.', style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500)),
-      for (final room in rooms) Card(
-        elevation: 0,
-        child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(room['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
-          const SizedBox(height: 8),
-          Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
-            final id = account.id;
-            final members = (room['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
-            final fixed = _alwaysAllowed(account) || _defaultDepartmentAccess(room, account);
-            return FilterChip(
-              label: Text(account.name),
-              selected: fixed || members.contains(id),
-              onSelected: fixed ? null : (value) => _toggle(room, id, value),
-            );
-          })]),
-        ])),
+      for (final room in [
+        ...widget.state.departments.map((name) => {'id': 'department:$name', 'name': name, 'members': const []}),
+        ...rooms.where((room) => !widget.state.departments.contains(room['name']?.toString())),
+      ]) ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+        title: Text(room['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
+        subtitle: const Text('눌러서 직원별 권한 보기'),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        children: [Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
+          final id = account.id;
+          final members = (room['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
+          final fixed = _alwaysAllowed(account) || _defaultDepartmentAccess(room, account);
+          final isDepartmentGroup = room['id'].toString().startsWith('department:');
+          return FilterChip(
+            label: Text(account.name),
+            selected: fixed || members.contains(id),
+            onSelected: fixed || isDepartmentGroup ? null : (value) => _toggle(room, id, value),
+          );
+        })])],
       ),
     ]);
   }
