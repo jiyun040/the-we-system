@@ -56,6 +56,18 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
+      final selectedRoom = loadedRooms.where(
+        (room) => room['id'].toString() == selectedRoomId,
+      );
+      if (selectedRoomId != null &&
+          selectedRoom.isNotEmpty &&
+          selectedRoom.first['canAccess'] != true) {
+        final deniedName = selectedRoom.first['name']?.toString() ?? '자료공유 방';
+        selectedRoomId = null;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _showRoomPermissionDialog(deniedName);
+        });
+      }
       if (selectedRoomId == null && widget.initialPostId == null) {
         final prefs = await SharedPreferences.getInstance();
         Map<String, dynamic>? newest;
@@ -136,6 +148,43 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
         });
       }
     }
+  }
+
+  Future<void> _showRoomPermissionDialog(String roomName) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (context) => TheWeModalSurface(
+        width: 420,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const TheWeModalHeader(title: '자료공유 방 접근 권한'),
+            const SizedBox(height: 18),
+            const TheWeModalAlertIcon(),
+            const SizedBox(height: 14),
+            Text(
+              '“$roomName” 방을 볼 권한이 없습니다.',
+              style: TheWeTextStyle.subtitle,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '소속 부서 방이 아니거나 관리자가 권한을 부여하지 않은 방입니다.',
+              style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500),
+            ),
+            const SizedBox(height: 24),
+            Align(
+              alignment: Alignment.centerRight,
+              child: FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('확인'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   DateTime _createdAt(Map<String, dynamic> post) =>
@@ -550,6 +599,12 @@ class _ApprovalBoardPageState extends ConsumerState<ApprovalBoardPage> {
                               label: Text('방 · ${room['name']}'),
                               selected: selectedRoomId == room['id'].toString(),
                               onSelected: (_) async {
+                                if (room['canAccess'] != true) {
+                                  await _showRoomPermissionDialog(
+                                    room['name']?.toString() ?? '자료공유 방',
+                                  );
+                                  return;
+                                }
                                 setState(() {
                                   selectedRoomId =
                                       selectedRoomId == room['id'].toString()

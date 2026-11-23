@@ -6,6 +6,7 @@ import 'package:the_we_system/common/constants/text_style.dart';
 import 'package:the_we_system/common/components/the_we_modal.dart';
 import 'package:the_we_system/core/network/dio_provider.dart';
 import 'package:the_we_system/features/approval/presentation/controllers/approval_providers.dart';
+import 'package:the_we_system/features/approval/presentation/models/approval_local_models.dart';
 
 class AdminSharedRooms extends ConsumerStatefulWidget {
   const AdminSharedRooms({super.key, required this.state});
@@ -19,6 +20,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   final departments = <String>{};
   final users = <String>{};
   bool saving = false;
+  bool permissionMode = false;
   List<Map<String, dynamic>> rooms = [];
   @override
   void initState() {
@@ -297,12 +299,26 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(
+  Widget build(BuildContext context) {
+    if (permissionMode) {
+      return AdminSharedRoomPermissions(
+        state: widget.state,
+        initialRooms: rooms,
+        onBack: () => setState(() => permissionMode = false),
+      );
+    }
+    return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Row(
         children: [
           Expanded(child: Text('생성된 자료공유 방', style: TheWeTextStyle.title)),
+          OutlinedButton.icon(
+            onPressed: () => setState(() => permissionMode = true),
+            icon: const Icon(Icons.admin_panel_settings_outlined),
+            label: const Text('권한 관리'),
+          ),
+          const SizedBox(width: 8),
           FilledButton.icon(
             onPressed: _openCreateDialog,
             icon: const Icon(Icons.add),
@@ -349,5 +365,84 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
           ),
         ),
     ],
-  );
+    );
+  }
+}
+
+class AdminSharedRoomPermissions extends ConsumerStatefulWidget {
+  const AdminSharedRoomPermissions({super.key, required this.state, required this.onBack, this.initialRooms = const []});
+  final ApprovalDashboardState state;
+  final VoidCallback onBack;
+  final List<Map<String, dynamic>> initialRooms;
+  @override
+  ConsumerState<AdminSharedRoomPermissions> createState() => _AdminSharedRoomPermissionsState();
+}
+
+class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPermissions> {
+  List<Map<String, dynamic>> rooms = [];
+  bool loading = true;
+  String? loadError;
+  @override
+  void initState() {
+    super.initState();
+    rooms = List<Map<String, dynamic>>.from(widget.initialRooms);
+    if (rooms.isEmpty) _load(); else loading = false;
+  }
+  Future<void> _load() async {
+    try {
+      final response = await ref.read<Dio>(dioProvider).get<Map<String, dynamic>>('/board/rooms');
+      if (mounted) setState(() { rooms = (response.data?['rooms'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(); loading = false; });
+    } catch (_) {
+      if (mounted) setState(() { loading = false; loadError = '자료공유 방 목록을 불러오지 못했습니다.'; });
+    }
+  }
+  bool _alwaysAllowed(EmployeeAccount account) =>
+      account.canAccessAdminMode || account.position.contains('대표');
+
+  bool _defaultDepartmentAccess(Map<String, dynamic> room, EmployeeAccount account) =>
+      account.department.trim() == (room['name']?.toString() ?? '').trim();
+  Future<void> _toggle(Map<String, dynamic> room, String userId, bool enabled) async {
+    final members = (room['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
+    enabled ? members.add(userId) : members.remove(userId);
+    for (final account in widget.state.accounts) {
+      if (_alwaysAllowed(account) || _defaultDepartmentAccess(room, account)) {
+        members.add(account.id);
+      }
+    }
+    await ref.read<Dio>(dioProvider).patch('/board/rooms/${room['id']}', data: {'userIds': members.toList()});
+    await _load();
+  }
+  @override
+  Widget build(BuildContext context) {
+    final accounts = widget.state.accounts.where((a) => !a.isSystemAdministrator).toList();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      Row(children: [
+        IconButton(onPressed: widget.onBack, icon: const Icon(Icons.arrow_back), tooltip: '자료공유 방으로 돌아가기'),
+        Expanded(child: Text('자료공유 권한 관리', style: TheWeTextStyle.title)),
+      ]),
+      const SizedBox(height: 8),
+      Text('방별로 자료공유를 볼 수 있는 사원을 지정합니다. 대표와 관리자 계정은 모든 방을 볼 수 있습니다.', style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500)),
+      const SizedBox(height: 18),
+      if (loading) const Center(child: CircularProgressIndicator()),
+      if (!loading && loadError != null) Text(loadError!, style: TheWeTextStyle.body.copyWith(color: TheWeColor.danger)),
+      if (!loading && loadError == null && rooms.isEmpty) Text('생성된 자료공유 방이 없습니다. 먼저 방을 생성해 주세요.', style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500)),
+      for (final room in rooms) Card(
+        elevation: 0,
+        child: Padding(padding: const EdgeInsets.all(18), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(room['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
+          const SizedBox(height: 8),
+          Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
+            final id = account.id;
+            final members = (room['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
+            final fixed = _alwaysAllowed(account) || _defaultDepartmentAccess(room, account);
+            return FilterChip(
+              label: Text(account.name),
+              selected: fixed || members.contains(id),
+              onSelected: fixed ? null : (value) => _toggle(room, id, value),
+            );
+          })]),
+        ])),
+      ),
+    ]);
+  }
 }
