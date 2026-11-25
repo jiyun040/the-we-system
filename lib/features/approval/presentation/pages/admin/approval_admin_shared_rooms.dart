@@ -383,6 +383,7 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
   bool loading = true;
   String? loadError;
   String? expandedGroup;
+  final Map<String, Set<String>> pendingMembers = {};
   @override
   void initState() {
     super.initState();
@@ -402,28 +403,29 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
 
   bool _defaultDepartmentAccess(Map<String, dynamic> room, EmployeeAccount account) =>
       account.department.trim() == (room['name']?.toString() ?? '').trim();
-  Future<void> _toggle(Map<String, dynamic> room, String userId, bool enabled) async {
-    final members = (room['members'] as List<dynamic>? ?? const [])
-        .whereType<Map>()
-        .map((e) => e['id'].toString())
-        .toSet();
+  Set<String> _membersFor(Map<String, dynamic> room) => pendingMembers[room['id'].toString()] ??=
+      (room['members'] as List<dynamic>? ?? const [])
+          .whereType<Map>()
+          .map((e) => e['id'].toString())
+          .toSet();
+
+  void _toggle(Map<String, dynamic> room, String userId, bool enabled) {
+    final members = _membersFor(room);
     enabled ? members.add(userId) : members.remove(userId);
-    final isDepartmentGroup = widget.state.departments.contains(
-      room['name']?.toString(),
-    );
-    if (isDepartmentGroup) {
-      for (final account in widget.state.accounts) {
-        if (_alwaysAllowed(account) || _defaultDepartmentAccess(room, account)) {
-          members.add(account.id);
-        }
-      }
-    }
+    setState(() {});
+  }
+
+  Future<void> _savePermissions() async {
     try {
-      await ref.read<Dio>(dioProvider).patch(
-        '/board/rooms/${room['id']}',
-        data: {'userIds': members.toList()},
-      );
+      for (final entry in pendingMembers.entries) {
+        await ref.read<Dio>(dioProvider).patch(
+          '/board/rooms/${entry.key}',
+          data: {'userIds': entry.value.toList()},
+        );
+      }
+      pendingMembers.clear();
       await _load();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('권한이 저장되었습니다.')));
     } catch (_) {
       if (mounted) setState(() => loadError = '권한을 저장하지 못했습니다.');
     }
@@ -467,7 +469,7 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
             childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
             children: [Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
               final id = account.id;
-              final members = (groups[index]['members'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => e['id'].toString()).toSet();
+              final members = _membersFor(groups[index]);
               final isDepartmentGroup = widget.state.departments.contains(groups[index]['name']?.toString());
               final isVirtualGroup = groups[index]['id'].toString().startsWith('department:');
               final fixed = _alwaysAllowed(account) || (isDepartmentGroup && _defaultDepartmentAccess(groups[index], account));
@@ -486,6 +488,11 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
       Row(children: [
         IconButton(onPressed: widget.onBack, icon: const Icon(Icons.arrow_back), tooltip: '자료공유 방으로 돌아가기'),
         Expanded(child: Text('자료공유 권한 관리', style: TheWeTextStyle.title)),
+        FilledButton.icon(
+          onPressed: pendingMembers.isEmpty ? null : _savePermissions,
+          icon: const Icon(Icons.save_outlined),
+          label: const Text('저장'),
+        ),
       ]),
       const SizedBox(height: 8),
       Text('방별로 자료공유를 볼 수 있는 사원을 지정합니다. 대표와 관리자 계정은 모든 방을 볼 수 있습니다.', style: TheWeTextStyle.body.copyWith(color: TheWeColor.black500)),
