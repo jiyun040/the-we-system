@@ -452,30 +452,25 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
             borderRadius: BorderRadius.circular(14),
             side: BorderSide.none,
           ),
-          child: ExpansionTile(
-            key: ValueKey('${groups[index]['id']}_${expandedGroup == groups[index]['id']}'),
-            initiallyExpanded: expandedGroup == groups[index]['id'],
-            onExpansionChanged: (open) => setState(() => expandedGroup = open ? groups[index]['id'].toString() : null),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide.none,
+          child: Column(children: [
+            ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 18),
+              title: Text(groups[index]['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
+              trailing: Icon(expandedGroup == groups[index]['id'].toString() ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down),
+              onTap: () => setState(() => expandedGroup = expandedGroup == groups[index]['id'].toString() ? null : groups[index]['id'].toString()),
             ),
-            collapsedShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
-              side: BorderSide.none,
+            if (expandedGroup == groups[index]['id'].toString()) Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
+              child: Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
+                final id = account.id;
+                final members = _membersFor(groups[index]);
+                final isDepartmentGroup = widget.state.departments.contains(groups[index]['name']?.toString());
+                final fixed = _alwaysAllowed(account) || (isDepartmentGroup && _defaultDepartmentAccess(groups[index], account));
+                final isVirtualGroup = groups[index]['id'].toString().startsWith('department:');
+                return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed || isVirtualGroup ? null : (value) => _toggle(groups[index], id, value));
+              })]),
             ),
-            tilePadding: const EdgeInsets.symmetric(horizontal: 18),
-            title: Text(groups[index]['name']?.toString() ?? '', style: TheWeTextStyle.subtitle),
-            childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
-            children: [Wrap(spacing: 8, runSpacing: 4, children: [for (final account in accounts) Builder(builder: (context) {
-              final id = account.id;
-              final members = _membersFor(groups[index]);
-              final isDepartmentGroup = widget.state.departments.contains(groups[index]['name']?.toString());
-              final isVirtualGroup = groups[index]['id'].toString().startsWith('department:');
-              final fixed = _alwaysAllowed(account) || (isDepartmentGroup && _defaultDepartmentAccess(groups[index], account));
-              return FilterChip(label: Text(account.name), selected: fixed || members.contains(id), onSelected: fixed || isVirtualGroup ? null : (value) => _toggle(groups[index], id, value));
-            })])],
-          ),
+          ]),
         ),
       ],
     ];
