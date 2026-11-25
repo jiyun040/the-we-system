@@ -62,7 +62,7 @@ class ApprovalMonthAttendanceGrid extends StatelessWidget {
     );
 
     const labels = ['일', '월', '화', '수', '목', '금', '토'];
-    const holidays = {6: '현충일'};
+
 
     return Column(
       children: [
@@ -98,7 +98,8 @@ class ApprovalMonthAttendanceGrid extends StatelessWidget {
           ),
           itemBuilder: (context, index) {
             final date = cells[index];
-            final isCurrentMonth = date.month == now.month;
+            final isCurrentMonth =
+                date.year == now.year && date.month == now.month;
             final isToday =
                 date.year == now.year &&
                 date.month == now.month &&
@@ -106,7 +107,7 @@ class ApprovalMonthAttendanceGrid extends StatelessWidget {
             final isWeekend =
                 date.weekday == DateTime.saturday ||
                 date.weekday == DateTime.sunday;
-            final holiday = isCurrentMonth ? holidays[date.day] : null;
+            const String? holiday = null;
             final scheduleColor = holiday != null
                 ? TheWeColor.pink
                 : date.weekday == DateTime.sunday
