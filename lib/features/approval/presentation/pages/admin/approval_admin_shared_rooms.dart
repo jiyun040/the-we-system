@@ -32,7 +32,7 @@ class _AdminSharedRoomsState extends ConsumerState<AdminSharedRooms> {
     try {
       final response = await ref
           .read<Dio>(dioProvider)
-          .get<Map<String, dynamic>>('/board/rooms', queryParameters: {'includeDepartments': true});
+          .get<Map<String, dynamic>>('/board/rooms');
       if (mounted)
         setState(
           () => rooms = (response.data?['rooms'] as List<dynamic>? ?? const [])
@@ -392,7 +392,7 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
   }
   Future<void> _load() async {
     try {
-      final response = await ref.read<Dio>(dioProvider).get<Map<String, dynamic>>('/board/rooms');
+      final response = await ref.read<Dio>(dioProvider).get<Map<String, dynamic>>('/board/rooms', queryParameters: {'includeDepartments': true});
       if (mounted) setState(() { rooms = (response.data?['rooms'] as List<dynamic>? ?? const []).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList(); loading = false; });
     } catch (_) {
       if (mounted) setState(() { loading = false; loadError = '자료공유 방 목록을 불러오지 못했습니다.'; });
