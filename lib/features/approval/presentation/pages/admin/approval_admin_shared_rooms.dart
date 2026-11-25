@@ -453,7 +453,7 @@ class _AdminSharedRoomPermissionsState extends ConsumerState<AdminSharedRoomPerm
             side: BorderSide.none,
           ),
           child: ExpansionTile(
-            key: PageStorageKey(groups[index]['id']),
+            key: ValueKey('${groups[index]['id']}_${expandedGroup == groups[index]['id']}'),
             initiallyExpanded: expandedGroup == groups[index]['id'],
             onExpansionChanged: (open) => setState(() => expandedGroup = open ? groups[index]['id'].toString() : null),
             shape: RoundedRectangleBorder(
