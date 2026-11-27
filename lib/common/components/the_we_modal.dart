@@ -162,6 +162,8 @@ class TheWeModalActions extends StatelessWidget {
     this.secondaryLabel,
     this.onPrimaryPressed,
     this.onSecondaryPressed,
+    this.tertiaryLabel,
+    this.onTertiaryPressed,
     this.primaryColor,
     this.expand = false,
     this.centered = false,
@@ -171,6 +173,8 @@ class TheWeModalActions extends StatelessWidget {
   final String? secondaryLabel;
   final VoidCallback? onPrimaryPressed;
   final VoidCallback? onSecondaryPressed;
+  final String? tertiaryLabel;
+  final VoidCallback? onTertiaryPressed;
   final Color? primaryColor;
   final bool expand;
   final bool centered;
@@ -178,6 +182,14 @@ class TheWeModalActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final buttons = <Widget>[
+      if (tertiaryLabel != null)
+        _TheWeModalButton(
+          label: tertiaryLabel!,
+          filled: false,
+          color: TheWeColor.danger,
+          expanded: expand,
+          onPressed: onTertiaryPressed,
+        ),
       if (secondaryLabel != null)
         _TheWeModalButton(
           label: secondaryLabel!,

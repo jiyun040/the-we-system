@@ -946,14 +946,6 @@ class _LedgerContent extends StatelessWidget {
       ],
       _SummaryCards(summary: summary, items: items, month: month),
       const SizedBox(height: 20),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: OutlinedButton.icon(
-          onPressed: onCreate,
-          icon: const Icon(Icons.add),
-          label: const Text('매출관리대장 추가'),
-        ),
-      ),
       if (compact) ...[
         _searchField(fullWidth: true),
         const SizedBox(height: 8),
@@ -1094,6 +1086,11 @@ class _LedgerContent extends StatelessWidget {
       onPressed: onNext,
       icon: const Icon(Icons.chevron_right),
       tooltip: '다음 달',
+    ),
+    OutlinedButton.icon(
+      onPressed: onCreate,
+      icon: const Icon(Icons.add, size: 18),
+      label: const Text('매출관리대장 추가'),
     ),
   ];
 
@@ -1884,22 +1881,12 @@ class LedgerEditDialogState extends State<LedgerEditDialog> {
               ),
             ),
             const SizedBox(height: 24),
-            if (widget.onDelete != null)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: widget.onDelete,
-                  icon: const Icon(Icons.delete_outline),
-                  label: const Text('삭제'),
-                  style: TextButton.styleFrom(
-                    foregroundColor: TheWeColor.danger,
-                  ),
-                ),
-              ),
             TheWeModalActions(
               primaryLabel: '저장',
               secondaryLabel: '취소',
               onSecondaryPressed: () => Navigator.pop(context),
+              tertiaryLabel: widget.onDelete == null ? null : '삭제',
+              onTertiaryPressed: widget.onDelete,
               onPrimaryPressed: () {
                 if (issuerSelection == '직접입력' &&
                     invoiceIssuer.text.trim().isEmpty) {
