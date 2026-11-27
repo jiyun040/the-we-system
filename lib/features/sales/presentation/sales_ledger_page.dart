@@ -959,6 +959,15 @@ class _LedgerContent extends StatelessWidget {
           crossAxisAlignment: WrapCrossAlignment.center,
           children: _navigationControls(),
         ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: OutlinedButton.icon(
+            onPressed: onCreate,
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('매출관리대장 추가'),
+          ),
+        ),
       ] else ...[
         Row(
           children: [
@@ -968,21 +977,24 @@ class _LedgerContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [..._statusChips(), ..._accountingChips()],
+        Row(
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [..._statusChips(), ..._accountingChips()],
+              ),
+            ),
+            const SizedBox(width: 16),
+            OutlinedButton.icon(
+              onPressed: onCreate,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('매출관리대장 추가'),
+            ),
+          ],
         ),
       ],
-      const SizedBox(height: 10),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: OutlinedButton.icon(
-          onPressed: onCreate,
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('매출관리대장 추가'),
-        ),
-      ),
       const SizedBox(height: 16),
     ];
     Widget table() => loading
