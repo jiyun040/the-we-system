@@ -227,7 +227,18 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   Future<void> _create() async {
     final data = await showDialog<Map<String, dynamic>>(
       context: context,
-      builder: (_) => const _LedgerCreateDialog(),
+      builder: (_) => _LedgerCreateDialog(
+        contractors: _allItems
+            .map((e) => e.contractor)
+            .where((e) => e.trim().isNotEmpty)
+            .toSet()
+            .toList(),
+        partners: _allItems
+            .map((e) => e.partner)
+            .where((e) => e.trim().isNotEmpty)
+            .toSet()
+            .toList(),
+      ),
     );
     if (data == null) return;
     try {
@@ -1489,7 +1500,12 @@ class LedgerEditDialog extends StatefulWidget {
 }
 
 class _LedgerCreateDialog extends StatefulWidget {
-  const _LedgerCreateDialog();
+  const _LedgerCreateDialog({
+    required this.contractors,
+    required this.partners,
+  });
+  final List<String> contractors;
+  final List<String> partners;
   @override
   State<_LedgerCreateDialog> createState() => _LedgerCreateDialogState();
 }
@@ -1508,6 +1524,29 @@ class _LedgerCreateDialogState extends State<_LedgerCreateDialog> {
     super.dispose();
   }
 
+  Widget companyField(
+    String label,
+    TextEditingController controller,
+    List<String> options,
+  ) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(label),
+      Autocomplete<String>(
+        optionsBuilder: (value) => options.where(
+          (item) => item.toLowerCase().contains(value.text.toLowerCase()),
+        ),
+        onSelected: (value) => controller.text = value,
+        fieldViewBuilder: (context, textController, focusNode, onSubmitted) =>
+            TextField(
+              controller: textController,
+              focusNode: focusNode,
+              onChanged: (value) => controller.text = value,
+            ),
+      ),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) => TheWeModalSurface(
     child: Column(
@@ -1516,16 +1555,16 @@ class _LedgerCreateDialogState extends State<_LedgerCreateDialog> {
       children: [
         const TheWeModalHeader(title: '매출관리대장 추가'),
         const SizedBox(height: 16),
-        for (final field in [
-          ('공사명', project),
-          ('시공사', contractor),
-          ('협력사', partner),
-          ('호기', elevator),
-        ]) ...[
-          Text(field.$1),
-          TextField(controller: field.$2),
-          const SizedBox(height: 10),
-        ],
+        const Text('공사명'),
+        TextField(controller: project),
+        const SizedBox(height: 10),
+        companyField('시공사', contractor, widget.contractors),
+        const SizedBox(height: 10),
+        companyField('협력사', partner, widget.partners),
+        const SizedBox(height: 10),
+        const Text('호기'),
+        TextField(controller: elevator),
+        const SizedBox(height: 10),
         TheWeModalActions(
           primaryLabel: '추가',
           secondaryLabel: '취소',
