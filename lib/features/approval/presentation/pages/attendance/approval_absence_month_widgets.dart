@@ -60,9 +60,9 @@ class ApprovalMonthAttendanceGrid extends StatelessWidget {
       42,
       (index) => startDate.add(Duration(days: index)),
     );
+    final today = DateTime(now.year, now.month, now.day);
 
     const labels = ['일', '월', '화', '수', '목', '금', '토'];
-
 
     return Column(
       children: [
@@ -104,6 +104,7 @@ class ApprovalMonthAttendanceGrid extends StatelessWidget {
                 date.year == now.year &&
                 date.month == now.month &&
                 date.day == now.day;
+            final isFuture = date.isAfter(today);
             final isWeekend =
                 date.weekday == DateTime.saturday ||
                 date.weekday == DateTime.sunday;
@@ -158,7 +159,9 @@ class ApprovalMonthAttendanceGrid extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: compact ? 4 : 10),
-                  if (compact)
+                  if (isFuture)
+                    const SizedBox.shrink()
+                  else if (compact)
                     Align(
                       alignment: Alignment.center,
                       child: Container(
