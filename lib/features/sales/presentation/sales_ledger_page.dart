@@ -974,6 +974,15 @@ class _LedgerContent extends StatelessWidget {
           children: [..._statusChips(), ..._accountingChips()],
         ),
       ],
+      const SizedBox(height: 10),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: onCreate,
+          icon: const Icon(Icons.add, size: 18),
+          label: const Text('매출관리대장 추가'),
+        ),
+      ),
       const SizedBox(height: 16),
     ];
     Widget table() => loading
@@ -1086,11 +1095,6 @@ class _LedgerContent extends StatelessWidget {
       onPressed: onNext,
       icon: const Icon(Icons.chevron_right),
       tooltip: '다음 달',
-    ),
-    OutlinedButton.icon(
-      onPressed: onCreate,
-      icon: const Icon(Icons.add, size: 18),
-      label: const Text('매출관리대장 추가'),
     ),
   ];
 
