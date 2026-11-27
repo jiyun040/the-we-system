@@ -154,7 +154,33 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
   Future<void> _edit(SalesLedgerEntry item) async {
     final changed = await showDialog<SalesLedgerEntry>(
       context: context,
-      builder: (_) => LedgerEditDialog(item: item),
+      builder: (_) => LedgerEditDialog(
+        item: item,
+        onDelete: () async {
+          final confirmed = await showDialog<bool>(
+            context: context,
+            builder: (context) => TheWeConfirmDialog(
+              title: '매출관리대장을 삭제할까요?',
+              message: '${item.projectName} 내역을 삭제합니다.',
+              primaryLabel: '삭제',
+              primaryColor: TheWeColor.danger,
+              onPrimaryPressed: () => Navigator.pop(context, true),
+              onSecondaryPressed: () => Navigator.pop(context, false),
+            ),
+          );
+          if (confirmed != true) return;
+          await _api.deleteEntry(item.id);
+          if (mounted) Navigator.pop(context);
+          if (mounted) {
+            setState(() {
+              _allItems = _allItems
+                  .where((entry) => entry.id != item.id)
+                  .toList();
+              _applyFilters();
+            });
+          }
+        },
+      ),
     );
     if (changed == null) return;
     try {
@@ -195,6 +221,34 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
           ),
         );
       }
+    }
+  }
+
+  Future<void> _create() async {
+    final data = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => const _LedgerCreateDialog(),
+    );
+    if (data == null) return;
+    try {
+      final created = await _api.createEntry({
+        ...data,
+        'month': '${_month.year}-${_month.month.toString().padLeft(2, '0')}',
+      });
+      if (!mounted) return;
+      setState(() {
+        _allItems = [..._allItems, created];
+        _applyFilters();
+      });
+    } catch (error) {
+      if (mounted)
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              userFacingErrorMessage(error, fallback: '추가하지 못했습니다.'),
+            ),
+          ),
+        );
     }
   }
 
@@ -375,6 +429,7 @@ class _SalesLedgerPageState extends ConsumerState<SalesLedgerPage> {
       onEdit: _edit,
       onDateEdit: _saveInlineDate,
       onStatement: _showStatement,
+      onCreate: _create,
     );
     return PopScope<void>(
       canPop: !_hasActiveLedgerFilter,
@@ -837,6 +892,7 @@ class _LedgerContent extends StatelessWidget {
     required this.onEdit,
     required this.onDateEdit,
     required this.onStatement,
+    required this.onCreate,
   });
 
   final DateTime month;
@@ -863,6 +919,7 @@ class _LedgerContent extends StatelessWidget {
   final ValueChanged<SalesLedgerEntry> onEdit;
   final Future<void> Function(SalesLedgerEntry) onDateEdit;
   final ValueChanged<SalesLedgerEntry> onStatement;
+  final VoidCallback onCreate;
 
   @override
   Widget build(BuildContext context) {
@@ -889,6 +946,14 @@ class _LedgerContent extends StatelessWidget {
       ],
       _SummaryCards(summary: summary, items: items, month: month),
       const SizedBox(height: 20),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: onCreate,
+          icon: const Icon(Icons.add),
+          label: const Text('매출관리대장 추가'),
+        ),
+      ),
       if (compact) ...[
         _searchField(fullWidth: true),
         const SizedBox(height: 8),
@@ -1401,12 +1466,76 @@ class _StatusPill extends StatelessWidget {
 }
 
 class LedgerEditDialog extends StatefulWidget {
-  const LedgerEditDialog({required this.item});
+  const LedgerEditDialog({required this.item, this.onDelete});
 
   final SalesLedgerEntry item;
+  final Future<void> Function()? onDelete;
 
   @override
   State<LedgerEditDialog> createState() => LedgerEditDialogState();
+}
+
+class _LedgerCreateDialog extends StatefulWidget {
+  const _LedgerCreateDialog();
+  @override
+  State<_LedgerCreateDialog> createState() => _LedgerCreateDialogState();
+}
+
+class _LedgerCreateDialogState extends State<_LedgerCreateDialog> {
+  final project = TextEditingController(),
+      contractor = TextEditingController(),
+      partner = TextEditingController(),
+      elevator = TextEditingController();
+  @override
+  void dispose() {
+    project.dispose();
+    contractor.dispose();
+    partner.dispose();
+    elevator.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TheWeModalSurface(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const TheWeModalHeader(title: '매출관리대장 추가'),
+        const SizedBox(height: 16),
+        for (final field in [
+          ('공사명', project),
+          ('시공사', contractor),
+          ('협력사', partner),
+          ('호기', elevator),
+        ]) ...[
+          Text(field.$1),
+          TextField(controller: field.$2),
+          const SizedBox(height: 10),
+        ],
+        TheWeModalActions(
+          primaryLabel: '추가',
+          secondaryLabel: '취소',
+          onSecondaryPressed: () => Navigator.pop(context),
+          onPrimaryPressed: () {
+            if (project.text.trim().isEmpty) return;
+            Navigator.pop(context, {
+              'projectName': project.text.trim(),
+              'contractor': contractor.text.trim(),
+              'partner': partner.text.trim(),
+              'machineNumber': elevator.text.trim(),
+              'startDate': DateTime.now().toIso8601String().substring(0, 10),
+              'status': '신규',
+              'category': '본사',
+              'installment': 1,
+              'supplyAmount': 0,
+              'invoiceIssuer': '협력사',
+            });
+          },
+        ),
+      ],
+    ),
+  );
 }
 
 class LedgerEditDialogState extends State<LedgerEditDialog> {
@@ -1755,6 +1884,18 @@ class LedgerEditDialogState extends State<LedgerEditDialog> {
               ),
             ),
             const SizedBox(height: 24),
+            if (widget.onDelete != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: widget.onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  label: const Text('삭제'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: TheWeColor.danger,
+                  ),
+                ),
+              ),
             TheWeModalActions(
               primaryLabel: '저장',
               secondaryLabel: '취소',

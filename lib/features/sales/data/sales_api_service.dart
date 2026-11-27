@@ -177,6 +177,26 @@ class SalesApiService {
     }
   }
 
+  Future<void> deleteEntry(String id) async {
+    try {
+      await _dio.delete<void>('/sales/ledger/$id');
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
+  Future<SalesLedgerEntry> createEntry(Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/sales/ledger',
+        data: data,
+      );
+      return SalesLedgerEntry.fromJson(response.data ?? const {});
+    } on DioException catch (error) {
+      throw ApiException.fromDio(error);
+    }
+  }
+
   Future<SalesStatement> fetchStatement(
     String projectName,
     DateTime month, {
