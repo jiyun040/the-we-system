@@ -324,9 +324,11 @@ class _TheWeModalButton extends StatelessWidget {
           : OutlinedButton(
               onPressed: onPressed,
               style: OutlinedButton.styleFrom(
-                foregroundColor: TheWeColor.black500,
+                foregroundColor: color ?? TheWeColor.black500,
                 side: BorderSide(
-                  color: TheWeColor.black300.withValues(alpha: 0.35),
+                  color: color == null
+                      ? TheWeColor.black300.withValues(alpha: 0.35)
+                      : color!.withValues(alpha: 0.65),
                 ),
                 textStyle: style,
                 elevation: 0,
